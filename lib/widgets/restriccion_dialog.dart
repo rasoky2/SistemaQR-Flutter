@@ -1,7 +1,9 @@
-import 'package:fluent_ui/fluent_ui.dart';
+import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:inventario_qr/providers/inventario.provider.dart';
+import 'package:inventario_qr/utils/theme_colors.dart';
 import 'package:provider/provider.dart';
+import 'package:unicons/unicons.dart';
 
 class RestriccionDialog extends StatefulWidget {
   const RestriccionDialog({super.key});
@@ -39,10 +41,10 @@ class _RestriccionDialogState extends State<RestriccionDialog> {
   Widget build(BuildContext context) {
     final provider = context.read<InventarioProvider>();
     
-    return ContentDialog(
+    return AlertDialog(
       title: Row(
         children: [
-          Icon(FluentIcons.settings, color: Colors.blue),
+                          const Icon(UniconsLine.setting, color: MDSJColors.primary),
           const SizedBox(width: 8),
           Text(
             'Configurar Restricciones',
@@ -62,7 +64,7 @@ class _RestriccionDialogState extends State<RestriccionDialog> {
               'Lead Time (días)',
               _leadTimeController,
               (value) => provider.actualizarConfiguracion(leadTimeDias: double.tryParse(value) ?? 36.5),
-              icon: FluentIcons.clock,
+                              icon: UniconsLine.clock,
               tooltip: 'Tiempo promedio de entrega de pedidos',
             ),
             const SizedBox(height: 20),
@@ -70,7 +72,7 @@ class _RestriccionDialogState extends State<RestriccionDialog> {
               'Espacio Máximo (m²)',
               _espacioMaximoController,
               (value) => provider.actualizarConfiguracion(espacioMaximo: double.tryParse(value) ?? 150.0),
-              icon: FluentIcons.database,
+                              icon: UniconsLine.store,
               tooltip: 'Capacidad máxima de almacenamiento',
             ),
             const SizedBox(height: 20),
@@ -78,7 +80,7 @@ class _RestriccionDialogState extends State<RestriccionDialog> {
               'Presupuesto Máximo (S/)',
               _presupuestoMaximoController,
               (value) => provider.actualizarConfiguracion(presupuestoMaximo: double.tryParse(value) ?? 10000.0),
-              icon: FluentIcons.money,
+                              icon: UniconsLine.money_bill,
               tooltip: 'Límite de presupuesto para el inventario',
             ),
             const SizedBox(height: 20),
@@ -86,27 +88,27 @@ class _RestriccionDialogState extends State<RestriccionDialog> {
               'Número Máximo de Pedidos',
               _numeroMaximoPedidosController,
               (value) => provider.actualizarConfiguracion(numeroMaximoPedidos: double.tryParse(value) ?? 100.0),
-              icon: FluentIcons.package,
+                              icon: UniconsLine.box,
               tooltip: 'Cantidad máxima de pedidos permitidos',
             ),
             const SizedBox(height: 16),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.blue.withValues(alpha: 0.1),
+                color: MDSJColors.infoBackground,
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+                border: Border.all(color: MDSJColors.infoBorder),
               ),
               child: Row(
                 children: [
-                  Icon(FluentIcons.info, size: 16, color: Colors.blue),
+                  const Icon(UniconsLine.info_circle, size: 16, color: MDSJColors.info),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'Estos valores afectan los cálculos del modelo QR y las restricciones del sistema.',
                       style: GoogleFonts.inter(
                         fontSize: 12,
-                        color: Colors.blue,
+                        color: MDSJColors.info,
                       ),
                     ),
                   ),
@@ -117,22 +119,22 @@ class _RestriccionDialogState extends State<RestriccionDialog> {
         ),
       ),
       actions: [
-        Button(
+        TextButton(
+          onPressed: () => Navigator.pop(context),
           child: Text(
             'Cancelar',
             style: GoogleFonts.inter(fontWeight: FontWeight.w500),
           ),
-          onPressed: () => Navigator.pop(context),
         ),
-        Button(
-          child: Text(
-            'Guardar',
-            style: GoogleFonts.inter(fontWeight: FontWeight.w500),
-          ),
+        ElevatedButton(
           onPressed: () {
             Navigator.pop(context);
             _mostrarConfirmacion(context);
           },
+          child: Text(
+            'Guardar',
+            style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+          ),
         ),
       ],
     );
@@ -160,7 +162,7 @@ class _RestriccionDialogState extends State<RestriccionDialog> {
         Row(
           children: [
             if (icon != null) ...[
-              Icon(icon, size: 16, color: Colors.blue),
+              Icon(icon, size: 16, color: MDSJColors.primary),
               const SizedBox(width: 8),
             ],
             Expanded(
@@ -169,27 +171,37 @@ class _RestriccionDialogState extends State<RestriccionDialog> {
                 style: GoogleFonts.inter(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
-                  color: Colors.black,
+                  color: MDSJColors.textPrimary,
                 ),
               ),
             ),
             if (tooltip != null) ...[
               const SizedBox(width: 4),
-              const Icon(FluentIcons.info, size: 14, color: Colors.grey),
+                              const Icon(UniconsLine.info_circle, size: 14, color: MDSJColors.textSecondary),
             ],
           ],
         ),
         const SizedBox(height: 8),
-        TextFormBox(
+        TextFormField(
           controller: controller,
           focusNode: focusNode,
           onChanged: onChanged,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
-          placeholder: 'Ingrese un valor',
-          decoration: WidgetStateProperty.all(BoxDecoration(
-            border: Border.all(color: Colors.grey.withValues(alpha: 0.3)),
-            borderRadius: BorderRadius.circular(4),
-          )),
+          decoration: InputDecoration(
+            hintText: 'Ingrese un valor',
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(4),
+              borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.3)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(4),
+              borderSide: BorderSide(color: Colors.grey.withValues(alpha: 0.3)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(4),
+              borderSide: const BorderSide(color: MDSJColors.primary, width: 2),
+            ),
+          ),
         ),
         if (tooltip != null) ...[
           const SizedBox(height: 4),
@@ -197,7 +209,7 @@ class _RestriccionDialogState extends State<RestriccionDialog> {
             tooltip,
             style: GoogleFonts.inter(
               fontSize: 11,
-              color: Colors.grey,
+              color: MDSJColors.textSecondary,
             ),
           ),
         ],
@@ -208,10 +220,10 @@ class _RestriccionDialogState extends State<RestriccionDialog> {
   void _mostrarConfirmacion(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => ContentDialog(
+      builder: (context) => AlertDialog(
         title: Row(
           children: [
-            Icon(FluentIcons.check_mark, color: Colors.green),
+                            const Icon(UniconsLine.check_circle, color: MDSJColors.success),
             const SizedBox(width: 8),
             Text(
               'Configuración Guardada',
@@ -227,7 +239,7 @@ class _RestriccionDialogState extends State<RestriccionDialog> {
           style: GoogleFonts.inter(fontSize: 14),
         ),
         actions: [
-          Button(
+          TextButton(
             onPressed: () => Navigator.pop(context),
             child: Text(
               'Aceptar',

@@ -1,47 +1,113 @@
-import 'package:fluent_ui/fluent_ui.dart';
+import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:inventario_qr/providers/inventario.provider.dart';
 import 'package:inventario_qr/screens/home_screen.dart';
 import 'package:inventario_qr/screens/ingresar_datos_screen.dart';
 import 'package:inventario_qr/screens/resultados_screen.dart';
+import 'package:inventario_qr/utils/page_transitions.dart';
+import 'package:inventario_qr/utils/theme_colors.dart';
 import 'package:provider/provider.dart';
 
 void main() {
-  // Configurar ClearType para mejor renderizado de fuentes en Windows
-  WidgetsFlutterBinding.ensureInitialized();
-  
-  runApp(const InventarioApp());
+  runApp(const MyApp());
 }
 
-class InventarioApp extends StatelessWidget {
-  const InventarioApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
       create: (context) => InventarioProvider(),
-      child: FluentApp(
-        title: 'Sistema QR de Inventario',
+      child: MaterialApp(
+        title: 'Sistema de Inventario MDSJ',
         debugShowCheckedModeBanner: false,
-        theme: FluentThemeData(
-          brightness: Brightness.light,
-          accentColor: Colors.blue,
-          scaffoldBackgroundColor: Colors.grey[50],
-          typography: Typography.raw(
-            titleLarge: GoogleFonts.inter(
-              fontSize: 22,
+        theme: ThemeData(
+          // Paleta de colores basada en el diseño MDSJ
+          primaryColor: MDSJColors.primary,
+          colorScheme: ColorScheme.fromSeed(
+            seedColor: MDSJColors.primary,
+            primary: MDSJColors.primary,
+            secondary: MDSJColors.secondary,
+            surface: MDSJColors.surface,
+            onPrimary: Colors.white,
+            onSecondary: Colors.white,
+            onSurface: MDSJColors.textPrimary,
+          ),
+          
+          // Tipografía Poppins
+          textTheme: GoogleFonts.poppinsTextTheme(
+            Theme.of(context).textTheme,
+          ),
+          
+          // Configuración de componentes Material
+          elevatedButtonTheme: ElevatedButtonThemeData(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: MDSJColors.primary,
+              foregroundColor: Colors.white,
+              textStyle: GoogleFonts.poppins(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+          ),
+          
+          inputDecorationTheme: InputDecorationTheme(
+            filled: true,
+            fillColor: Colors.white,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: MDSJColors.border),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(8),
+              borderSide: const BorderSide(color: MDSJColors.border),
+            ),
+            focusedBorder: const OutlineInputBorder(
+            ),
+            hintStyle: GoogleFonts.poppins(
+              color: MDSJColors.textSecondary,
+              fontSize: 14,
+            ),
+            labelStyle: GoogleFonts.poppins(
+              color: MDSJColors.textPrimary,
+              fontSize: 14,
+            ),
+          ),
+          
+          cardTheme: CardThemeData(
+            elevation: 2,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            color: Colors.white,
+          ),
+          
+          appBarTheme: AppBarTheme(
+            backgroundColor: MDSJColors.primary,
+            foregroundColor: Colors.white,
+            titleTextStyle: GoogleFonts.poppins(
+              fontSize: 20,
               fontWeight: FontWeight.w600,
+              color: Colors.white,
             ),
-            bodyLarge: GoogleFonts.inter(
-              fontSize: 16,
-              fontWeight: FontWeight.w400,
-            ),
+            elevation: 0,
           ),
         ),
         home: const HomeScreen(),
-        routes: {
-          '/resultados': (context) => const ResultadosScreen(),
-          '/ingresar-datos': (context) => const IngresarDatosScreen(),
+        onGenerateRoute: (settings) {
+          switch (settings.name) {
+            case '/ingresar-datos':
+              return SlideLeftRoute(page: const IngresarDatosScreen());
+            case '/resultados':
+              return SlideLeftRoute(page: const ResultadosScreen());
+            default:
+              return null;
+          }
         },
       ),
     );

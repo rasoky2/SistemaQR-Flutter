@@ -174,30 +174,3 @@ class InventarioProvider extends ChangeNotifier {
   // ... configuración del sistema
 }
 ```
-
-## 🤝 Contribución
-
-### Guías de Desarrollo
-1. **Arquitectura**: Seguir el patrón Provider para gestión de estado
-2. **UI**: Usar componentes FluentUI para mantener consistencia
-3. **Código**: Seguir convenciones de nomenclatura con punto (ej: `archivo.model.dart`)
-4. **Documentación**: Mantener documentación actualizada
-
-### Flujo de Trabajo
-1. Fork del repositorio
-2. Crear rama para nueva funcionalidad
-3. Implementar cambios siguiendo las guías
-4. Probar en Windows Desktop
-5. Crear Pull Request
-
-## 📄 Licencia
-
-Este proyecto está bajo la Licencia MIT. Ver el archivo `LICENSE` para más detalles.
-
-## 🆘 Soporte
-
-Para reportar bugs o solicitar nuevas funcionalidades, por favor crear un issue en el repositorio.
-
----
-
-**Desarrollado con ❤️ usando Flutter y FluentUI para Windows Desktop**

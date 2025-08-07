@@ -1,0 +1,26 @@
+{
+  "name": "sistema-inventario-qr",
+  "version": "1.0.0",
+  "description": "Sistema de gestión inteligente de inventarios con análisis de costos y optimización de recursos",
+  "main": "index.js",
+  "scripts": {
+    "build": "flutter build web --release",
+    "dev": "flutter run -d web-server --web-port 3000",
+    "start": "flutter run -d web-server --web-port 3000"
+  },
+  "keywords": [
+    "inventario",
+    "gestión",
+    "QR",
+    "costos",
+    "optimización",
+    "análisis",
+    "flutter",
+    "web"
+  ],
+  "author": "Sistema de Inventario QR",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  }
+} 

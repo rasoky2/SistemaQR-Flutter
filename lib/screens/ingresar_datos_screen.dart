@@ -1,12 +1,13 @@
-import 'package:fluent_ui/fluent_ui.dart';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart' hide Colors, Card, showDialog, Checkbox, FilledButton;
+import 'package:flutter/material.dart';
 import 'package:inventario_qr/models/articulo.model.dart';
 import 'package:inventario_qr/providers/inventario.provider.dart';
 import 'package:inventario_qr/repositories/excel.repository.dart';
+import 'package:inventario_qr/utils/theme_colors.dart';
+import 'package:inventario_qr/widgets/articulos_table.dart';
 import 'package:inventario_qr/widgets/restriccion_dialog.dart';
 import 'package:open_file/open_file.dart';
 import 'package:provider/provider.dart';
+import 'package:unicons/unicons.dart';
 
 class IngresarDatosScreen extends StatefulWidget {
   const IngresarDatosScreen({super.key});
@@ -27,6 +28,13 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
   final _desviacionDiariaController = TextEditingController();
   final _puntoReordenController = TextEditingController();
   final _tamanoLoteController = TextEditingController();
+  
+
+
+  @override
+  void initState() {
+    super.initState();
+  }
 
   @override
   void dispose() {
@@ -43,6 +51,10 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
     super.dispose();
   }
 
+
+
+
+
   void _limpiarFormulario() {
     _formKey.currentState?.reset();
     _nombreController.clear();
@@ -57,6 +69,47 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
     _tamanoLoteController.clear();
   }
 
+  void _limpiarTodosLosDatos(BuildContext context) {
+    final provider = context.read<InventarioProvider>();
+    
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Confirmar Limpieza'),
+          content: const Text(
+            '¿Estás seguro de que deseas eliminar todos los artículos del inventario? '
+            'Esta acción no se puede deshacer.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancelar'),
+            ),
+            TextButton(
+              onPressed: () {
+                provider.limpiarDatos();
+                Navigator.pop(context);
+                
+                // Mostrar mensaje de confirmación
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Todos los datos han sido eliminados'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              },
+              style: TextButton.styleFrom(
+                foregroundColor: Colors.red,
+              ),
+              child: const Text('Eliminar Todo'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _agregarArticulo() {
     if (_formKey.currentState?.validate() ?? false) {
       debugPrint('📝 Iniciando agregar artículo manual...');
@@ -65,15 +118,15 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
       final tamanoLote = double.tryParse(_tamanoLoteController.text);
       if (tamanoLote == null || tamanoLote <= 0) {
         debugPrint('❌ Tamaño de lote inválido: ${_tamanoLoteController.text}');
-        // Mostrar mensaje de error usando InfoBar
+        // Mostrar mensaje de error usando AlertDialog
         showDialog(
           context: context,
           builder: (BuildContext context) {
-            return ContentDialog(
+            return AlertDialog(
               title: const Text('Error'),
               content: const Text('El tamaño de lote debe ser mayor a 0'),
               actions: [
-                Button(
+                TextButton(
                   onPressed: () => Navigator.pop(context),
                   child: const Text('Aceptar'),
                 ),
@@ -117,15 +170,15 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
       
       _limpiarFormulario();
       
-      // Mostrar mensaje de éxito usando InfoBar
+      // Mostrar mensaje de éxito usando AlertDialog
       showDialog(
         context: context,
         builder: (BuildContext context) {
-          return ContentDialog(
+          return AlertDialog(
             title: const Text('Éxito'),
             content: const Text('Artículo agregado correctamente'),
             actions: [
-              Button(
+              TextButton(
                 onPressed: () => Navigator.pop(context),
                 child: const Text('Aceptar'),
               ),
@@ -140,25 +193,22 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ScaffoldPage(
-      header: PageHeader(
-        title: Row(
-          children: [
-            Button(
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Ingresar Datos'),
+        leading: IconButton(
+          icon: const Icon(UniconsLine.arrow_left),
               onPressed: () => Navigator.pop(context),
-              child: const Icon(FluentIcons.back, size: 20),
-            ),
-            const SizedBox(width: 8),
-            const Text('Ingresar Datos'),
-            const Spacer(),
-            Button(
+        ),
+        actions: [
+                      IconButton(
               onPressed: () => mostrarDialogoRestricciones(context),
-              child: const Icon(FluentIcons.settings, size: 20),
+              icon: const Icon(UniconsLine.setting),
+              tooltip: 'Configurar Restricciones',
             ),
           ],
         ),
-      ),
-      content: Consumer<InventarioProvider>(
+      body: Consumer<InventarioProvider>(
         builder: (context, provider, child) {
           return SingleChildScrollView(
             padding: const EdgeInsets.all(24.0),
@@ -183,16 +233,16 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            const Row(
               children: [
-                Icon(FluentIcons.add, color: Colors.blue),
-                const SizedBox(width: 12),
-                const Text(
+                Icon(UniconsLine.plus, color: MDSJColors.primary),
+                SizedBox(width: 12),
+                Text(
                   'Nuevo Artículo',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black,
+                    color: MDSJColors.textPrimary,
                   ),
                 ),
               ],
@@ -409,30 +459,18 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
                   Row(
                     children: [
                       Expanded(
-                        child: Button(
+                        child: ElevatedButton.icon(
                           onPressed: _agregarArticulo,
-                          child: const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(FluentIcons.add),
-                              SizedBox(width: 8),
-                              Text('Agregar Artículo'),
-                            ],
-                          ),
+                          icon: const Icon(UniconsLine.plus),
+                          label: const Text('Agregar Artículo'),
                         ),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
-                        child: Button(
+                        child: OutlinedButton.icon(
                           onPressed: _limpiarFormulario,
-                          child: const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(FluentIcons.clear),
-                              SizedBox(width: 8),
-                              Text('Limpiar Formulario'),
-                            ],
-                          ),
+                          icon: const Icon(UniconsLine.times),
+                          label: const Text('Limpiar Formulario'),
                         ),
                       ),
                     ],
@@ -441,30 +479,30 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
                   Row(
                     children: [
                       Expanded(
-                        child: Button(
+                        child: ElevatedButton.icon(
                           onPressed: () => _mostrarDialogoImportarExcel(context),
-                          child: const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(FluentIcons.excel_document),
-                              SizedBox(width: 8),
-                              Text('Importar desde Excel'),
-                            ],
-                          ),
+                          icon: const Icon(UniconsLine.upload_alt),
+                          label: const Text('Importar desde Excel'),
                         ),
                       ),
                       const SizedBox(width: 16),
                       Expanded(
-                        child: Button(
+                        child: OutlinedButton.icon(
                           onPressed: () => _generarPlantillaExcel(context),
-                          child: const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(FluentIcons.download),
-                              SizedBox(width: 8),
-                              Text('Generar Plantilla Excel'),
-                            ],
-                          ),
+                          icon: const Icon(UniconsLine.download_alt),
+                          label: const Text('Generar Plantilla Excel'),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => _limpiarTodosLosDatos(context),
+                          icon: const Icon(UniconsLine.trash),
+                          label: const Text('Limpiar Todos los Datos'),
                         ),
                       ),
                     ],
@@ -483,348 +521,24 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
     required String label,
     String? Function(String?)? validator,
   }) {
-    return TextFormBox(
+    return TextFormField(
       controller: controller,
-      placeholder: 'Ingrese $label',
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: 'Ingrese $label',
+      ),
       validator: validator,
     );
   }
 
   Widget _buildArticulosList(InventarioProvider provider) {
-    if (provider.articulos.isEmpty) {
-      return const Card(
-        child: Padding(
-          padding: EdgeInsets.all(24.0),
-          child: Center(
-            child: Column(
-              children: [
-                Icon(FluentIcons.package, size: 64, color: Colors.grey),
-                SizedBox(height: 16),
-                Text(
-                  'No hay artículos agregados',
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: Colors.grey,
-                  ),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  'Agrega artículos usando el formulario de arriba',
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(FluentIcons.package, color: Colors.blue),
-                const SizedBox(width: 12),
-                Text(
-                  'Artículos Agregados (${provider.articulos.length})',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: DataTable(
-                columns: [
-                  const DataColumn(label: Text('Parámetro')),
-                  ...provider.articulos.asMap().entries.map((entry) {
-                    final index = entry.key;
-                    final articulo = entry.value;
-                    return DataColumn(
-                      label: Row(
-                        children: [
-                          Text(articulo.nombre),
-                          const SizedBox(width: 8),
-                          Button(
-                            onPressed: () => provider.eliminarArticulo(index),
-                            child: const Icon(FluentIcons.delete, size: 12),
-                          ),
-                        ],
-                      ),
-                    );
-                  }),
-                ],
-                rows: <DataRow>[
-                  _buildEditableParameterRow('Demanda anual (Dᵢ)', provider, (index, value) {
-                    final articulo = provider.articulos[index];
-                    final newArticulo = Articulo(
-                      nombre: articulo.nombre,
-                      demandaAnual: value,
-                      costoPedido: articulo.costoPedido,
-                      costoMantenimiento: articulo.costoMantenimiento,
-                      costoFaltante: articulo.costoFaltante,
-                      costoUnitario: articulo.costoUnitario,
-                      espacioUnidad: articulo.espacioUnidad,
-                      desviacionDiaria: articulo.desviacionDiaria,
-                      puntoReorden: articulo.puntoReorden,
-                      tamanoLote: articulo.tamanoLote,
-                    );
-                    provider.actualizarArticulo(index, newArticulo);
-                  }),
-                  _buildEditableParameterRow('Costo por pedido (Kᵢ)', provider, (index, value) {
-                    final articulo = provider.articulos[index];
-                    final newArticulo = Articulo(
-                      nombre: articulo.nombre,
-                      demandaAnual: articulo.demandaAnual,
-                      costoPedido: value,
-                      costoMantenimiento: articulo.costoMantenimiento,
-                      costoFaltante: articulo.costoFaltante,
-                      costoUnitario: articulo.costoUnitario,
-                      espacioUnidad: articulo.espacioUnidad,
-                      desviacionDiaria: articulo.desviacionDiaria,
-                      puntoReorden: articulo.puntoReorden,
-                      tamanoLote: articulo.tamanoLote,
-                    );
-                    provider.actualizarArticulo(index, newArticulo);
-                  }),
-                  _buildEditableParameterRow('Costo mant. anual (hᵢ)', provider, (index, value) {
-                    final articulo = provider.articulos[index];
-                    final newArticulo = Articulo(
-                      nombre: articulo.nombre,
-                      demandaAnual: articulo.demandaAnual,
-                      costoPedido: articulo.costoPedido,
-                      costoMantenimiento: value,
-                      costoFaltante: articulo.costoFaltante,
-                      costoUnitario: articulo.costoUnitario,
-                      espacioUnidad: articulo.espacioUnidad,
-                      desviacionDiaria: articulo.desviacionDiaria,
-                      puntoReorden: articulo.puntoReorden,
-                      tamanoLote: articulo.tamanoLote,
-                    );
-                    provider.actualizarArticulo(index, newArticulo);
-                  }),
-                  _buildEditableParameterRow('Costo por faltante (pᵢ)', provider, (index, value) {
-                    final articulo = provider.articulos[index];
-                    final newArticulo = Articulo(
-                      nombre: articulo.nombre,
-                      demandaAnual: articulo.demandaAnual,
-                      costoPedido: articulo.costoPedido,
-                      costoMantenimiento: articulo.costoMantenimiento,
-                      costoFaltante: value,
-                      costoUnitario: articulo.costoUnitario,
-                      espacioUnidad: articulo.espacioUnidad,
-                      desviacionDiaria: articulo.desviacionDiaria,
-                      puntoReorden: articulo.puntoReorden,
-                      tamanoLote: articulo.tamanoLote,
-                    );
-                    provider.actualizarArticulo(index, newArticulo);
-                  }),
-                  _buildEditableParameterRow('Costo unitario (cᵢ)', provider, (index, value) {
-                    final articulo = provider.articulos[index];
-                    final newArticulo = Articulo(
-                      nombre: articulo.nombre,
-                      demandaAnual: articulo.demandaAnual,
-                      costoPedido: articulo.costoPedido,
-                      costoMantenimiento: articulo.costoMantenimiento,
-                      costoFaltante: articulo.costoFaltante,
-                      costoUnitario: value,
-                      espacioUnidad: articulo.espacioUnidad,
-                      desviacionDiaria: articulo.desviacionDiaria,
-                      puntoReorden: articulo.puntoReorden,
-                      tamanoLote: articulo.tamanoLote,
-                    );
-                    provider.actualizarArticulo(index, newArticulo);
-                  }),
-                  _buildEditableParameterRow('Espacio por unidad (sᵢ)', provider, (index, value) {
-                    final articulo = provider.articulos[index];
-                    final newArticulo = Articulo(
-                      nombre: articulo.nombre,
-                      demandaAnual: articulo.demandaAnual,
-                      costoPedido: articulo.costoPedido,
-                      costoMantenimiento: articulo.costoMantenimiento,
-                      costoFaltante: articulo.costoFaltante,
-                      costoUnitario: articulo.costoUnitario,
-                      espacioUnidad: value,
-                      desviacionDiaria: articulo.desviacionDiaria,
-                      puntoReorden: articulo.puntoReorden,
-                      tamanoLote: articulo.tamanoLote,
-                    );
-                    provider.actualizarArticulo(index, newArticulo);
-                  }),
-                  _buildEditableParameterRow('Desv. estándar diaria (σ)', provider, (index, value) {
-                    final articulo = provider.articulos[index];
-                    final newArticulo = Articulo(
-                      nombre: articulo.nombre,
-                      demandaAnual: articulo.demandaAnual,
-                      costoPedido: articulo.costoPedido,
-                      costoMantenimiento: articulo.costoMantenimiento,
-                      costoFaltante: articulo.costoFaltante,
-                      costoUnitario: articulo.costoUnitario,
-                      espacioUnidad: articulo.espacioUnidad,
-                      desviacionDiaria: value,
-                      puntoReorden: articulo.puntoReorden,
-                      tamanoLote: articulo.tamanoLote,
-                    );
-                    provider.actualizarArticulo(index, newArticulo);
-                  }),
-                  _buildEditableParameterRow('Punto de reorden (Rᵢ)', provider, (index, value) {
-                    final articulo = provider.articulos[index];
-                    final newArticulo = Articulo(
-                      nombre: articulo.nombre,
-                      demandaAnual: articulo.demandaAnual,
-                      costoPedido: articulo.costoPedido,
-                      costoMantenimiento: articulo.costoMantenimiento,
-                      costoFaltante: articulo.costoFaltante,
-                      costoUnitario: articulo.costoUnitario,
-                      espacioUnidad: articulo.espacioUnidad,
-                      desviacionDiaria: articulo.desviacionDiaria,
-                      puntoReorden: value,
-                      tamanoLote: articulo.tamanoLote,
-                    );
-                    provider.actualizarArticulo(index, newArticulo);
-                  }),
-                  _buildEditableParameterRow('Tamaño de lote (Qᵢ)', provider, (index, value) {
-                    final articulo = provider.articulos[index];
-                    final newArticulo = Articulo(
-                      nombre: articulo.nombre,
-                      demandaAnual: articulo.demandaAnual,
-                      costoPedido: articulo.costoPedido,
-                      costoMantenimiento: articulo.costoMantenimiento,
-                      costoFaltante: articulo.costoFaltante,
-                      costoUnitario: articulo.costoUnitario,
-                      espacioUnidad: articulo.espacioUnidad,
-                      desviacionDiaria: articulo.desviacionDiaria,
-                      puntoReorden: articulo.puntoReorden,
-                      tamanoLote: value,
-                    );
-                    provider.actualizarArticulo(index, newArticulo);
-                  }),
-                ],
-              ),
-            ),
-            if (provider.articulos.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF5F5F5),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    Icon(FluentIcons.info, color: Colors.blue, size: 16),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Restricción: Máximo 150 m² en total',
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.black,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
+    return ArticulosTable(
+      articulos: provider.articulos,
+      title: 'Artículos Agregados',
     );
   }
 
-  DataRow _buildEditableParameterRow(String parameter, InventarioProvider provider, Function(int, double) onValueChanged) {
-    return DataRow(
-      cells: [
-        DataCell(
-          Text(
-            parameter,
-            style: const TextStyle(
-              fontWeight: FontWeight.w500,
-              color: Colors.black,
-            ),
-          ),
-        ),
-        ...provider.articulos.asMap().entries.map((entry) {
-          final index = entry.key;
-          final articulo = entry.value;
-          
-          // Determinar el valor a mostrar según el parámetro
-          double value;
-          String displayValue;
-          String suffix = '';
-          
-          switch (parameter) {
-            case 'Demanda anual (Dᵢ)':
-              value = articulo.demandaAnual;
-              displayValue = value.toStringAsFixed(0);
-              suffix = ' unidades';
-              break;
-            case 'Costo por pedido (Kᵢ)':
-              value = articulo.costoPedido;
-              displayValue = 'S/ ${value.toStringAsFixed(2)}';
-              break;
-            case 'Costo mant. anual (hᵢ)':
-              value = articulo.costoMantenimiento;
-              displayValue = 'S/ ${value.toStringAsFixed(2)}';
-              suffix = '/unidad';
-              break;
-            case 'Costo por faltante (pᵢ)':
-              value = articulo.costoFaltante;
-              displayValue = 'S/ ${value.toStringAsFixed(2)}';
-              suffix = '/unidad';
-              break;
-            case 'Costo unitario (cᵢ)':
-              value = articulo.costoUnitario;
-              displayValue = 'S/ ${value.toStringAsFixed(2)}';
-              break;
-            case 'Espacio por unidad (sᵢ)':
-              value = articulo.espacioUnidad;
-              displayValue = value.toStringAsFixed(1);
-              suffix = ' m²';
-              break;
-            case 'Desv. estándar diaria (σ)':
-              value = articulo.desviacionDiaria;
-              displayValue = value.toStringAsFixed(1);
-              suffix = ' unidades/día';
-              break;
-            case 'Punto de reorden (Rᵢ)':
-              value = articulo.puntoReorden;
-              displayValue = value.toStringAsFixed(0);
-              suffix = ' unidades';
-              break;
-            case 'Tamaño de lote (Qᵢ)':
-              value = articulo.tamanoLote;
-              displayValue = value.toStringAsFixed(0);
-              suffix = ' unidades';
-              break;
-            default:
-              value = 0.0;
-              displayValue = '0';
-          }
-          
-          return DataCell(
-            _EditableCell(
-              displayValue: displayValue + suffix,
-              currentValue: value,
-              onValueChanged: (newValue) => onValueChanged(index, newValue),
-              parameter: parameter,
-            ),
-          );
-        }),
-      ],
-    );
-  }
+
 
   Future<void> _generarPlantillaExcel(BuildContext context) async {
     try {
@@ -840,18 +554,18 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
         final bool? abrirArchivo = await showDialog<bool>(
           context: context,
           builder: (BuildContext context) {
-            return ContentDialog(
+            return AlertDialog(
               title: const Text('Plantilla Generada'),
               content: const Text(
                 'La plantilla Excel se ha generado correctamente con todos los campos necesarios. '
                 '¿Deseas abrir el archivo para ver la estructura?',
               ),
               actions: [
-                Button(
+                TextButton(
                   onPressed: () => Navigator.pop(context, false),
                   child: const Text('No'),
                 ),
-                Button(
+                TextButton(
                   onPressed: () => Navigator.pop(context, true),
                   child: const Text('Sí, abrir'),
                 ),
@@ -869,11 +583,11 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
               showDialog(
                 context: context,
                 builder: (BuildContext context) {
-                  return ContentDialog(
+                  return AlertDialog(
                     title: const Text('Error'),
                     content: Text('No se pudo abrir el archivo: ${result.message}'),
                     actions: [
-                      Button(
+                      TextButton(
                         onPressed: () => Navigator.pop(context),
                         child: const Text('Aceptar'),
                       ),
@@ -893,11 +607,11 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
         showDialog(
           context: context,
           builder: (BuildContext context) {
-            return ContentDialog(
+            return AlertDialog(
               title: const Text('Error'),
               content: Text('Error al generar la plantilla Excel: $e'),
               actions: [
-                Button(
+                TextButton(
                   onPressed: () => Navigator.pop(context),
                   child: const Text('Aceptar'),
                 ),
@@ -936,7 +650,7 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
           builder: (BuildContext context) {
             return StatefulBuilder(
               builder: (context, setState) {
-                return ContentDialog(
+                return AlertDialog(
                   title: const Text('Seleccionar Columnas para Importar'),
                   content: SizedBox(
                     width: 400,
@@ -948,8 +662,8 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
                           style: TextStyle(fontSize: 14),
                         ),
                         const SizedBox(height: 16),
-                        ...columnasDisponibles.map((columna) => Checkbox(
-                          checked: provider.columnasImportar.contains(columna),
+                        ...columnasDisponibles.map((columna) => CheckboxListTile(
+                          value: provider.columnasImportar.contains(columna),
                           onChanged: (bool? value) {
                             debugPrint('🔘 Checkbox cambiado para columna: $columna, valor: $value');
                             if (value == true) {
@@ -959,13 +673,14 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
                             }
                             setState(() {}); // Reconstruir el diálogo
                           },
-                          content: Text(columna),
+                          title: Text(columna),
+                          controlAffinity: ListTileControlAffinity.leading,
                         )),
                       ],
                     ),
                   ),
                   actions: [
-                    Button(
+                    TextButton(
                       onPressed: () {
                         debugPrint('📥 Botón Importar presionado');
                         Navigator.pop(context);
@@ -976,7 +691,7 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
                               showDialog(
                                 context: context,
                                 builder: (BuildContext context) {
-                                  return ContentDialog(
+                                  return AlertDialog(
                                     title: const Text('⚠️ Campos Faltantes'),
                                     content: Column(
                                       mainAxisSize: MainAxisSize.min,
@@ -1031,9 +746,9 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
                                             padding: const EdgeInsets.only(bottom: 8),
                                             child: Text(
                                               '• ${articulo.nombre}: ${problemas.join(', ')}',
-                                              style: TextStyle(
+                                              style: const TextStyle(
                                                 fontSize: 12,
-                                                color: Colors.red,
+                                                color: MDSJColors.error,
                                               ),
                                             ),
                                           );
@@ -1049,7 +764,7 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
                                       ],
                                     ),
                                     actions: [
-                                      Button(
+                                      TextButton(
                                         onPressed: () {
                                           Navigator.pop(context);
                                         },
@@ -1065,7 +780,7 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
                       },
                       child: const Text('Importar'),
                     ),
-                    Button(
+                    TextButton(
                       onPressed: () {
                         debugPrint('❌ Botón Cancelar presionado');
                         Navigator.pop(context);
@@ -1086,11 +801,11 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
         showDialog(
           context: context,
           builder: (BuildContext context) {
-            return ContentDialog(
+            return AlertDialog(
               title: const Text('Error'),
               content: Text('Error al leer el archivo Excel: $e'),
               actions: [
-                Button(
+                TextButton(
                   onPressed: () {
                     Navigator.pop(context);
                   },
@@ -1102,131 +817,5 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
         );
       }
     }
-  }
-} 
-
-class _EditableCell extends StatefulWidget {
-  final String displayValue;
-  final double currentValue;
-  final Function(double) onValueChanged;
-  final String parameter;
-
-  const _EditableCell({
-    required this.displayValue,
-    required this.currentValue,
-    required this.onValueChanged,
-    required this.parameter,
-  });
-
-  @override
-  State<_EditableCell> createState() => _EditableCellState();
-
-  @override
-  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
-    super.debugFillProperties(properties);
-    properties..add(StringProperty('displayValue', displayValue))
-    ..add(DoubleProperty('currentValue', currentValue))
-    ..add(ObjectFlagProperty<Function(double p1)>.has('onValueChanged', onValueChanged))
-    ..add(StringProperty('parameter', parameter));
-  }
-}
-
-class _EditableCellState extends State<_EditableCell> {
-  bool _isEditing = false;
-  late TextEditingController _controller;
-  late FocusNode _focusNode;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController(text: _getNumericValue().toString());
-    _focusNode = FocusNode();
-    _focusNode.addListener(() {
-      if (!_focusNode.hasFocus && _isEditing) {
-        _finishEditing();
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    _focusNode.dispose();
-    super.dispose();
-  }
-
-  double _getNumericValue() {
-    // Extrae el valor numérico del displayValue
-    final value = double.tryParse(widget.displayValue.replaceAll(RegExp(r'[^0-9.,-]'), '').replaceAll(',', '.'));
-    return value ?? widget.currentValue;
-  }
-
-  void _startEditing() {
-    setState(() => _isEditing = true);
-    _focusNode.requestFocus();
-    // Selecciona todo el texto al entrar en edición
-    _controller.selection = TextSelection(baseOffset: 0, extentOffset: _controller.text.length);
-  }
-
-  void _finishEditing() {
-    final value = double.tryParse(_controller.text.replaceAll(',', '.'));
-    if (value != null) {
-      widget.onValueChanged(value);
-    }
-    setState(() => _isEditing = false);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // Alternar fondo tipo Excel (puedes usar hashCode para alternar color)
-    final isEven = widget.parameter.hashCode.isEven;
-    final baseColor = isEven ? const Color(0xFFF8FAFC) : const Color(0xFFFFFFFF);
-    final borderColor = _isEditing ? Colors.blue : Colors.grey.withOpacity(0.3);
-    final borderWidth = _isEditing ? 2.0 : 1.0;
-
-    return GestureDetector(
-      onDoubleTap: _startEditing,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 120),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: baseColor,
-          border: Border.all(color: borderColor, width: borderWidth),
-          borderRadius: BorderRadius.circular(_isEditing ? 4 : 0),
-        ),
-        child: _isEditing
-            ? TextField(
-                controller: _controller,
-                focusNode: _focusNode,
-                autofocus: true,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                onSubmitted: (_) => _finishEditing(),
-                onEditingComplete: _finishEditing,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                decoration: const InputDecoration(
-                  isDense: true,
-                  contentPadding: EdgeInsets.symmetric(vertical: 4, horizontal: 2),
-                  border: InputBorder.none,
-                ),
-                onTap: () {
-                  // Selecciona todo el texto al hacer tap en modo edición
-                  _controller.selection = TextSelection(baseOffset: 0, extentOffset: _controller.text.length);
-                },
-              )
-            : MouseRegion(
-                cursor: SystemMouseCursors.click,
-                child: Text(
-                  widget.displayValue,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontWeight: FontWeight.w500,
-                    fontSize: 14,
-                    color: _isEditing ? Colors.blue : Colors.black,
-                  ),
-                ),
-              ),
-      ),
-    );
   }
 } 

@@ -10,8 +10,6 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
-  # FluentUI para Windows Desktop
-  fluent_ui: ^4.12.0
   # Gestión de estado
   provider: ^6.1.5
   # Manejo de Excel
@@ -23,12 +21,16 @@ dependencies:
   # Google Fonts
   google_fonts: ^6.3.0
   # Gráficas para visualización de datos
-  fl_chart: ^1.0.0
+  syncfusion_flutter_charts: ^30.1.42
+  # Iconos Unicons
+  unicons: ^3.0.0
+  # Tabla avanzada con edición Excel
+  pluto_grid: ^8.0.0
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^3.0.0
+  flutter_lints: ^6.0.0
 
 flutter:
   uses-material-design: true

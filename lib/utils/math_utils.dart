@@ -27,8 +27,8 @@ class MathUtils {
   /// Función de pérdida normal estándar L(z)
   static double normalLossFunction(double z) {
     final phi = normalPdf(z);
-    final Phi = normalCdf(z);
-    return phi - z * (1 - Phi);
+    final phiCdf = normalCdf(z);
+    return phi - z * (1 - phiCdf);
   }
 
   /// Calcula el z-score para un punto de reorden dado
@@ -48,8 +48,8 @@ class MathUtils {
 
   /// Calcula los backorders esperados
   static double calcularBackordersEsperados(double desviacionLeadTime, double zScore) {
-    final Lz = normalLossFunction(zScore);
-    return desviacionLeadTime * Lz;
+    final lz = normalLossFunction(zScore);
+    return desviacionLeadTime * lz;
   }
 
   /// Calcula el costo total de un artículo

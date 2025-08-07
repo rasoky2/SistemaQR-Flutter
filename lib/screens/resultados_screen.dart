@@ -1,13 +1,25 @@
 import 'package:file_picker/file_picker.dart';
-import 'package:fl_chart/fl_chart.dart';
-import 'package:fluent_ui/fluent_ui.dart';
-import 'package:flutter/material.dart' hide Colors, Card, showDialog;
+import 'package:flutter/material.dart';
 import 'package:inventario_qr/models/resultado.model.dart';
 import 'package:inventario_qr/providers/inventario.provider.dart';
 import 'package:inventario_qr/repositories/inventario.repository.dart';
 import 'package:inventario_qr/utils/math_utils.dart';
+import 'package:inventario_qr/utils/theme_colors.dart';
+import 'package:inventario_qr/widgets/articulos_table.dart';
 import 'package:open_file/open_file.dart';
 import 'package:provider/provider.dart';
+import 'package:syncfusion_flutter_charts/charts.dart';
+import 'package:unicons/unicons.dart';
+
+
+// Clase de datos para los gráficos
+class ChartData {
+  ChartData(this.nombre, this.valor);
+  final String nombre;
+  final double valor;
+}
+
+
 
 class ResultadosScreen extends StatefulWidget {
   const ResultadosScreen({super.key});
@@ -23,39 +35,29 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ScaffoldPage(
-      header: PageHeader(
-        title: Row(
-          children: [
-            Button(
-              onPressed: () => Navigator.pop(context),
-              child: const Icon(FluentIcons.back, size: 20),
-            ),
-            const SizedBox(width: 8),
-            const Text('Resultados del Modelo QR'),
-            const Spacer(),
-            Consumer<InventarioProvider>(
-              builder: (context, provider, child) {
-                if (provider.resultado == null) {
-                  return const SizedBox.shrink();
-                }
-                return Button(
-                  onPressed: () => _exportarResultadosExcel(context),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(FluentIcons.excel_document, size: 16),
-                      SizedBox(width: 4),
-                      Text('Exportar Excel'),
-                    ],
-                  ),
-                );
-              },
-            ),
-          ],
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Resultados del Modelo QR'),
+        leading: IconButton(
+          icon: const Icon(UniconsLine.arrow_left),
+          onPressed: () => Navigator.pop(context),
         ),
+        actions: [
+          Consumer<InventarioProvider>(
+            builder: (context, provider, child) {
+              if (provider.resultado == null) {
+                return const SizedBox.shrink();
+              }
+              return IconButton(
+                onPressed: () => _exportarResultadosExcel(context),
+                icon: const Icon(UniconsLine.file_export),
+                tooltip: 'Exportar Excel',
+              );
+            },
+          ),
+        ],
       ),
-      content: Consumer<InventarioProvider>(
+      body: Consumer<InventarioProvider>(
         builder: (context, provider, child) {
           debugPrint('📊 ResultadosScreen: Consumer reconstruyendo');
           debugPrint('📊 ResultadosScreen: Resultado disponible: ${provider.resultado != null}');
@@ -67,7 +69,7 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(FluentIcons.calculator, size: 64, color: Colors.grey),
+                  Icon(UniconsLine.calculator, size: 64, color: Colors.grey),
                   SizedBox(height: 16),
                   Text(
                     'No hay resultados disponibles',
@@ -99,7 +101,7 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
                 const SizedBox(height: 24),
                 _buildResultsTable(provider),
                 const SizedBox(height: 24),
-                _buildDetailedResults(provider),
+                _buildArticulosTable(provider),
                 const SizedBox(height: 24),
                 _buildChartsSection(provider),
                 const SizedBox(height: 24),
@@ -121,16 +123,16 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            const Row(
               children: [
-                Icon(FluentIcons.info, color: Colors.blue),
-                const SizedBox(width: 12),
-                const Text(
+                Icon(UniconsLine.info_circle, color: MDSJColors.primary),
+                SizedBox(width: 12),
+                Text(
                   'Resumen del Sistema',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black,
+                    color: MDSJColors.textPrimary,
                   ),
                 ),
               ],
@@ -141,38 +143,41 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
             Row(
               children: [
                 Expanded(
-                  child: _buildSummaryItem(
+                  child:                   _buildSummaryItem(
                     'Costo Total',
                     MathUtils.formatearMoneda(resultado.costoTotalSistema),
-                    FluentIcons.money,
-                    Colors.green,
+                    UniconsLine.money_bill,
+                    MDSJColors.success,
                   ),
                 ),
                 Expanded(
-                  child: _buildSummaryItemWithConstraint(
+                  child: _buildSummaryItemWithComparison(
                     'Espacio Usado',
                     MathUtils.formatearUnidades(resultado.espacioTotalUsado, 'm²'),
-                    FluentIcons.database,
-                    Colors.blue,
+                    UniconsLine.store,
+                    MDSJColors.info,
                     (resultado.espacioTotalUsado / provider.espacioMaximo) * 100,
+                    MathUtils.formatearUnidades(provider.espacioMaximo, 'm²'),
                   ),
                 ),
                 Expanded(
-                  child: _buildSummaryItemWithConstraint(
+                  child: _buildSummaryItemWithComparison(
                     'Presupuesto',
                     MathUtils.formatearMoneda(resultado.presupuestoTotal),
-                    FluentIcons.calculator,
-                    Colors.orange,
+                    UniconsLine.calculator,
+                    MDSJColors.warning,
                     (resultado.presupuestoTotal / provider.presupuestoMaximo) * 100,
+                    MathUtils.formatearMoneda(provider.presupuestoMaximo),
                   ),
                 ),
                 Expanded(
-                  child: _buildSummaryItemWithConstraint(
+                  child: _buildSummaryItemWithComparison(
                     'Número de Pedidos',
                     resultado.numeroTotalPedidos.toString(),
-                    FluentIcons.package,
-                    Colors.purple,
+                    UniconsLine.box,
+                    MDSJColors.secondary,
                     (resultado.numeroTotalPedidos / provider.numeroMaximoPedidos) * 100,
+                    provider.numeroMaximoPedidos.toString(),
                   ),
                 ),
               ],
@@ -187,32 +192,32 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
                   child: _buildSummaryItem(
                     'Total Artículos',
                     resultado.resultados.length.toString(),
-                    FluentIcons.list,
-                    Colors.blue,
+                    UniconsLine.list_ul,
+                    MDSJColors.info,
                   ),
                 ),
                 Expanded(
                   child: _buildSummaryItem(
                     'Costo Promedio/Artículo',
                     MathUtils.formatearMoneda(resultado.costoTotalSistema / resultado.resultados.length),
-                    FluentIcons.calculator,
-                    Colors.green,
+                    UniconsLine.calculator,
+                    MDSJColors.success,
                   ),
                 ),
                 Expanded(
                   child: _buildSummaryItem(
                     'Espacio Promedio/Artículo',
                     MathUtils.formatearUnidades(resultado.espacioTotalUsado / resultado.resultados.length, 'm²'),
-                    FluentIcons.database,
-                    Colors.blue,
+                    UniconsLine.store,
+                    MDSJColors.info,
                   ),
                 ),
                 Expanded(
                   child: _buildSummaryItem(
                     'Pedidos Promedio/Artículo',
                     (resultado.numeroTotalPedidos / resultado.resultados.length).toStringAsFixed(1),
-                    FluentIcons.package,
-                    Colors.purple,
+                    UniconsLine.box,
+                    MDSJColors.secondary,
                   ),
                 ),
               ],
@@ -245,7 +250,7 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
           title,
           style: const TextStyle(
             fontSize: 14,
-            color: Colors.grey,
+            color: MDSJColors.textSecondary,
           ),
         ),
         const SizedBox(height: 4),
@@ -254,22 +259,30 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Colors.black,
+            color: MDSJColors.textPrimary,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildSummaryItemWithConstraint(String title, String value, IconData icon, Color color, double constraintPercentage) {
-    Color progressColor;
+  Widget _buildSummaryItemWithComparison(String title, String value, IconData icon, Color color, double constraintPercentage, String maxValue) {
+    Color comparisonColor;
+    String comparisonText;
+    String comparisonDetail;
     
     if (constraintPercentage <= 70) {
-      progressColor = Colors.green;
+      comparisonColor = MDSJColors.success;
+      comparisonText = 'Excelente';
+      comparisonDetail = '${constraintPercentage.toStringAsFixed(0)}% del máximo';
     } else if (constraintPercentage <= 90) {
-      progressColor = Colors.orange;
+      comparisonColor = MDSJColors.warning;
+      comparisonText = 'Atención';
+      comparisonDetail = '${constraintPercentage.toStringAsFixed(0)}% del máximo';
     } else {
-      progressColor = Colors.red;
+      comparisonColor = MDSJColors.error;
+      comparisonText = 'Crítico';
+      comparisonDetail = '${constraintPercentage.toStringAsFixed(0)}% del máximo';
     }
 
     return Column(
@@ -280,7 +293,8 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
           title,
           style: const TextStyle(
             fontSize: 14,
-            color: Colors.grey,
+            color: MDSJColors.textPrimary,
+            fontWeight: FontWeight.w500,
           ),
         ),
         const SizedBox(height: 4),
@@ -289,37 +303,46 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
           style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
-            color: Colors.black,
+            color: MDSJColors.textPrimary,
           ),
         ),
-        const SizedBox(height: 12),
-        // Barra de progreso compacta con espacio independiente
+        const SizedBox(height: 8),
         Container(
-          width: double.infinity,
-          height: 4,
-          margin: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
-            color: Colors.grey.withValues(alpha: 0.2),
-            borderRadius: BorderRadius.circular(2),
+            color: comparisonColor.withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: comparisonColor.withValues(alpha: 0.6)),
           ),
-          child: FractionallySizedBox(
-            alignment: Alignment.centerLeft,
-            widthFactor: constraintPercentage / 100,
-            child: Container(
-              decoration: BoxDecoration(
-                color: progressColor,
-                borderRadius: BorderRadius.circular(2),
+          child: Column(
+            children: [
+              Text(
+                comparisonText,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: comparisonColor,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
+              const SizedBox(height: 2),
+              Text(
+                comparisonDetail,
+                style: TextStyle(
+                  fontSize: 9,
+                  color: comparisonColor,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 4),
         Text(
-          '${constraintPercentage.toStringAsFixed(0)}%',
-          style: TextStyle(
+          'Máximo: $maxValue',
+          style: const TextStyle(
             fontSize: 10,
-            color: progressColor,
-            fontWeight: FontWeight.bold,
+            color: MDSJColors.textPrimary,
+            fontWeight: FontWeight.w600,
           ),
         ),
         const SizedBox(height: 8),
@@ -336,15 +359,15 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
           title,
           style: const TextStyle(
             fontSize: 12,
-            color: Colors.grey,
+            color: MDSJColors.textSecondary,
           ),
         ),
         const SizedBox(height: 4),
         Text(
           detail,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 10,
-            color: Colors.blue,
+            color: MDSJColors.info,
             fontWeight: FontWeight.w500,
           ),
           maxLines: 1,
@@ -356,7 +379,7 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
           style: const TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.bold,
-            color: Colors.black,
+            color: MDSJColors.textPrimary,
           ),
         ),
       ],
@@ -366,8 +389,9 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
   Widget _buildExpandableExtremes(ResultadoSistema resultado, Map<String, dynamic> estadisticas) {
     return Column(
       children: [
-        Button(
-          onPressed: () => setState(() => _isExtremesExpanded = !_isExtremesExpanded),
+        InkWell(
+          onTap: () => setState(() => _isExtremesExpanded = !_isExtremesExpanded),
+          borderRadius: BorderRadius.circular(8),
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
             decoration: BoxDecoration(
@@ -377,27 +401,27 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
             child: Row(
               children: [
                 Icon(
-                  _isExtremesExpanded ? FluentIcons.chevron_down : FluentIcons.chevron_right,
-                  color: Colors.blue,
+                  _isExtremesExpanded ? UniconsLine.angle_up : UniconsLine.angle_down,
+                  color: MDSJColors.primary,
                   size: 16,
                 ),
                 const SizedBox(width: 8),
-                Icon(FluentIcons.chart, color: Colors.blue, size: 16),
+                const Icon(UniconsLine.chart, color: MDSJColors.primary, size: 16),
                 const SizedBox(width: 8),
                 const Text(
                   'Análisis de Extremos',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: Colors.black,
+                    color: MDSJColors.textPrimary,
                   ),
                 ),
                 const Spacer(),
                 Text(
                   _isExtremesExpanded ? 'Ocultar' : 'Mostrar',
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 12,
-                    color: Colors.blue,
+                    color: MDSJColors.primary,
                   ),
                 ),
               ],
@@ -415,8 +439,8 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
                     'Artículo Más Costoso',
                     estadisticas['articuloMasCostoso'] as String,
                     MathUtils.formatearMoneda(resultado.resultados.reduce((a, b) => a.costoTotal > b.costoTotal ? a : b).costoTotal),
-                    FluentIcons.warning,
-                    Colors.red,
+                    UniconsLine.exclamation_triangle,
+                    MDSJColors.error,
                   ),
                 ),
                 Expanded(
@@ -424,8 +448,8 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
                     'Artículo Menos Costoso',
                     estadisticas['articuloMenosCostoso'] as String,
                     MathUtils.formatearMoneda(resultado.resultados.reduce((a, b) => a.costoTotal < b.costoTotal ? a : b).costoTotal),
-                    FluentIcons.check_mark,
-                    Colors.green,
+                    UniconsLine.check_circle,
+                    MDSJColors.success,
                   ),
                 ),
                 Expanded(
@@ -433,8 +457,8 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
                     'Mayor Espacio',
                     estadisticas['articuloMasEspacio'] as String,
                     MathUtils.formatearUnidades(resultado.resultados.reduce((a, b) => a.espacioUsado > b.espacioUsado ? a : b).espacioUsado, 'm²'),
-                    FluentIcons.database,
-                    Colors.blue,
+                    UniconsLine.store,
+                    MDSJColors.info,
                   ),
                 ),
                 Expanded(
@@ -442,8 +466,8 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
                     'Menor Espacio',
                     estadisticas['articuloMenosEspacio'] as String,
                     MathUtils.formatearUnidades(resultado.resultados.reduce((a, b) => a.espacioUsado < b.espacioUsado ? a : b).espacioUsado, 'm²'),
-                    FluentIcons.database,
-                    Colors.blue,
+                    UniconsLine.store,
+                    MDSJColors.info,
                   ),
                 ),
               ],
@@ -461,16 +485,16 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            const Row(
               children: [
-                Icon(FluentIcons.table, color: Colors.blue),
-                const SizedBox(width: 12),
-                const Text(
+                Icon(UniconsLine.table, color: MDSJColors.primary),
+                SizedBox(width: 12),
+                Text(
                   'Resultados por Artículo',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black,
+                    color: MDSJColors.textPrimary,
                   ),
                 ),
               ],
@@ -509,80 +533,23 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
     );
   }
 
-  Widget _buildDetailedResults(InventarioProvider provider) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(FluentIcons.document, color: Colors.blue),
-                const SizedBox(width: 12),
-                const Text(
-                  'Detalles por Artículo',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: DataTable(
-                columns: [
-                  const DataColumn(label: Text('Parámetro')),
-                  ...provider.resultado!.resultados.map((resultado) {
-                    return DataColumn(
-                      label: Text(resultado.nombre),
-                    );
-                  }),
-                ],
-                rows: <DataRow>[
-                  _buildParameterRow('Tamaño de Lote (Q)', provider.resultado!.resultados.map((r) => r.tamanoLote.toStringAsFixed(0)).toList()),
-                  _buildParameterRow('Punto de Reorden (R)', provider.resultado!.resultados.map((r) => r.puntoReorden.toStringAsFixed(0)).toList()),
-                  _buildParameterRow('Z-Score', provider.resultado!.resultados.map((r) => r.zScore.toStringAsFixed(2)).toList()),
-                  _buildParameterRow('Backorders Esperados', provider.resultado!.resultados.map((r) => r.backordersEsperados.toStringAsFixed(2)).toList()),
-                  _buildParameterRow('Costo de Pedidos', provider.resultado!.resultados.map((r) => MathUtils.formatearMoneda(r.costoPedidos)).toList()),
-                  _buildParameterRow('Costo de Mantenimiento', provider.resultado!.resultados.map((r) => MathUtils.formatearMoneda(r.costoMantenimiento)).toList()),
-                  _buildParameterRow('Costo de Servicio', provider.resultado!.resultados.map((r) => MathUtils.formatearMoneda(r.costoServicio)).toList()),
-                  _buildParameterRow('Costo Total', provider.resultado!.resultados.map((r) => MathUtils.formatearMoneda(r.costoTotal)).toList()),
-                  _buildParameterRow('Espacio Usado', provider.resultado!.resultados.map((r) => MathUtils.formatearUnidades(r.espacioUsado, 'm²')).toList()),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
+  Widget _buildArticulosTable(InventarioProvider provider) {
+    return ArticulosTable(
+      articulos: provider.articulos,
+      title: 'Artículos del Sistema',
+      height: 300,
+      showDeleteButton: false, // Solo lectura en resultados
     );
   }
 
-  DataRow _buildParameterRow(String parameter, List<String> values) {
-    return DataRow(
-      cells: [
-        DataCell(
-          Text(
-            parameter,
-            style: const TextStyle(
-              fontWeight: FontWeight.w500,
-              color: Colors.black,
-            ),
-          ),
-        ),
-        ...values.map((value) => DataCell(Text(value))),
-      ],
-    );
-  }
+
 
   Widget _buildExpandableStatistics(Map<String, dynamic> estadisticas) {
     return Column(
       children: [
-        Button(
-          onPressed: () => setState(() => _isStatisticsExpanded = !_isStatisticsExpanded),
+        InkWell(
+          onTap: () => setState(() => _isStatisticsExpanded = !_isStatisticsExpanded),
+          borderRadius: BorderRadius.circular(8),
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
             decoration: BoxDecoration(
@@ -592,27 +559,27 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
             child: Row(
               children: [
                 Icon(
-                  _isStatisticsExpanded ? FluentIcons.chevron_down : FluentIcons.chevron_right,
-                  color: Colors.blue,
+                  _isStatisticsExpanded ? UniconsLine.angle_up : UniconsLine.angle_down,
+                  color: MDSJColors.primary,
                   size: 16,
                 ),
                 const SizedBox(width: 8),
-                Icon(FluentIcons.chart, color: Colors.blue, size: 16),
+                const Icon(UniconsLine.chart, color: MDSJColors.primary, size: 16),
                 const SizedBox(width: 8),
                 const Text(
                   'Estadísticas Promedio',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: Colors.black,
+                    color: MDSJColors.textPrimary,
                   ),
                 ),
                 const Spacer(),
                 Text(
                   _isStatisticsExpanded ? 'Ocultar' : 'Mostrar',
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 12,
-                    color: Colors.blue,
+                    color: MDSJColors.primary,
                   ),
                 ),
               ],
@@ -628,33 +595,33 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
                 Expanded(
                   child: _buildSummaryItem(
                     'Costo Promedio',
-                    MathUtils.formatearMoneda(estadisticas['costoPromedio']),
-                    FluentIcons.money,
-                    Colors.green,
+                    MathUtils.formatearMoneda(estadisticas['costoPromedio'] as double),
+                    UniconsLine.money_bill,
+                    MDSJColors.success,
                   ),
                 ),
                 Expanded(
                   child: _buildSummaryItem(
                     'Espacio Promedio',
-                    MathUtils.formatearUnidades(estadisticas['espacioPromedio'], 'm²'),
-                    FluentIcons.database,
-                    Colors.blue,
+                    MathUtils.formatearUnidades(estadisticas['espacioPromedio'] as double, 'm²'),
+                    UniconsLine.store,
+                    MDSJColors.info,
                   ),
                 ),
                 Expanded(
                   child: _buildSummaryItem(
                     'Z-Score Promedio',
-                    estadisticas['zScorePromedio'].toStringAsFixed(2),
-                    FluentIcons.calculator,
-                    Colors.orange,
+                    (estadisticas['zScorePromedio'] as double).toStringAsFixed(2),
+                    UniconsLine.calculator,
+                    MDSJColors.warning,
                   ),
                 ),
                 Expanded(
                   child: _buildSummaryItem(
                     'Mediana Costo',
-                    MathUtils.formatearMoneda(estadisticas['medianaCosto']),
-                    FluentIcons.chart,
-                    Colors.purple,
+                    MathUtils.formatearMoneda(estadisticas['medianaCosto'] as double),
+                    UniconsLine.chart,
+                    MDSJColors.secondary,
                   ),
                 ),
               ],
@@ -672,16 +639,16 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            const Row(
               children: [
-                Icon(FluentIcons.chart, color: Colors.blue),
-                const SizedBox(width: 12),
-                const Text(
+                Icon(Icons.analytics, color: MDSJColors.primary),
+                SizedBox(width: 12),
+                Text(
                   'Visualización de Datos',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black,
+                    color: MDSJColors.textPrimary,
                   ),
                 ),
               ],
@@ -697,8 +664,9 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
   Widget _buildExpandableCharts(InventarioProvider provider) {
     return Column(
       children: [
-        Button(
-          onPressed: () => setState(() => _isChartsExpanded = !_isChartsExpanded),
+        InkWell(
+          onTap: () => setState(() => _isChartsExpanded = !_isChartsExpanded),
+          borderRadius: BorderRadius.circular(8),
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
             decoration: BoxDecoration(
@@ -708,27 +676,27 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
             child: Row(
               children: [
                 Icon(
-                  _isChartsExpanded ? FluentIcons.chevron_down : FluentIcons.chevron_right,
-                  color: Colors.blue,
+                  _isChartsExpanded ? UniconsLine.angle_up : UniconsLine.angle_down,
+                  color: MDSJColors.primary,
                   size: 16,
                 ),
                 const SizedBox(width: 8),
-                Icon(FluentIcons.chart, color: Colors.blue, size: 16),
+                const Icon(UniconsLine.chart, color: MDSJColors.primary, size: 16),
                 const SizedBox(width: 8),
                 const Text(
-                  'Gráficas y Análisis',
+                  'Análisis Comparativo',
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: Colors.black,
+                    color: MDSJColors.textPrimary,
                   ),
                 ),
                 const Spacer(),
                 Text(
                   _isChartsExpanded ? 'Ocultar' : 'Mostrar',
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 12,
-                    color: Colors.blue,
+                    color: MDSJColors.primary,
                   ),
                 ),
               ],
@@ -741,14 +709,8 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
             duration: const Duration(milliseconds: 300),
             child: Column(
               children: [
-                // Gráfica de costos por artículo
-                _buildCostChart(provider),
-                const SizedBox(height: 24),
-                // Gráfica de espacio por artículo
-                _buildSpaceChart(provider),
-                const SizedBox(height: 24),
-                // Gráfica de Z-Score por artículo
-                _buildZScoreChart(provider),
+                // Gráfica combinada de métricas
+                _buildCombinedChart(provider),
               ],
             ),
           ),
@@ -757,285 +719,114 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
     );
   }
 
-  Widget _buildCostChart(InventarioProvider provider) {
+
+
+  Widget _buildCombinedChart(InventarioProvider provider) {
     final resultados = provider.resultado!.resultados;
-    final barGroups = resultados.asMap().entries.map((entry) {
-      final index = entry.key;
-      final resultado = entry.value;
-      return BarChartGroupData(
-        x: index,
-        barRods: [
-          BarChartRodData(
-            toY: resultado.costoTotal,
-            color: Colors.blue,
-            width: 20,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(4),
-              topRight: Radius.circular(4),
-            ),
-          ),
-        ],
-      );
-    }).toList();
+    
+    // Normalizar los datos para que todos usen la misma escala
+    final maxCosto = resultados.map((r) => r.costoTotal).reduce((a, b) => a > b ? a : b);
+    final maxEspacio = resultados.map((r) => r.espacioUsado).reduce((a, b) => a > b ? a : b);
+    final maxZScore = resultados.map((r) => r.zScore).reduce((a, b) => a > b ? a : b);
+    
+    final costosNormalizados = resultados.map((resultado) => 
+      ChartData(resultado.nombre, (resultado.costoTotal / maxCosto) * 100)
+    ).toList();
+    
+    final espaciosNormalizados = resultados.map((resultado) => 
+      ChartData(resultado.nombre, (resultado.espacioUsado / maxEspacio) * 100)
+    ).toList();
+    
+    final zScoresNormalizados = resultados.map((resultado) => 
+      ChartData(resultado.nombre, (resultado.zScore / maxZScore) * 100)
+    ).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Costos por Artículo',
+          'Análisis Combinado: Costos, Espacio y Z-Score por Artículo (Normalizado %)',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
-            color: Colors.black,
+            color: MDSJColors.textPrimary,
           ),
         ),
         const SizedBox(height: 8),
         SizedBox(
-          height: 200,
-          child: BarChart(
-            BarChartData(
-              alignment: BarChartAlignment.spaceAround,
-              maxY: resultados.map((r) => r.costoTotal).reduce((a, b) => a > b ? a : b) * 1.2,
-              barTouchData: BarTouchData(
-                touchTooltipData: BarTouchTooltipData(
-                  getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                    final resultado = resultados[group.x];
-                    return BarTooltipItem(
-                      '${resultado.nombre}\n${MathUtils.formatearMoneda(rod.toY)}',
-                      const TextStyle(color: Colors.white),
-                    );
-                  },
-                ),
-              ),
-              titlesData: FlTitlesData(
-                rightTitles: const AxisTitles(),
-                topTitles: const AxisTitles(),
-                bottomTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    getTitlesWidget: (value, meta) {
-                      if (value.toInt() >= 0 && value.toInt() < resultados.length) {
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
-                          child: Text(
-                            resultados[value.toInt()].nombre,
-                            style: const TextStyle(fontSize: 10),
-                            textAlign: TextAlign.center,
-                          ),
-                        );
-                      }
-                      return const Text('');
-                    },
-                  ),
-                ),
-                leftTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    reservedSize: 60,
-                    getTitlesWidget: (value, meta) {
-                      return Text(
-                        MathUtils.formatearMoneda(value),
-                        style: const TextStyle(fontSize: 10),
-                      );
-                    },
-                  ),
-                ),
-              ),
-              borderData: FlBorderData(show: false),
-              barGroups: barGroups,
+          height: 250,
+          child: SfCartesianChart(
+            primaryXAxis: const CategoryAxis(
+              labelStyle: TextStyle(fontSize: 10),
+              labelRotation: 45,
             ),
+            primaryYAxis: const NumericAxis(
+              labelStyle: TextStyle(fontSize: 10),
+              minimum: 0,
+              maximum: 100,
+              interval: 20,
+            ),
+            tooltipBehavior: TooltipBehavior(
+              enable: true,
+              shared: true,
+            ),
+            legend: const Legend(
+              isVisible: true,
+              position: LegendPosition.bottom,
+            ),
+            series: <CartesianSeries>[
+              // Serie para Costos normalizados
+              LineSeries<ChartData, String>(
+                dataSource: costosNormalizados,
+                xValueMapper: (ChartData data, _) => data.nombre,
+                yValueMapper: (ChartData data, _) => data.valor,
+                name: 'Costo Total (%)',
+                color: MDSJColors.primary,
+                width: 3,
+                markerSettings: const MarkerSettings(isVisible: true),
+                dataLabelSettings: const DataLabelSettings(
+                  isVisible: true,
+                  labelAlignment: ChartDataLabelAlignment.top,
+                ),
+              ),
+              // Serie para Espacio normalizado
+              LineSeries<ChartData, String>(
+                dataSource: espaciosNormalizados,
+                xValueMapper: (ChartData data, _) => data.nombre,
+                yValueMapper: (ChartData data, _) => data.valor,
+                name: 'Espacio Usado (%)',
+                color: MDSJColors.success,
+                width: 3,
+                markerSettings: const MarkerSettings(isVisible: true),
+                dataLabelSettings: const DataLabelSettings(
+                  isVisible: true,
+                  labelAlignment: ChartDataLabelAlignment.top,
+                ),
+              ),
+              // Serie para Z-Score normalizado
+              LineSeries<ChartData, String>(
+                dataSource: zScoresNormalizados,
+                xValueMapper: (ChartData data, _) => data.nombre,
+                yValueMapper: (ChartData data, _) => data.valor,
+                name: 'Z-Score (%)',
+                color: MDSJColors.warning,
+                width: 3,
+                markerSettings: const MarkerSettings(isVisible: true),
+                dataLabelSettings: const DataLabelSettings(
+                  isVisible: true,
+                  labelAlignment: ChartDataLabelAlignment.top,
+                ),
+              ),
+            ],
           ),
         ),
       ],
     );
   }
 
-  Widget _buildSpaceChart(InventarioProvider provider) {
-    final resultados = provider.resultado!.resultados;
-    final barGroups = resultados.asMap().entries.map((entry) {
-      final index = entry.key;
-      final resultado = entry.value;
-      return BarChartGroupData(
-        x: index,
-        barRods: [
-          BarChartRodData(
-            toY: resultado.espacioUsado,
-            color: Colors.green,
-            width: 20,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(4),
-              topRight: Radius.circular(4),
-            ),
-          ),
-        ],
-      );
-    }).toList();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Espacio por Artículo',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
-        ),
-        const SizedBox(height: 8),
-        SizedBox(
-          height: 200,
-          child: BarChart(
-            BarChartData(
-              alignment: BarChartAlignment.spaceAround,
-              maxY: resultados.map((r) => r.espacioUsado).reduce((a, b) => a > b ? a : b) * 1.2,
-              barTouchData: BarTouchData(
-                touchTooltipData: BarTouchTooltipData(
-                  getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                    final resultado = resultados[group.x];
-                    return BarTooltipItem(
-                      '${resultado.nombre}\n${MathUtils.formatearUnidades(rod.toY, 'm²')}',
-                      const TextStyle(color: Colors.white),
-                    );
-                  },
-                ),
-              ),
-              titlesData: FlTitlesData(
-                rightTitles: const AxisTitles(),
-                topTitles: const AxisTitles(),
-                bottomTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    getTitlesWidget: (value, meta) {
-                      if (value.toInt() >= 0 && value.toInt() < resultados.length) {
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
-                          child: Text(
-                            resultados[value.toInt()].nombre,
-                            style: const TextStyle(fontSize: 10),
-                            textAlign: TextAlign.center,
-                          ),
-                        );
-                      }
-                      return const Text('');
-                    },
-                  ),
-                ),
-                leftTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    reservedSize: 60,
-                    getTitlesWidget: (value, meta) {
-                      return Text(
-                        MathUtils.formatearUnidades(value, 'm²'),
-                        style: const TextStyle(fontSize: 10),
-                      );
-                    },
-                  ),
-                ),
-              ),
-              borderData: FlBorderData(show: false),
-              barGroups: barGroups,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 
-  Widget _buildZScoreChart(InventarioProvider provider) {
-    final resultados = provider.resultado!.resultados;
-    final barGroups = resultados.asMap().entries.map((entry) {
-      final index = entry.key;
-      final resultado = entry.value;
-      return BarChartGroupData(
-        x: index,
-        barRods: [
-          BarChartRodData(
-            toY: resultado.zScore,
-            color: resultado.zScore > 0 ? Colors.orange : Colors.red,
-            width: 20,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(4),
-              topRight: Radius.circular(4),
-            ),
-          ),
-        ],
-      );
-    }).toList();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Z-Score por Artículo',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
-        ),
-        const SizedBox(height: 8),
-        SizedBox(
-          height: 200,
-          child: BarChart(
-            BarChartData(
-              alignment: BarChartAlignment.spaceAround,
-              maxY: resultados.map((r) => r.zScore).reduce((a, b) => a > b ? a : b) * 1.2,
-              minY: resultados.map((r) => r.zScore).reduce((a, b) => a < b ? a : b) * 1.2,
-              barTouchData: BarTouchData(
-                touchTooltipData: BarTouchTooltipData(
-                  getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                    final resultado = resultados[group.x];
-                    return BarTooltipItem(
-                      '${resultado.nombre}\nZ-Score: ${rod.toY.toStringAsFixed(2)}',
-                      const TextStyle(color: Colors.white),
-                    );
-                  },
-                ),
-              ),
-              titlesData: FlTitlesData(
-                rightTitles: const AxisTitles(),
-                topTitles: const AxisTitles(),
-                bottomTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    getTitlesWidget: (value, meta) {
-                      if (value.toInt() >= 0 && value.toInt() < resultados.length) {
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 8.0),
-                          child: Text(
-                            resultados[value.toInt()].nombre,
-                            style: const TextStyle(fontSize: 10),
-                            textAlign: TextAlign.center,
-                          ),
-                        );
-                      }
-                      return const Text('');
-                    },
-                  ),
-                ),
-                leftTitles: AxisTitles(
-                  sideTitles: SideTitles(
-                    showTitles: true,
-                    reservedSize: 60,
-                    getTitlesWidget: (value, meta) {
-                      return Text(
-                        value.toStringAsFixed(1),
-                        style: const TextStyle(fontSize: 10),
-                      );
-                    },
-                  ),
-                ),
-              ),
-              borderData: FlBorderData(show: false),
-              barGroups: barGroups,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 
   Future<void> _exportarResultadosExcel(BuildContext context) async {
     final provider = context.read<InventarioProvider>();
@@ -1044,11 +835,11 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
       showDialog(
         context: context,
         builder: (BuildContext context) {
-          return ContentDialog(
+          return AlertDialog(
             title: const Text('Error'),
             content: const Text('No hay resultados disponibles para exportar'),
             actions: [
-              Button(
+              TextButton(
                 onPressed: () => Navigator.pop(context),
                 child: const Text('Aceptar'),
               ),
@@ -1087,15 +878,15 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
         final bool? abrirArchivo = await showDialog<bool>(
           context: context,
           builder: (BuildContext context) {
-            return ContentDialog(
+            return AlertDialog(
               title: const Text('Exportación Completada'),
               content: const Text('Los resultados se han exportado correctamente. ¿Deseas abrir el archivo Excel?'),
               actions: [
-                Button(
+                TextButton(
                   onPressed: () => Navigator.pop(context, false),
                   child: const Text('No'),
                 ),
-                Button(
+                TextButton(
                   onPressed: () => Navigator.pop(context, true),
                   child: const Text('Sí, abrir'),
                 ),
@@ -1113,11 +904,11 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
               showDialog(
                 context: context,
                 builder: (BuildContext context) {
-                  return ContentDialog(
+                  return AlertDialog(
                     title: const Text('Error'),
                     content: Text('No se pudo abrir el archivo: ${result.message}'),
                     actions: [
-                      Button(
+                      TextButton(
                         onPressed: () => Navigator.pop(context),
                         child: const Text('Aceptar'),
                       ),
@@ -1137,11 +928,11 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
         showDialog(
           context: context,
           builder: (BuildContext context) {
-            return ContentDialog(
+            return AlertDialog(
               title: const Text('Error'),
               content: Text('Error al exportar resultados: $e'),
               actions: [
-                Button(
+                TextButton(
                   onPressed: () => Navigator.pop(context),
                   child: const Text('Aceptar'),
                 ),

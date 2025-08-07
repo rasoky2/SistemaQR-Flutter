@@ -1,30 +1,31 @@
-import 'package:fluent_ui/fluent_ui.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart' hide Colors, Card, showDialog;
-import 'package:inventario_qr/models/articulo.model.dart';
+import 'package:flutter/material.dart';
 import 'package:inventario_qr/providers/inventario.provider.dart';
+import 'package:inventario_qr/screens/ingresar_datos_screen.dart';
+import 'package:inventario_qr/screens/resultados_screen.dart';
+import 'package:inventario_qr/utils/page_transitions.dart';
+import 'package:inventario_qr/widgets/articulos_table.dart';
 import 'package:inventario_qr/widgets/restriccion_dialog.dart';
 import 'package:provider/provider.dart';
+import 'package:unicons/unicons.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return ScaffoldPage(
-      header: PageHeader(
-        title: Row(
-          children: [
-            const Text('Sistema QR de Inventario'),
-            const Spacer(),
-            Button(
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Sistema de Inventario MDSJ'),
+        actions: [
+          IconButton(
               onPressed: () => mostrarDialogoRestricciones(context),
-              child: const Icon(FluentIcons.settings, size: 20),
+            icon: const Icon(Icons.settings),
+            tooltip: 'Configurar restricciones',
             ),
           ],
-        ),
       ),
-      content: Consumer<InventarioProvider>(
+      body: Consumer<InventarioProvider>(
         builder: (context, provider, child) {
           debugPrint('🏠 HomeScreen: Consumer reconstruyendo - Artículos: ${provider.articulos.length}');
           return SingleChildScrollView(
@@ -47,7 +48,8 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildSystemSummary(InventarioProvider provider) {
-    return Card(
+    return Builder(
+      builder: (context) => Card(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
@@ -55,7 +57,7 @@ class HomeScreen extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(FluentIcons.info, color: Colors.blue),
+                  Icon(UniconsLine.info_circle, color: Theme.of(context).primaryColor),
                 const SizedBox(width: 12),
                 const Text(
                   'Resumen del Sistema',
@@ -74,7 +76,7 @@ class HomeScreen extends StatelessWidget {
                   child: _buildSummaryItem(
                     'Artículos',
                     '${provider.articulos.length}',
-                    FluentIcons.package,
+                    UniconsLine.box,
                   ),
                 ),
                 Expanded(
@@ -83,7 +85,7 @@ class HomeScreen extends StatelessWidget {
                     provider.resultado != null 
                         ? 'S/ ${provider.resultado!.costoTotalSistema.toStringAsFixed(2)}'
                         : 'N/A',
-                    FluentIcons.money,
+                    UniconsLine.money_bill,
                   ),
                 ),
                 Expanded(
@@ -92,21 +94,23 @@ class HomeScreen extends StatelessWidget {
                     provider.resultado != null 
                         ? '${provider.resultado!.espacioTotalUsado.toStringAsFixed(1)} m²'
                         : 'N/A',
-                    FluentIcons.database,
+                    UniconsLine.store,
                   ),
                 ),
               ],
             ),
           ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildSummaryItem(String title, String value, IconData icon) {
-    return Column(
+    return Builder(
+      builder: (context) => Column(
       children: [
-        Icon(icon, size: 32, color: Colors.blue),
+          Icon(icon, size: 32, color: Theme.of(context).primaryColor),
         const SizedBox(height: 8),
         Text(
           title,
@@ -125,6 +129,7 @@ class HomeScreen extends StatelessWidget {
           ),
         ),
       ],
+      ),
     );
   }
 
@@ -141,15 +146,15 @@ class HomeScreen extends StatelessWidget {
           context,
           'Ingresar Datos',
           'Agregar artículos manualmente',
-          FluentIcons.add,
+          UniconsLine.plus,
           Colors.teal,
-          () => Navigator.pushNamed(context, '/ingresar-datos'),
+          () => NavigationHelper.pushSlideLeft(context, const IngresarDatosScreen()),
         ),
         _buildNavigationCard(
           context,
           'Datos de Ejemplo',
           'Cargar datos de prueba',
-          FluentIcons.lightning_bolt,
+          UniconsLine.bolt,
           Colors.green,
           () => provider.cargarDatosEjemplo(),
         ),
@@ -157,16 +162,16 @@ class HomeScreen extends StatelessWidget {
           context,
           'Ver Resultados',
           'Mostrar cálculos detallados',
-          FluentIcons.calculator,
+          UniconsLine.calculator,
           Colors.orange,
-          () => Navigator.pushNamed(context, '/resultados'),
+          () => NavigationHelper.pushSlideLeft(context, const ResultadosScreen()),
           enabled: provider.resultado != null,
         ),
         _buildNavigationCard(
           context,
           'Limpiar Datos',
           'Eliminar todos los artículos',
-          FluentIcons.delete,
+          UniconsLine.trash,
           Colors.red,
           () => provider.limpiarDatos(),
           enabled: provider.articulos.isNotEmpty,
@@ -174,6 +179,8 @@ class HomeScreen extends StatelessWidget {
       ],
     );
   }
+
+
 
   Widget _buildNavigationCard(
     BuildContext context,
@@ -194,45 +201,16 @@ class HomeScreen extends StatelessWidget {
     final iconSize = screenWidth > 1200 ? 24.0 : 
                     screenWidth > 800 ? 20.0 : 16.0;
     
-    return Card(
-      child: Button(
+    return _AnimatedNavigationCard(
+      title: title,
+      subtitle: subtitle,
+      icon: icon,
+      color: color,
         onPressed: enabled ? onPressed : null,
-        child: Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                icon,
-                size: iconSize,
-                color: enabled ? color : Colors.grey,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: titleFontSize,
-                  fontWeight: FontWeight.bold,
-                  color: enabled ? Colors.black : Colors.grey,
-                ),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 2),
-              Text(
-                subtitle,
-                style: TextStyle(
-                  fontSize: subtitleFontSize,
-                  color: enabled ? Colors.grey : Colors.grey,
-                ),
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ],
-          ),
-        ),
-      ),
+      enabled: enabled,
+      titleFontSize: titleFontSize,
+      subtitleFontSize: subtitleFontSize,
+      iconSize: iconSize,
     );
   }
 
@@ -241,503 +219,184 @@ class HomeScreen extends StatelessWidget {
     debugPrint('🏠 HomeScreen: Total de artículos en provider: ${provider.articulos.length}');
     debugPrint('🏠 HomeScreen: Nombres de artículos: ${provider.articulos.map((a) => a.nombre).toList()}');
     
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(FluentIcons.table, color: Colors.blue),
-                const SizedBox(width: 12),
-                Text(
-                  'Artículos en Inventario (${provider.articulos.length})',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            if (provider.articulos.isEmpty)
-              const Center(
-                child: Column(
-                  children: [
-                    Icon(FluentIcons.package, size: 64, color: Colors.grey),
-                    SizedBox(height: 16),
-                    Text(
-                      'No hay artículos en el inventario',
-                      style: TextStyle(
-                        fontSize: 18,
-                        color: Colors.grey,
-                      ),
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      'Agrega artículos usando los botones de arriba',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  ],
-                ),
-              )
-            else
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: DataTable(
-                  columns: [
-                    const DataColumn(label: Text('Parámetro')),
-                    ...provider.articulos.asMap().entries.map((entry) {
-                      final index = entry.key;
-                      final articulo = entry.value;
-                      return DataColumn(
-                        label: Row(
-                          children: [
-                            Text(articulo.nombre),
-                            const SizedBox(width: 8),
-                            Button(
-                              onPressed: () => provider.eliminarArticulo(index),
-                              child: const Icon(FluentIcons.delete, size: 12),
-                            ),
-                          ],
-                        ),
-                      );
-                    }),
-                  ],
-                  rows: <DataRow>[
-                    _buildEditableParameterRow('Demanda anual (Dᵢ)', provider, (index, value) {
-                      final articulo = provider.articulos[index];
-                      final newArticulo = Articulo(
-                        nombre: articulo.nombre,
-                        demandaAnual: value,
-                        costoPedido: articulo.costoPedido,
-                        costoMantenimiento: articulo.costoMantenimiento,
-                        costoFaltante: articulo.costoFaltante,
-                        costoUnitario: articulo.costoUnitario,
-                        espacioUnidad: articulo.espacioUnidad,
-                        desviacionDiaria: articulo.desviacionDiaria,
-                        puntoReorden: articulo.puntoReorden,
-                        tamanoLote: articulo.tamanoLote,
-                      );
-                      provider.actualizarArticulo(index, newArticulo);
-                    }),
-                    _buildEditableParameterRow('Costo por pedido (Kᵢ)', provider, (index, value) {
-                      final articulo = provider.articulos[index];
-                      final newArticulo = Articulo(
-                        nombre: articulo.nombre,
-                        demandaAnual: articulo.demandaAnual,
-                        costoPedido: value,
-                        costoMantenimiento: articulo.costoMantenimiento,
-                        costoFaltante: articulo.costoFaltante,
-                        costoUnitario: articulo.costoUnitario,
-                        espacioUnidad: articulo.espacioUnidad,
-                        desviacionDiaria: articulo.desviacionDiaria,
-                        puntoReorden: articulo.puntoReorden,
-                        tamanoLote: articulo.tamanoLote,
-                      );
-                      provider.actualizarArticulo(index, newArticulo);
-                    }),
-                    _buildEditableParameterRow('Costo mant. anual (hᵢ)', provider, (index, value) {
-                      final articulo = provider.articulos[index];
-                      final newArticulo = Articulo(
-                        nombre: articulo.nombre,
-                        demandaAnual: articulo.demandaAnual,
-                        costoPedido: articulo.costoPedido,
-                        costoMantenimiento: value,
-                        costoFaltante: articulo.costoFaltante,
-                        costoUnitario: articulo.costoUnitario,
-                        espacioUnidad: articulo.espacioUnidad,
-                        desviacionDiaria: articulo.desviacionDiaria,
-                        puntoReorden: articulo.puntoReorden,
-                        tamanoLote: articulo.tamanoLote,
-                      );
-                      provider.actualizarArticulo(index, newArticulo);
-                    }),
-                    _buildEditableParameterRow('Costo por faltante (pᵢ)', provider, (index, value) {
-                      final articulo = provider.articulos[index];
-                      final newArticulo = Articulo(
-                        nombre: articulo.nombre,
-                        demandaAnual: articulo.demandaAnual,
-                        costoPedido: articulo.costoPedido,
-                        costoMantenimiento: articulo.costoMantenimiento,
-                        costoFaltante: value,
-                        costoUnitario: articulo.costoUnitario,
-                        espacioUnidad: articulo.espacioUnidad,
-                        desviacionDiaria: articulo.desviacionDiaria,
-                        puntoReorden: articulo.puntoReorden,
-                        tamanoLote: articulo.tamanoLote,
-                      );
-                      provider.actualizarArticulo(index, newArticulo);
-                    }),
-                    _buildEditableParameterRow('Costo unitario (cᵢ)', provider, (index, value) {
-                      final articulo = provider.articulos[index];
-                      final newArticulo = Articulo(
-                        nombre: articulo.nombre,
-                        demandaAnual: articulo.demandaAnual,
-                        costoPedido: articulo.costoPedido,
-                        costoMantenimiento: articulo.costoMantenimiento,
-                        costoFaltante: articulo.costoFaltante,
-                        costoUnitario: value,
-                        espacioUnidad: articulo.espacioUnidad,
-                        desviacionDiaria: articulo.desviacionDiaria,
-                        puntoReorden: articulo.puntoReorden,
-                        tamanoLote: articulo.tamanoLote,
-                      );
-                      provider.actualizarArticulo(index, newArticulo);
-                    }),
-                    _buildEditableParameterRow('Espacio por unidad (sᵢ)', provider, (index, value) {
-                      final articulo = provider.articulos[index];
-                      final newArticulo = Articulo(
-                        nombre: articulo.nombre,
-                        demandaAnual: articulo.demandaAnual,
-                        costoPedido: articulo.costoPedido,
-                        costoMantenimiento: articulo.costoMantenimiento,
-                        costoFaltante: articulo.costoFaltante,
-                        costoUnitario: articulo.costoUnitario,
-                        espacioUnidad: value,
-                        desviacionDiaria: articulo.desviacionDiaria,
-                        puntoReorden: articulo.puntoReorden,
-                        tamanoLote: articulo.tamanoLote,
-                      );
-                      provider.actualizarArticulo(index, newArticulo);
-                    }),
-                    _buildEditableParameterRow('Desv. estándar diaria (σ)', provider, (index, value) {
-                      final articulo = provider.articulos[index];
-                      final newArticulo = Articulo(
-                        nombre: articulo.nombre,
-                        demandaAnual: articulo.demandaAnual,
-                        costoPedido: articulo.costoPedido,
-                        costoMantenimiento: articulo.costoMantenimiento,
-                        costoFaltante: articulo.costoFaltante,
-                        costoUnitario: articulo.costoUnitario,
-                        espacioUnidad: articulo.espacioUnidad,
-                        desviacionDiaria: value,
-                        puntoReorden: articulo.puntoReorden,
-                        tamanoLote: articulo.tamanoLote,
-                      );
-                      provider.actualizarArticulo(index, newArticulo);
-                    }),
-                    _buildEditableParameterRow('Punto de reorden (Rᵢ)', provider, (index, value) {
-                      final articulo = provider.articulos[index];
-                      final newArticulo = Articulo(
-                        nombre: articulo.nombre,
-                        demandaAnual: articulo.demandaAnual,
-                        costoPedido: articulo.costoPedido,
-                        costoMantenimiento: articulo.costoMantenimiento,
-                        costoFaltante: articulo.costoFaltante,
-                        costoUnitario: articulo.costoUnitario,
-                        espacioUnidad: articulo.espacioUnidad,
-                        desviacionDiaria: articulo.desviacionDiaria,
-                        puntoReorden: value,
-                        tamanoLote: articulo.tamanoLote,
-                      );
-                      provider.actualizarArticulo(index, newArticulo);
-                    }),
-                    _buildEditableParameterRow('Tamaño de lote (Qᵢ)', provider, (index, value) {
-                      final articulo = provider.articulos[index];
-                      final newArticulo = Articulo(
-                        nombre: articulo.nombre,
-                        demandaAnual: articulo.demandaAnual,
-                        costoPedido: articulo.costoPedido,
-                        costoMantenimiento: articulo.costoMantenimiento,
-                        costoFaltante: articulo.costoFaltante,
-                        costoUnitario: articulo.costoUnitario,
-                        espacioUnidad: articulo.espacioUnidad,
-                        desviacionDiaria: articulo.desviacionDiaria,
-                        puntoReorden: articulo.puntoReorden,
-                        tamanoLote: value,
-                      );
-                      provider.actualizarArticulo(index, newArticulo);
-                    }),
-                  ],
-                ),
-              ),
-            if (provider.articulos.isNotEmpty) ...[
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFF0F8FF),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(
-                    color: const Color(0xFFB3D9FF),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(FluentIcons.info, color: Colors.blue, size: 16),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Restricción: Máximo ${provider.espacioMaximo.toStringAsFixed(1)} m² en total',
-                            style: const TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.black,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Button(
-                          onPressed: () => mostrarDialogoRestricciones(context),
-                          child: const Icon(FluentIcons.edit, size: 14),
-                        ),
-                      ],
-                    ),
-                    if (provider.resultado != null) ...[
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Icon(
-                            provider.resultado!.espacioTotalUsado <= provider.espacioMaximo 
-                                ? FluentIcons.check_mark 
-                                : FluentIcons.error,
-                            color: provider.resultado!.espacioTotalUsado <= provider.espacioMaximo 
-                                ? Colors.green 
-                                : Colors.red,
-                            size: 14,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Espacio usado: ${provider.resultado!.espacioTotalUsado.toStringAsFixed(1)} m² / ${provider.espacioMaximo.toStringAsFixed(1)} m²',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: provider.resultado!.espacioTotalUsado <= provider.espacioMaximo 
-                                  ? Colors.green 
-                                  : Colors.red,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  DataRow _buildEditableParameterRow(String parameter, InventarioProvider provider, Function(int, double) onValueChanged) {
-    return DataRow(
-      cells: [
-        DataCell(
-          Text(
-            parameter,
-            style: const TextStyle(
-              fontWeight: FontWeight.w500,
-              color: Colors.black,
-            ),
-          ),
-        ),
-        ...provider.articulos.asMap().entries.map((entry) {
-          final index = entry.key;
-          final articulo = entry.value;
-          
-          // Determinar el valor a mostrar según el parámetro
-          double value;
-          String displayValue;
-          String suffix = '';
-          
-          switch (parameter) {
-            case 'Demanda anual (Dᵢ)':
-              value = articulo.demandaAnual;
-              displayValue = value.toStringAsFixed(0);
-              suffix = ' unidades';
-              break;
-            case 'Costo por pedido (Kᵢ)':
-              value = articulo.costoPedido;
-              displayValue = 'S/ ${value.toStringAsFixed(2)}';
-              break;
-            case 'Costo mant. anual (hᵢ)':
-              value = articulo.costoMantenimiento;
-              displayValue = 'S/ ${value.toStringAsFixed(2)}';
-              suffix = '/unidad';
-              break;
-            case 'Costo por faltante (pᵢ)':
-              value = articulo.costoFaltante;
-              displayValue = 'S/ ${value.toStringAsFixed(2)}';
-              suffix = '/unidad';
-              break;
-            case 'Costo unitario (cᵢ)':
-              value = articulo.costoUnitario;
-              displayValue = 'S/ ${value.toStringAsFixed(2)}';
-              break;
-            case 'Espacio por unidad (sᵢ)':
-              value = articulo.espacioUnidad;
-              displayValue = value.toStringAsFixed(1);
-              suffix = ' m²';
-              break;
-            case 'Desv. estándar diaria (σ)':
-              value = articulo.desviacionDiaria;
-              displayValue = value.toStringAsFixed(1);
-              suffix = ' unidades/día';
-              break;
-            case 'Punto de reorden (Rᵢ)':
-              value = articulo.puntoReorden;
-              displayValue = value.toStringAsFixed(0);
-              suffix = ' unidades';
-              break;
-            case 'Tamaño de lote (Qᵢ)':
-              value = articulo.tamanoLote;
-              displayValue = value.toStringAsFixed(0);
-              suffix = ' unidades';
-              break;
-            default:
-              value = 0.0;
-              displayValue = '0';
-          }
-          
-          return DataCell(
-            _EditableCell(
-              displayValue: displayValue + suffix,
-              currentValue: value,
-              onValueChanged: (newValue) => onValueChanged(index, newValue),
-              parameter: parameter,
-            ),
-          );
-        }),
-      ],
+    return ArticulosTable(
+      articulos: provider.articulos,
+      title: 'Artículos en Inventario',
+      height: 300,
     );
   }
 
 
 }
 
-class _EditableCell extends StatefulWidget {
-  final String displayValue;
-  final double currentValue;
-  final Function(double) onValueChanged;
-  final String parameter;
 
-  const _EditableCell({
-    required this.displayValue,
-    required this.currentValue,
-    required this.onValueChanged,
-    required this.parameter,
+
+/// Widget de tarjeta de navegación con animación de presión
+class _AnimatedNavigationCard extends StatefulWidget {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color color;
+  final VoidCallback? onPressed;
+  final bool enabled;
+  final double titleFontSize;
+  final double subtitleFontSize;
+  final double iconSize;
+
+  const _AnimatedNavigationCard({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.color,
+    required this.onPressed,
+    required this.enabled,
+    required this.titleFontSize,
+    required this.subtitleFontSize,
+    required this.iconSize,
   });
 
   @override
-  State<_EditableCell> createState() => _EditableCellState();
+  State<_AnimatedNavigationCard> createState() => _AnimatedNavigationCardState();
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties
-      ..add(StringProperty('displayValue', displayValue))
-      ..add(DoubleProperty('currentValue', currentValue))
-      ..add(ObjectFlagProperty<Function(double p1)>.has('onValueChanged', onValueChanged))
-      ..add(StringProperty('parameter', parameter));
+    properties..add(DoubleProperty('iconSize', iconSize))
+    ..add(DoubleProperty('titleFontSize', titleFontSize))
+    ..add(StringProperty('subtitle', subtitle))
+    ..add(DiagnosticsProperty<IconData>('icon', icon))
+    ..add(ColorProperty('color', color))
+    ..add(ObjectFlagProperty<VoidCallback?>.has('onPressed', onPressed))
+    ..add(DiagnosticsProperty<bool>('enabled', enabled))
+    ..add(DoubleProperty('subtitleFontSize', subtitleFontSize))
+    ..add(StringProperty('title', title));
   }
 }
 
-class _EditableCellState extends State<_EditableCell> {
-  bool _isEditing = false;
-  late TextEditingController _controller;
-  late FocusNode _focusNode;
+class _AnimatedNavigationCardState extends State<_AnimatedNavigationCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _scaleAnimation;
+  late Animation<double> _elevationAnimation;
+  bool _isPressed = false;
 
   @override
   void initState() {
     super.initState();
-    _controller = TextEditingController(text: _getNumericValue().toString());
-    _focusNode = FocusNode();
-    _focusNode.addListener(() {
-      if (!_focusNode.hasFocus && _isEditing) {
-        _finishEditing();
-      }
-    });
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 150),
+      vsync: this,
+    );
+    
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.95,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    ));
+    
+    _elevationAnimation = Tween<double>(
+      begin: 2.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    ));
   }
 
   @override
   void dispose() {
-    _controller.dispose();
-    _focusNode.dispose();
+    _animationController.dispose();
     super.dispose();
   }
 
-  double _getNumericValue() {
-    // Extrae el valor numérico del displayValue
-    final value = double.tryParse(widget.displayValue.replaceAll(RegExp(r'[^0-9.,-]'), '').replaceAll(',', '.'));
-    return value ?? widget.currentValue;
-  }
-
-  void _startEditing() {
-    setState(() => _isEditing = true);
-    _focusNode.requestFocus();
-    // Selecciona todo el texto al entrar en edición
-    _controller.selection = TextSelection(baseOffset: 0, extentOffset: _controller.text.length);
-  }
-
-  void _finishEditing() {
-    final value = double.tryParse(_controller.text.replaceAll(',', '.'));
-    if (value != null) {
-      widget.onValueChanged(value);
+  void _onTapDown(TapDownDetails details) {
+    if (widget.enabled) {
+      setState(() {
+        _isPressed = true;
+      });
+      _animationController.forward();
     }
-    setState(() => _isEditing = false);
+  }
+
+  void _onTapUp(TapUpDetails details) {
+    if (widget.enabled) {
+      setState(() {
+        _isPressed = false;
+      });
+      _animationController.reverse();
+    }
+  }
+
+  void _onTapCancel() {
+    if (widget.enabled) {
+      setState(() {
+        _isPressed = false;
+      });
+      _animationController.reverse();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Alternar fondo tipo Excel (puedes usar hashCode para alternar color)
-    final isEven = widget.parameter.hashCode.isEven;
-    final baseColor = isEven ? const Color(0xFFF8FAFC) : const Color(0xFFFFFFFF);
-    final borderColor = _isEditing ? Colors.blue : Colors.grey.withValues(alpha: 0.3);
-    final borderWidth = _isEditing ? 2.0 : 1.0;
-
-    return GestureDetector(
-      onDoubleTap: _startEditing,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 120),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+    return AnimatedBuilder(
+      animation: _animationController,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: _scaleAnimation.value,
+          child: Card(
+            elevation: _elevationAnimation.value,
+            child: GestureDetector(
+              onTapDown: _onTapDown,
+              onTapUp: _onTapUp,
+              onTapCancel: _onTapCancel,
+              onTap: widget.enabled ? widget.onPressed : null,
+              child: Container(
+                padding: const EdgeInsets.all(8.0),
         decoration: BoxDecoration(
-          color: baseColor,
-          border: Border.all(color: borderColor, width: borderWidth),
-          borderRadius: BorderRadius.circular(_isEditing ? 4 : 0),
-        ),
-        child: _isEditing
-            ? TextField(
-                controller: _controller,
-                focusNode: _focusNode,
-                autofocus: true,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                onSubmitted: (_) => _finishEditing(),
-                onEditingComplete: _finishEditing,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                decoration: const InputDecoration(
-                  isDense: true,
-                  contentPadding: EdgeInsets.symmetric(vertical: 4, horizontal: 2),
-                  border: InputBorder.none,
+                  borderRadius: BorderRadius.circular(12),
+                  color: _isPressed && widget.enabled 
+                      ? widget.color.withValues(alpha: 0.1)
+                      : Colors.transparent,
                 ),
-                onTap: () {
-                  // Selecciona todo el texto al hacer tap en modo edición
-                  _controller.selection = TextSelection(baseOffset: 0, extentOffset: _controller.text.length);
-                },
-              )
-            : MouseRegion(
-                cursor: SystemMouseCursors.click,
-                child: Text(
-                  widget.displayValue,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      widget.icon,
+                      size: widget.iconSize,
+                      color: widget.enabled ? widget.color : Colors.grey,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      widget.title,
+                      style: TextStyle(
+                        fontSize: widget.titleFontSize,
+                        fontWeight: FontWeight.bold,
+                        color: widget.enabled ? Colors.black : Colors.grey,
+                      ),
                   textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      widget.subtitle,
                   style: TextStyle(
-                    fontWeight: FontWeight.w500,
-                    fontSize: 14,
-                    color: _isEditing ? Colors.blue : Colors.black,
-                  ),
+                        fontSize: widget.subtitleFontSize,
+                        color: widget.enabled ? Colors.grey : Colors.grey,
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
               ),
       ),
+          ),
+        );
+      },
     );
   }
 } 
