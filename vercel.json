@@ -4,11 +4,6 @@
   "framework": null,
   "installCommand": "flutter pub get",
   "devCommand": "flutter run -d web-server --web-port 3000",
-  "functions": {
-    "app/api/**/*.js": {
-      "runtime": "nodejs18.x"
-    }
-  },
   "rewrites": [
     {
       "source": "/(.*)",
