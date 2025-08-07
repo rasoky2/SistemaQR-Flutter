@@ -1,5 +1,5 @@
 {
-  "buildCommand": "chmod +x build.sh && ./build.sh",
+  "buildCommand": "flutter build web --release",
   "outputDirectory": "build/web",
   "framework": null,
   "installCommand": "flutter pub get",
@@ -17,7 +17,7 @@
   ],
   "headers": [
     {
-      "source": "/**",
+      "source": "/(.*)",
       "headers": [
         {
           "key": "X-Content-Type-Options",
