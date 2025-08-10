@@ -15,7 +15,7 @@ build/
 # Si en algún momento necesitas mantener `build/web/` para hosting estático,
 # comenta la regla general de `build/` de arriba y añade una excepción explícita.
 # ¡En este repo NO se versiona `build/`!
-# !build/web/
+!build/web/
 
 # OS files
 .DS_Store
