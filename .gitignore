@@ -9,13 +9,15 @@
 
 # Build directories (exclude all platform builds)
 
-# la carpeta build
-build/
+# la carpeta build (ignora todo por defecto)
+build/*
 
 # Si en algún momento necesitas mantener `build/web/` para hosting estático,
 # comenta la regla general de `build/` de arriba y añade una excepción explícita.
 # ¡En este repo NO se versiona `build/`!
+# Excepción para publicar en Vercel (incluir solo `build/web` completo):
 !build/web/
+!build/web/**
 
 # OS files
 .DS_Store
