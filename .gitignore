@@ -1,0 +1,41 @@
+# Flutter build outputs and tools
+
+#carpeta .dart_tool
+.dart_tool/
+
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+
+# Build directories (exclude all platform builds)
+
+# la carpeta build
+build/
+
+# Si en algún momento necesitas mantener `build/web/` para hosting estático,
+# comenta la regla general de `build/` de arriba y añade una excepción explícita.
+# ¡En este repo NO se versiona `build/`!
+# !build/web/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Large/intermediate files
+*.dill
+*.pdb
+*.obj
+*.log
+*.a
+*.so
+*.dll
+*.exe
+
+# Existing ignores kept
+DOCUMENTACION_ARQUITECTURA.md
+GUIA_INSTALACION.md
