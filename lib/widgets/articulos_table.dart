@@ -45,7 +45,7 @@ class ArticulosTable extends StatefulWidget {
 }
 
 class _ArticulosTableState extends State<ArticulosTable> {
-  late PlutoGridStateManager stateManager;
+  PlutoGridStateManager? stateManager;
   late List<PlutoColumn> columns;
   List<PlutoRow> rows = [];
 
@@ -53,13 +53,12 @@ class _ArticulosTableState extends State<ArticulosTable> {
   void initState() {
     super.initState();
     _initializePlutoGridColumns();
-    
-    // Actualizar filas después del primer frame
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        setState(() {});
-      }
-    });
+  }
+
+  @override
+  void didUpdateWidget(covariant ArticulosTable oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Forzamos rebuild de PlutoGrid mediante la key cuando cambia el length
   }
 
   // Formatear valor monetario en soles peruanos
@@ -206,7 +205,7 @@ class _ArticulosTableState extends State<ArticulosTable> {
 
   // Eliminar artículos seleccionados
   void _eliminarArticulosSeleccionados() {
-    final selectedRows = stateManager.checkedRows;
+    final selectedRows = stateManager?.checkedRows ?? <PlutoRow>[];
     if (selectedRows.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -522,11 +521,12 @@ class _ArticulosTableState extends State<ArticulosTable> {
                   ),
                 ),
                 child: PlutoGrid(
+                  key: ValueKey(widget.articulos.length),
                   columns: columns,
-                  rows: rows,
+                  rows: widget.articulos.map(_articuloToPlutoRow).toList(),
                   onLoaded: (PlutoGridOnLoadedEvent event) {
                     stateManager = event.stateManager;
-                    stateManager.setShowColumnFilter(false);
+                    stateManager!.setShowColumnFilter(false);
                   },
                   onChanged: (PlutoGridOnChangedEvent event) {
                     debugPrint('📝 Celda cambiada: ${event.column.title} = ${event.value}');
@@ -566,7 +566,7 @@ class _ArticulosTableState extends State<ArticulosTable> {
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties..add(DiagnosticsProperty<PlutoGridStateManager>('stateManager', stateManager))
+    properties..add(DiagnosticsProperty<PlutoGridStateManager?>('stateManager', stateManager))
     ..add(IterableProperty<PlutoColumn>('columns', columns))
     ..add(IterableProperty<PlutoRow>('rows', rows));
   }

@@ -1,6 +1,7 @@
 // Importaciones para manejo multiplataforma de Excel
-import 'dart:html' as html if (dart.library.html) '';
 import 'dart:io' show File if (dart.library.html) '';
+// ignore: unnecessary_import
+import 'dart:typed_data';
 
 import 'package:archive/archive.dart' as arc;
 import 'package:excel/excel.dart';
@@ -8,6 +9,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:inventario_qr/models/articulo.model.dart';
 import 'package:inventario_qr/models/resultado.model.dart';
+// Descarga web con import condicional
+import 'package:inventario_qr/utils/web_download_stub.dart'
+    if (dart.library.html) 'package:inventario_qr/utils/web_download_html.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:xml/xml.dart' as xml;
 
@@ -66,7 +70,7 @@ class ExcelRepository {
 
   /// Lee encabezados (primera fila) desde XLSX usando ZIP/XML (fallback Web)
   static Future<List<String>> _leerEncabezadosXlsxFallback(Uint8List bytes) async {
-    final data = arc.ZipDecoder().decodeBytes(bytes, verify: false);
+    final data = arc.ZipDecoder().decodeBytes(bytes);
     // Buscar workbook para saber la primera hoja
     final workbookFile = data.files.firstWhere(
       (f) => f.name == 'xl/workbook.xml',
@@ -151,7 +155,7 @@ class ExcelRepository {
 
   /// Lee toda la primera hoja como matriz dinámica usando ZIP/XML (fallback Web)
   static Future<List<List<dynamic>>> _leerHojaCompletaXlsxFallback(Uint8List bytes) async {
-    final data = arc.ZipDecoder().decodeBytes(bytes, verify: false);
+    final data = arc.ZipDecoder().decodeBytes(bytes);
     // workbook y rels
     final workbookFile = data.files.firstWhere((f) => f.name == 'xl/workbook.xml');
     final workbookXml = xml.XmlDocument.parse(String.fromCharCodes(workbookFile.content as List<int>));
@@ -664,13 +668,11 @@ class ExcelRepository {
       debugPrint('✅ Plantilla cargada desde assets: ${uint8bytes.length} bytes');
 
       if (kIsWeb) {
-        // Descargar en navegador
-        final blob = html.Blob([uint8bytes], 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        final url = html.Url.createObjectUrlFromBlob(blob);
-        html.AnchorElement(href: url)
-          ..download = 'plantilla_inventario.xlsx'
-          ..click();
-        html.Url.revokeObjectUrl(url);
+        await downloadBytesWeb(
+          uint8bytes,
+          'plantilla_inventario.xlsx',
+          mimeType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        );
         return 'plantilla_inventario.xlsx';
       } else {
         return await _guardarArchivo(uint8bytes, 'plantilla_inventario.xlsx');

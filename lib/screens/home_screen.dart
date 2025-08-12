@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:inventario_qr/providers/inventario.provider.dart';
 import 'package:inventario_qr/screens/ingresar_datos_screen.dart';
 import 'package:inventario_qr/screens/resultados_screen.dart';
+import 'package:inventario_qr/screens/tutorial_screen.dart';
 import 'package:inventario_qr/utils/page_transitions.dart';
 import 'package:inventario_qr/widgets/articulos_table.dart';
 import 'package:inventario_qr/widgets/restriccion_dialog.dart';
@@ -18,6 +19,14 @@ class HomeScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Sistema de Inventario MDSJ'),
         actions: [
+          IconButton(
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const TutorialScreen()),
+            ),
+            icon: const Icon(UniconsLine.question_circle),
+            tooltip: 'Ayuda',
+          ),
           IconButton(
               onPressed: () => mostrarDialogoRestricciones(context),
             icon: const Icon(Icons.settings),
@@ -134,10 +143,12 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildNavigationCards(BuildContext context, InventarioProvider provider) {
+    final width = MediaQuery.of(context).size.width;
+    final crossAxisCount = width > 1200 ? 3 : width > 800 ? 2 : 1;
     return GridView.count(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      crossAxisCount: 4,
+      crossAxisCount: crossAxisCount,
       crossAxisSpacing: 12,
       mainAxisSpacing: 12,
       childAspectRatio: 1.8,
@@ -149,14 +160,6 @@ class HomeScreen extends StatelessWidget {
           UniconsLine.plus,
           Colors.teal,
           () => NavigationHelper.pushSlideLeft(context, const IngresarDatosScreen()),
-        ),
-        _buildNavigationCard(
-          context,
-          'Datos de Ejemplo',
-          'Cargar datos de prueba',
-          UniconsLine.bolt,
-          Colors.green,
-          () => provider.cargarDatosEjemplo(),
         ),
         _buildNavigationCard(
           context,

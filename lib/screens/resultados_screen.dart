@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:open_file/open_file.dart';
 import 'package:inventario_qr/models/resultado.model.dart';
 import 'package:inventario_qr/providers/inventario.provider.dart';
 import 'package:inventario_qr/repositories/inventario.repository.dart';
@@ -917,7 +919,7 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
             children: [
               const Text('Los resultados se han exportado correctamente.'),
               const SizedBox(height: 8),
-              if (!filePath.contains('.'))
+              if (kIsWeb)
                 const Text(
                   'En web, el archivo se descargará automáticamente.',
                   style: TextStyle(
@@ -940,6 +942,31 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
               onPressed: () => Navigator.pop(context),
               child: const Text('Aceptar'),
             ),
+            if (!kIsWeb && filePath.isNotEmpty)
+              TextButton(
+                onPressed: () async {
+                  Navigator.pop(context);
+                  final result = await OpenFile.open(filePath);
+                  if (result.type != ResultType.done && context.mounted) {
+                    showDialog(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return AlertDialog(
+                          title: const Text('Error'),
+                          content: Text('No se pudo abrir el archivo: ${result.message}'),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('Aceptar'),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  }
+                },
+                child: const Text('Abrir archivo'),
+              ),
           ],
         );
       },

@@ -44,7 +44,7 @@ class _RestriccionDialogState extends State<RestriccionDialog> {
     return AlertDialog(
       title: Row(
         children: [
-                          const Icon(UniconsLine.setting, color: MDSJColors.primary),
+          const Icon(UniconsLine.setting, color: MDSJColors.primary),
           const SizedBox(width: 8),
           Text(
             'Configurar Restricciones',
@@ -90,30 +90,6 @@ class _RestriccionDialogState extends State<RestriccionDialog> {
               (value) => provider.actualizarConfiguracion(numeroMaximoPedidos: double.tryParse(value) ?? 100.0),
                               icon: UniconsLine.box,
               tooltip: 'Cantidad máxima de pedidos permitidos',
-            ),
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: MDSJColors.infoBackground,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: MDSJColors.infoBorder),
-              ),
-              child: Row(
-                children: [
-                  const Icon(UniconsLine.info_circle, size: 16, color: MDSJColors.info),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Estos valores afectan los cálculos del modelo QR y las restricciones del sistema.',
-                      style: GoogleFonts.inter(
-                        fontSize: 12,
-                        color: MDSJColors.info,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
             ),
           ],
         ),

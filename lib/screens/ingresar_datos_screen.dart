@@ -1,7 +1,10 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:inventario_qr/models/articulo.model.dart';
 import 'package:inventario_qr/providers/inventario.provider.dart';
 import 'package:inventario_qr/repositories/excel.repository.dart';
+import 'package:inventario_qr/screens/tutorial_screen.dart';
 import 'package:inventario_qr/utils/theme_colors.dart';
 import 'package:inventario_qr/widgets/articulos_table.dart';
 import 'package:inventario_qr/widgets/restriccion_dialog.dart';
@@ -29,6 +32,35 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
   final _puntoReordenController = TextEditingController();
   final _tamanoLoteController = TextEditingController();
   
+  // Focus nodes para navegación rápida con Enter/Tab
+  final _nombreFocus = FocusNode();
+  final _demandaFocus = FocusNode();
+  final _costoPedidoFocus = FocusNode();
+  final _costoMantenimientoFocus = FocusNode();
+  final _costoFaltanteFocus = FocusNode();
+  final _costoUnitarioFocus = FocusNode();
+  final _espacioUnidadFocus = FocusNode();
+  final _desviacionDiariaFocus = FocusNode();
+  final _puntoReordenFocus = FocusNode();
+  final _tamanoLoteFocus = FocusNode();
+  
+  double? _parseNum(String? input) {
+    if (input == null) {
+      return null;
+    }
+    String s = input.trim();
+    if (s.isEmpty) {
+      return null;
+    }
+    // Si no hay punto y sí hay coma, usar coma como decimal
+    if (!s.contains('.') && s.contains(',')) {
+      s = s.replaceAll(',', '.');
+    }
+    // Quitar separadores de miles comunes
+    s = s.replaceAll('\u00A0', '').replaceAll(' ', '');
+    return double.tryParse(s);
+  }
+  
 
 
   @override
@@ -48,6 +80,16 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
     _desviacionDiariaController.dispose();
     _puntoReordenController.dispose();
     _tamanoLoteController.dispose();
+    _nombreFocus.dispose();
+    _demandaFocus.dispose();
+    _costoPedidoFocus.dispose();
+    _costoMantenimientoFocus.dispose();
+    _costoFaltanteFocus.dispose();
+    _costoUnitarioFocus.dispose();
+    _espacioUnidadFocus.dispose();
+    _desviacionDiariaFocus.dispose();
+    _puntoReordenFocus.dispose();
+    _tamanoLoteFocus.dispose();
     super.dispose();
   }
 
@@ -115,7 +157,7 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
       debugPrint('📝 Iniciando agregar artículo manual...');
       
       // Validación adicional para el tamaño de lote
-      final tamanoLote = double.tryParse(_tamanoLoteController.text);
+      final tamanoLote = _parseNum(_tamanoLoteController.text);
       if (tamanoLote == null || tamanoLote <= 0) {
         debugPrint('❌ Tamaño de lote inválido: ${_tamanoLoteController.text}');
         // Mostrar mensaje de error usando AlertDialog
@@ -140,14 +182,14 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
       // Crear el artículo
       final articulo = Articulo(
         nombre: _nombreController.text.trim(),
-        demandaAnual: double.parse(_demandaController.text),
-        costoPedido: double.parse(_costoPedidoController.text),
-        costoMantenimiento: double.parse(_costoMantenimientoController.text),
-        costoFaltante: double.parse(_costoFaltanteController.text),
-        costoUnitario: double.parse(_costoUnitarioController.text),
-        espacioUnidad: double.parse(_espacioUnidadController.text),
-        desviacionDiaria: double.parse(_desviacionDiariaController.text),
-        puntoReorden: double.parse(_puntoReordenController.text),
+        demandaAnual: _parseNum(_demandaController.text) ?? 0,
+        costoPedido: _parseNum(_costoPedidoController.text) ?? 0,
+        costoMantenimiento: _parseNum(_costoMantenimientoController.text) ?? 0,
+        costoFaltante: _parseNum(_costoFaltanteController.text) ?? 0,
+        costoUnitario: _parseNum(_costoUnitarioController.text) ?? 0,
+        espacioUnidad: _parseNum(_espacioUnidadController.text) ?? 0,
+        desviacionDiaria: _parseNum(_desviacionDiariaController.text) ?? 0,
+        puntoReorden: _parseNum(_puntoReordenController.text) ?? 0,
         tamanoLote: tamanoLote,
       );
 
@@ -170,22 +212,15 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
       
       _limpiarFormulario();
       
-      // Mostrar mensaje de éxito usando AlertDialog
-      showDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: const Text('Éxito'),
-            content: const Text('Artículo agregado correctamente'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Aceptar'),
-              ),
-            ],
-          );
-        },
-      );
+      // Feedback ligero sin bloquear (mejor UX)
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Artículo agregado correctamente'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     } else {
       debugPrint('❌ Validación del formulario falló');
     }
@@ -201,14 +236,26 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
               onPressed: () => Navigator.pop(context),
         ),
         actions: [
-                      IconButton(
-              onPressed: () => mostrarDialogoRestricciones(context),
-              icon: const Icon(UniconsLine.setting),
-              tooltip: 'Configurar Restricciones',
+          IconButton(
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const TutorialScreen()),
             ),
-          ],
+            icon: const Icon(UniconsLine.question_circle),
+            tooltip: 'Ayuda',
+          ),
+          IconButton(
+            onPressed: () => mostrarDialogoRestricciones(context),
+            icon: const Icon(UniconsLine.setting),
+            tooltip: 'Configurar Restricciones',
+          ),
+        ],
         ),
-      body: Consumer<InventarioProvider>(
+      body: CallbackShortcuts(
+        bindings: <ShortcutActivator, VoidCallback>{
+          const SingleActivator(LogicalKeyboardKey.enter, control: true): _agregarArticulo,
+        },
+        child: Consumer<InventarioProvider>(
         builder: (context, provider, child) {
           return SingleChildScrollView(
             padding: const EdgeInsets.all(24.0),
@@ -222,6 +269,7 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
             ),
           );
         },
+      ),
       ),
     );
   }
@@ -258,6 +306,10 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
                         child: _buildTextField(
                           controller: _nombreController,
                           label: 'Nombre del Artículo',
+                          focusNode: _nombreFocus,
+                          nextFocusNode: _demandaFocus,
+                          textInputAction: TextInputAction.next,
+                          autofocus: true,
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
                               return 'El nombre es requerido';
@@ -268,9 +320,13 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
                       ),
                       const SizedBox(width: 16),
                       Expanded(
-                        child: _buildTextField(
+                        child: _buildNumberField(
                           controller: _demandaController,
                           label: 'Demanda Anual (unidades)',
+                          focusNode: _demandaFocus,
+                          nextFocusNode: _costoPedidoFocus,
+                          step: 1,
+                          allowDecimal: false,
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
                               return 'La demanda es requerida';
@@ -291,9 +347,12 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
                   Row(
                     children: [
                       Expanded(
-                        child: _buildTextField(
+                        child: _buildNumberField(
                           controller: _costoPedidoController,
                           label: 'Costo por Pedido (soles)',
+                          focusNode: _costoPedidoFocus,
+                          nextFocusNode: _costoMantenimientoFocus,
+                          step: 1,
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
                               return 'El costo es requerido';
@@ -310,9 +369,12 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
                       ),
                       const SizedBox(width: 16),
                       Expanded(
-                        child: _buildTextField(
+                        child: _buildNumberField(
                           controller: _costoMantenimientoController,
                           label: 'Costo Mantenimiento (soles/unidad)',
+                          focusNode: _costoMantenimientoFocus,
+                          nextFocusNode: _costoFaltanteFocus,
+                          step: 0.1,
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
                               return 'El costo es requerido';
@@ -333,9 +395,12 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
                   Row(
                     children: [
                       Expanded(
-                        child: _buildTextField(
+                        child: _buildNumberField(
                           controller: _costoFaltanteController,
                           label: 'Costo por Faltante (soles/unidad)',
+                          focusNode: _costoFaltanteFocus,
+                          nextFocusNode: _costoUnitarioFocus,
+                          step: 0.1,
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
                               return 'El costo es requerido';
@@ -352,9 +417,12 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
                       ),
                       const SizedBox(width: 16),
                       Expanded(
-                        child: _buildTextField(
+                        child: _buildNumberField(
                           controller: _costoUnitarioController,
                           label: 'Costo Unitario (soles)',
+                          focusNode: _costoUnitarioFocus,
+                          nextFocusNode: _espacioUnidadFocus,
+                          step: 0.1,
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
                               return 'El costo es requerido';
@@ -375,9 +443,13 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
                   Row(
                     children: [
                       Expanded(
-                        child: _buildTextField(
+                        child: _buildNumberField(
                           controller: _espacioUnidadController,
                           label: 'Espacio por Unidad (m²)',
+                          focusNode: _espacioUnidadFocus,
+                          nextFocusNode: _desviacionDiariaFocus,
+                          step: 0.1,
+                          showStepper: true,
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
                               return 'El espacio es requerido';
@@ -394,9 +466,13 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
                       ),
                       const SizedBox(width: 16),
                       Expanded(
-                        child: _buildTextField(
+                        child: _buildNumberField(
                           controller: _desviacionDiariaController,
                           label: 'Desviación Estándar Diaria',
+                          focusNode: _desviacionDiariaFocus,
+                          nextFocusNode: _puntoReordenFocus,
+                          step: 0.1,
+                          showStepper: true,
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
                               return 'La desviación es requerida';
@@ -417,9 +493,13 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
                   Row(
                     children: [
                       Expanded(
-                        child: _buildTextField(
+                        child: _buildNumberField(
                           controller: _puntoReordenController,
                           label: 'Punto de Reorden (unidades)',
+                          focusNode: _puntoReordenFocus,
+                          nextFocusNode: _tamanoLoteFocus,
+                          step: 1,
+                          allowDecimal: false,
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
                               return 'El punto de reorden es requerido';
@@ -436,9 +516,14 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
                       ),
                       const SizedBox(width: 16),
                       Expanded(
-                        child: _buildTextField(
+                        child: _buildNumberField(
                           controller: _tamanoLoteController,
                           label: 'Tamaño de Lote (unidades)',
+                          focusNode: _tamanoLoteFocus,
+                          textInputAction: TextInputAction.done,
+                          onSubmitted: (_) => _agregarArticulo(),
+                          step: 1,
+                          allowDecimal: false,
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
                               return 'El tamaño de lote es requerido';
@@ -525,13 +610,97 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
     required TextEditingController controller,
     required String label,
     String? Function(String?)? validator,
+    FocusNode? focusNode,
+    FocusNode? nextFocusNode,
+    TextInputAction? textInputAction,
+    bool autofocus = false,
   }) {
     return TextFormField(
       controller: controller,
+      focusNode: focusNode,
       decoration: InputDecoration(
         labelText: label,
         hintText: 'Ingrese $label',
       ),
+      autofocus: autofocus,
+      textInputAction: textInputAction ?? TextInputAction.next,
+      onFieldSubmitted: (_) {
+        if (nextFocusNode != null) {
+          FocusScope.of(context).requestFocus(nextFocusNode);
+        }
+      },
+      validator: validator,
+    );
+  }
+
+  Widget _buildNumberField({
+    required TextEditingController controller,
+    required String label,
+    String? Function(String?)? validator,
+    FocusNode? focusNode,
+    FocusNode? nextFocusNode,
+    TextInputAction? textInputAction,
+    void Function(String)? onSubmitted,
+    double step = 1,
+    bool allowDecimal = true,
+    bool showStepper = false,
+  }) {
+    final formatters = <TextInputFormatter>[
+      FilteringTextInputFormatter.allow(RegExp(allowDecimal ? r'[0-9.,]' : r'[0-9]')),
+    ];
+    return TextFormField(
+      controller: controller,
+      focusNode: focusNode,
+      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+      inputFormatters: formatters,
+      decoration: InputDecoration(
+        labelText: label,
+        hintText: 'Ingrese $label',
+        suffixIcon: showStepper
+            ? SizedBox(
+                width: 96,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    IconButton(
+                      tooltip: 'Decrementar',
+                      icon: const Icon(UniconsLine.minus_circle),
+                      onPressed: () {
+                        double val = _parseNum(controller.text) ?? 0;
+                        val = (val - step);
+                        if (val < 0) {
+                          val = 0;
+                        }
+                        controller.text = allowDecimal
+                            ? val.toStringAsFixed(2)
+                            : val.toStringAsFixed(0);
+                      },
+                    ),
+                    IconButton(
+                      tooltip: 'Incrementar',
+                      icon: const Icon(UniconsLine.plus_circle),
+                      onPressed: () {
+                        double val = _parseNum(controller.text) ?? 0;
+                        val = (val + step);
+                        controller.text = allowDecimal
+                            ? val.toStringAsFixed(2)
+                            : val.toStringAsFixed(0);
+                      },
+                    ),
+                  ],
+                ),
+              )
+            : null,
+      ),
+      textInputAction: textInputAction ?? TextInputAction.next,
+      onFieldSubmitted: (value) {
+        if (onSubmitted != null) {
+          onSubmitted(value);
+        }
+        if (nextFocusNode != null) {
+          FocusScope.of(context).requestFocus(nextFocusNode);
+        }
+      },
       validator: validator,
     );
   }
@@ -554,7 +723,19 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
       
       debugPrint('✅ Plantilla generada exitosamente en: $filePath');
       
-      // Mostrar diálogo de confirmación
+      // En Web no se puede abrir el archivo con OpenFile, solo informar
+      if (kIsWeb) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Descarga de plantilla iniciada en el navegador.'),
+            ),
+          );
+        }
+        return;
+      }
+
+      // Mostrar diálogo de confirmación (solo no-Web)
       if (context.mounted) {
         final bool? abrirArchivo = await showDialog<bool>(
           context: context,
