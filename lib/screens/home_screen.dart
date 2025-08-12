@@ -196,13 +196,13 @@ class HomeScreen extends StatelessWidget {
   }) {
     final screenWidth = MediaQuery.of(context).size.width;
     
-    // Tamaño de fuente responsivo basado en el ancho de la pantalla
-    final titleFontSize = screenWidth > 1200 ? 14.0 : 
-                         screenWidth > 800 ? 12.0 : 10.0;
-    final subtitleFontSize = screenWidth > 1200 ? 10.0 : 
-                           screenWidth > 800 ? 8.0 : 6.0;
-    final iconSize = screenWidth > 1200 ? 24.0 : 
-                    screenWidth > 800 ? 20.0 : 16.0;
+    // Tamaños aumentados para mejor legibilidad en contenedores grandes
+    final titleFontSize = screenWidth > 1200 ? 18.0 : 
+                         screenWidth > 800 ? 16.0 : 14.0;
+    final subtitleFontSize = screenWidth > 1200 ? 12.0 : 
+                           screenWidth > 800 ? 11.0 : 10.0;
+    final iconSize = screenWidth > 1200 ? 36.0 : 
+                    screenWidth > 800 ? 32.0 : 28.0;
     
     return _AnimatedNavigationCard(
       title: title,
@@ -356,7 +356,7 @@ class _AnimatedNavigationCardState extends State<_AnimatedNavigationCard>
               onTapCancel: _onTapCancel,
               onTap: widget.enabled ? widget.onPressed : null,
               child: Container(
-                padding: const EdgeInsets.all(8.0),
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
         decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
                   color: _isPressed && widget.enabled 
@@ -372,7 +372,7 @@ class _AnimatedNavigationCardState extends State<_AnimatedNavigationCard>
                       size: widget.iconSize,
                       color: widget.enabled ? widget.color : Colors.grey,
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 10),
                     Text(
                       widget.title,
                       style: TextStyle(
@@ -382,7 +382,7 @@ class _AnimatedNavigationCardState extends State<_AnimatedNavigationCard>
                       ),
                   textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 6),
                     Text(
                       widget.subtitle,
                   style: TextStyle(

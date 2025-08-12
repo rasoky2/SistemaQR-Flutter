@@ -1,14 +1,15 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
-import 'package:open_file/open_file.dart';
+import 'package:flutter/material.dart';
 import 'package:inventario_qr/models/resultado.model.dart';
 import 'package:inventario_qr/providers/inventario.provider.dart';
 import 'package:inventario_qr/repositories/inventario.repository.dart';
 import 'package:inventario_qr/utils/math_utils.dart';
 import 'package:inventario_qr/utils/theme_colors.dart';
 import 'package:inventario_qr/widgets/articulos_table.dart';
+// charts moved into ResultadosCharts widget
+import 'package:inventario_qr/widgets/resultados_charts.dart';
+import 'package:open_file/open_file.dart';
 import 'package:provider/provider.dart';
-import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:unicons/unicons.dart';
 
 
@@ -31,7 +32,7 @@ class ResultadosScreen extends StatefulWidget {
 class _ResultadosScreenState extends State<ResultadosScreen> {
   bool _isStatisticsExpanded = false;
   bool _isExtremesExpanded = false;
-  bool _isChartsExpanded = false;
+  // charts state moved into ResultadosCharts widget
 
   @override
   Widget build(BuildContext context) {
@@ -636,212 +637,16 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Row(
-              children: [
-                Icon(Icons.analytics, color: MDSJColors.primary),
-                SizedBox(width: 12),
-                Text(
-                  'Visualización de Datos',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: MDSJColors.textPrimary,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            _buildExpandableCharts(provider),
-          ],
-        ),
+        child: ResultadosCharts(resultado: provider.resultado!),
       ),
     );
   }
 
-  Widget _buildExpandableCharts(InventarioProvider provider) {
-    return Column(
-      children: [
-        InkWell(
-          onTap: () => setState(() => _isChartsExpanded = !_isChartsExpanded),
-          borderRadius: BorderRadius.circular(8),
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            decoration: BoxDecoration(
-              color: Colors.grey.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  _isChartsExpanded ? UniconsLine.angle_up : UniconsLine.angle_down,
-                  color: MDSJColors.primary,
-                  size: 16,
-                ),
-                const SizedBox(width: 8),
-                const Icon(UniconsLine.chart, color: MDSJColors.primary, size: 16),
-                const SizedBox(width: 8),
-                const Text(
-                  'Análisis Comparativo',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: MDSJColors.textPrimary,
-                  ),
-                ),
-                const Spacer(),
-                Text(
-                  _isChartsExpanded ? 'Ocultar' : 'Mostrar',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: MDSJColors.primary,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        if (_isChartsExpanded) ...[
-          const SizedBox(height: 16),
-          AnimatedContainer(
-            duration: const Duration(milliseconds: 300),
-            child: Column(
-              children: [
-                // Gráfica combinada de métricas
-                _buildCombinedChart(provider),
-              ],
-            ),
-          ),
-        ],
-      ],
-    );
-  }
+  // Charts moved to ResultadosCharts widget
 
 
 
-  Widget _buildCombinedChart(InventarioProvider provider) {
-    final resultados = provider.resultado!.resultados;
-    
-    // Normalizar los datos para que todos usen la misma escala
-    final maxCosto = resultados.map((r) => r.costoTotal).reduce((a, b) => a > b ? a : b);
-    final maxEspacio = resultados.map((r) => r.espacioUsado).reduce((a, b) => a > b ? a : b);
-    final maxZScore = resultados.map((r) => r.zScore).reduce((a, b) => a > b ? a : b);
-    
-    // Función para acortar nombres largos para mejor visualización
-    String truncarNombre(String nombre) {
-      if (nombre.length <= 15) {
-        return nombre;
-      }
-      return '${nombre.substring(0, 12)}...';
-    }
-
-    final costosNormalizados = resultados.map((resultado) => 
-      ChartData(truncarNombre(resultado.nombre), (resultado.costoTotal / maxCosto) * 100)
-    ).toList();
-    
-    final espaciosNormalizados = resultados.map((resultado) => 
-      ChartData(truncarNombre(resultado.nombre), (resultado.espacioUsado / maxEspacio) * 100)
-    ).toList();
-    
-    final zScoresNormalizados = resultados.map((resultado) => 
-      ChartData(truncarNombre(resultado.nombre), (resultado.zScore / maxZScore) * 100)
-    ).toList();
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Análisis Combinado: Costos, Espacio y Z-Score por Artículo (Normalizado %)',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: MDSJColors.textPrimary,
-          ),
-        ),
-        const SizedBox(height: 8),
-        SizedBox(
-          height: 300, // Aumentar altura para mejor visualización
-          child: SfCartesianChart(
-            primaryXAxis: const CategoryAxis(
-              labelStyle: TextStyle(fontSize: 9),
-              labelRotation: 45,
-              maximumLabelWidth: 80,
-              labelsExtent: 60,
-            ),
-            primaryYAxis: const NumericAxis(
-              labelStyle: TextStyle(fontSize: 10),
-              minimum: 0,
-              maximum: 100,
-              interval: 20,
-            ),
-            tooltipBehavior: TooltipBehavior(
-              enable: true,
-              format: 'point.x\npoint.y%',
-              header: 'series.name',
-              textStyle: const TextStyle(
-                fontSize: 11,
-                color: Colors.white,
-                fontWeight: FontWeight.w500,
-              ),
-              shadowColor: Colors.black26,
-              borderColor: Colors.grey.shade300,
-              animationDuration: 500,
-            ),
-            legend: const Legend(
-              isVisible: true,
-              position: LegendPosition.bottom,
-            ),
-            series: <CartesianSeries>[
-              // Serie para Costos normalizados
-              LineSeries<ChartData, String>(
-                dataSource: costosNormalizados,
-                xValueMapper: (ChartData data, _) => data.nombre,
-                yValueMapper: (ChartData data, _) => data.valor,
-                name: 'Costo Total (%)',
-                color: MDSJColors.primary,
-                width: 3,
-                markerSettings: const MarkerSettings(
-                  isVisible: true,
-                  width: 6,
-                  height: 6,
-                ),
-              ),
-              // Serie para Espacio normalizado
-              LineSeries<ChartData, String>(
-                dataSource: espaciosNormalizados,
-                xValueMapper: (ChartData data, _) => data.nombre,
-                yValueMapper: (ChartData data, _) => data.valor,
-                name: 'Espacio Usado (%)',
-                color: MDSJColors.success,
-                width: 3,
-                markerSettings: const MarkerSettings(
-                  isVisible: true,
-                  width: 6,
-                  height: 6,
-                ),
-              ),
-              // Serie para Z-Score normalizado
-              LineSeries<ChartData, String>(
-                dataSource: zScoresNormalizados,
-                xValueMapper: (ChartData data, _) => data.nombre,
-                yValueMapper: (ChartData data, _) => data.valor,
-                name: 'Z-Score (%)',
-                color: MDSJColors.warning,
-                width: 3,
-                markerSettings: const MarkerSettings(
-                  isVisible: true,
-                  width: 6,
-                  height: 6,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
+  // Combined chart and chart data moved to ResultadosCharts
 
 
 

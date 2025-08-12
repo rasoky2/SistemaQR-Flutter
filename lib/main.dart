@@ -8,8 +8,6 @@ import 'package:inventario_qr/utils/page_transitions.dart';
 import 'package:inventario_qr/utils/theme_colors.dart';
 import 'package:provider/provider.dart';
 
-// fn
-
 void main() {
   runApp(const MyApp());
 }

@@ -1,8 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
-import 'package:unicons/unicons.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:inventario_qr/utils/theme_colors.dart';
+import 'package:unicons/unicons.dart';
 
 class TutorialScreen extends StatelessWidget {
   const TutorialScreen({super.key});
@@ -39,13 +40,13 @@ class TutorialScreen extends StatelessWidget {
             const SizedBox(height: 24),
             _sectionTitle('Fórmulas usadas (Modelo EOQ y Punto de Reorden)'),
             _infoCard(children: [
-              _Formula('Tamaño de lote óptimo (EOQ):', r"Q^* = \sqrt{\frac{2\,D\,S}{H}}"),
+              const _Formula('Tamaño de lote óptimo (EOQ):', r"Q^* = \sqrt{\frac{2\,D\,S}{H}}"),
               const SizedBox(height: 8),
-              _Formula('Demanda diaria promedio (d):', r"d = \frac{D}{365}"),
-              _Formula('Desviación durante el lead time (σL):', r"\sigma_L = \sigma_d\,\sqrt{L}"),
-              _Formula('Punto de reorden (R):', r"R = d\,L + z\,\sigma_L"),
+              const _Formula('Demanda diaria promedio (d):', r"d = \frac{D}{365}"),
+              const _Formula('Desviación durante el lead time (σL):', r"\sigma_L = \sigma_d\,\sqrt{L}"),
+              const _Formula('Punto de reorden (R):', r"R = d\,L + z\,\sigma_L"),
               const SizedBox(height: 8),
-              _Plain('Donde:'),
+              const _Plain('Donde:'),
               const _Bullet('D: demanda anual (unidades/año).'),
               const _Bullet('S: costo por pedido.'),
               const _Bullet('H: costo anual de mantenimiento por unidad.'),
@@ -115,7 +116,7 @@ class _Bullet extends StatelessWidget {
                       style: GoogleFonts.poppins(fontSize: 14, height: 1.4, color: MDSJColors.textPrimary),
                       children: [
                         TextSpan(
-                          text: text.substring(0, sepIndex + 1) + ' ',
+                          text: '${text.substring(0, sepIndex + 1)} ',
                           style: const TextStyle(fontWeight: FontWeight.w700),
                         ),
                         TextSpan(text: text.substring(sepIndex + 2)),
@@ -131,10 +132,13 @@ class _Bullet extends StatelessWidget {
       ),
     );
   }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(StringProperty('text', text));
+  }
 }
-
-// Eliminado _RichLine (reemplazado por _Formula con LaTeX)
-
 class _Plain extends StatelessWidget {
   const _Plain(this.text);
   final String text;
@@ -144,6 +148,12 @@ class _Plain extends StatelessWidget {
       text,
       style: GoogleFonts.poppins(fontSize: 14),
     );
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(StringProperty('text', text));
   }
 }
 
@@ -171,12 +181,18 @@ class _Formula extends StatelessWidget {
           ),
           child: Math.tex(
             latex,
-            mathStyle: MathStyle.display,
             textStyle: GoogleFonts.poppins(fontSize: 20, color: MDSJColors.textPrimary),
           ),
         ),
       ],
     );
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(StringProperty('label', label));
+    properties.add(StringProperty('latex', latex));
   }
 }
 

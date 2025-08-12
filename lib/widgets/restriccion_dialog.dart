@@ -11,7 +11,6 @@ class RestriccionDialog extends StatefulWidget {
   @override
   State<RestriccionDialog> createState() => _RestriccionDialogState();
 }
-
 class _RestriccionDialogState extends State<RestriccionDialog> {
   late TextEditingController _leadTimeController;
   late TextEditingController _espacioMaximoController;

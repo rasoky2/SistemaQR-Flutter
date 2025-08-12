@@ -65,6 +65,14 @@ class _ArticulosTableState extends State<ArticulosTable> {
 
   void _initializePlutoGridColumns() {
     columns = [
+      // Columna oculta para mantener el índice real del provider
+      PlutoColumn(
+        title: '_idx',
+        field: '_idx',
+        type: PlutoColumnType.number(),
+        hide: true,
+        readOnly: true,
+      ),
       PlutoColumn(
         title: 'Nombre',
         field: 'nombre',
@@ -75,7 +83,7 @@ class _ArticulosTableState extends State<ArticulosTable> {
       PlutoColumn(
         title: 'Demanda Anual',
         field: 'demandaAnual',
-        type: PlutoColumnType.number(format: '#,##0'),
+        type: PlutoColumnType.number(format: '#,##0.00'),
         width: 120,
         enableDropToResize: false,
       ),
@@ -128,14 +136,14 @@ class _ArticulosTableState extends State<ArticulosTable> {
       PlutoColumn(
         title: 'Punto Reorden',
         field: 'puntoReorden',
-        type: PlutoColumnType.number(format: '#,##0'),
+        type: PlutoColumnType.number(format: '#,##0.00'),
         width: 130,
         enableDropToResize: false,
       ),
       PlutoColumn(
         title: 'Tamaño Lote',
         field: 'tamanoLote',
-        type: PlutoColumnType.number(format: '#,##0'),
+        type: PlutoColumnType.number(format: '#,##0.00'),
         width: 130,
         enableDropToResize: false,
       ),
@@ -143,9 +151,10 @@ class _ArticulosTableState extends State<ArticulosTable> {
   }
 
   // Convertir Articulo a PlutoRow
-  PlutoRow _articuloToPlutoRow(Articulo articulo) {
+  PlutoRow _articuloToPlutoRow(int index, Articulo articulo) {
     return PlutoRow(
       cells: {
+        '_idx': PlutoCell(value: index),
         'nombre': PlutoCell(value: articulo.nombre),
         'demandaAnual': PlutoCell(value: articulo.demandaAnual),
         'costoPedido': PlutoCell(value: articulo.costoPedido),
@@ -167,39 +176,72 @@ class _ArticulosTableState extends State<ArticulosTable> {
 
   // Manejar cambios en las celdas de PlutoGrid
   void _onCellChanged(PlutoGridOnChangedEvent event) {
-    final rowIndex = event.row.key is int ? event.row.key as int : rows.indexOf(event.row);
+    // Usar el índice real desde la columna oculta
+    final idxCell = event.row.cells['_idx'];
+    final rowIndex = (idxCell?.value is num) ? (idxCell!.value as num).toInt() : -1;
     final field = event.column.field;
     
     debugPrint('📝 Celda cambiada: ${event.column.title} = ${event.value}');
     
     if (rowIndex >= 0 && rowIndex < widget.articulos.length) {
-      
-      switch (field) {
-        case 'nombre':
-          break;
-        case 'demandaAnual':
-          break;
-        case 'costoPedido':
-          break;
-        case 'costoMantenimiento':
-          break;
-        case 'costoFaltante':
-          break;
-        case 'costoUnitario':
-          break;
-        case 'espacioUnidad':
-          break;
-        case 'desviacionDiaria':
-          break;
-        case 'puntoReorden':
-          break;
-        case 'tamanoLote':
-          break;
-        default:
-          return;
+      double? parseNum(v) {
+        if (v == null) return null;
+        String s = v.toString().trim();
+        if (s.isEmpty) return null;
+        if (!s.contains('.') && s.contains(',')) {
+          s = s.replaceAll(',', '.');
+        }
+        s = s.replaceAll('\u00A0', '').replaceAll(' ', '');
+        return double.tryParse(s);
       }
-      
-      // Notificar al provider si está disponible
+
+      final original = widget.articulos[rowIndex];
+      Articulo updated = original;
+
+      if (field == 'nombre') {
+        updated = original.copyWith(nombre: (event.value ?? '').toString());
+      } else {
+        final parsed = parseNum(event.value);
+        if (parsed == null) {
+          // Valor inválido: no actualizar
+          return;
+        }
+        switch (field) {
+          case 'demandaAnual':
+            updated = original.copyWith(demandaAnual: parsed);
+            break;
+          case 'costoPedido':
+            updated = original.copyWith(costoPedido: parsed);
+            break;
+          case 'costoMantenimiento':
+            updated = original.copyWith(costoMantenimiento: parsed);
+            break;
+          case 'costoFaltante':
+            updated = original.copyWith(costoFaltante: parsed);
+            break;
+          case 'costoUnitario':
+            updated = original.copyWith(costoUnitario: parsed);
+            break;
+          case 'espacioUnidad':
+            updated = original.copyWith(espacioUnidad: parsed);
+            break;
+          case 'desviacionDiaria':
+            updated = original.copyWith(desviacionDiaria: parsed);
+            break;
+          case 'puntoReorden':
+            updated = original.copyWith(puntoReorden: parsed);
+            break;
+          case 'tamanoLote':
+            updated = original.copyWith(tamanoLote: parsed);
+            break;
+          default:
+            return;
+        }
+      }
+
+      // Aplicar actualización al provider
+      final provider = context.read<InventarioProvider>();
+      provider.actualizarArticulo(rowIndex, updated);
     }
   }
 
@@ -288,10 +330,12 @@ class _ArticulosTableState extends State<ArticulosTable> {
             ElevatedButton(
               onPressed: () {
                 // Eliminar en orden inverso para evitar problemas de índices
-                final indices = selectedRows.map((row) {
-                  // Usar el índice de la fila en lugar de la clave
-                  return rows.indexOf(row);
-                }).toList()
+                final indices = selectedRows
+                    .map((row) => row.cells['_idx']?.value)
+                    .whereType<num>()
+                    .map((n) => n.toInt())
+                    .toSet()
+                    .toList()
                   ..sort((a, b) => b.compareTo(a));
                 
                 final provider = context.read<InventarioProvider>();
@@ -332,7 +376,9 @@ class _ArticulosTableState extends State<ArticulosTable> {
   @override
   Widget build(BuildContext context) {
     // Actualizar filas de PlutoGrid
-    rows = widget.articulos.map(_articuloToPlutoRow).toList();
+    rows = [
+      for (int i = 0; i < widget.articulos.length; i++) _articuloToPlutoRow(i, widget.articulos[i])
+    ];
     
     if (widget.articulos.isEmpty) {
       return Card(
@@ -466,37 +512,7 @@ class _ArticulosTableState extends State<ArticulosTable> {
                     ],
                   ],
                 ),
-                if (widget.articulos.isNotEmpty) ...[
-                  const SizedBox(height: 16),
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: MDSJColors.infoBackground,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: MDSJColors.infoBorder),
-                    ),
-                    child: const Row(
-                      children: [
-                        Icon(
-                          UniconsLine.info_circle,
-                          size: 16,
-                          color: MDSJColors.primary,
-                        ),
-                        SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Haz clic en cualquier celda para editar. Usa los checkboxes para seleccionar múltiples artículos.',
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: MDSJColors.primary,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                // Se elimina el banner informativo redundante
               ],
             ),
             const SizedBox(height: 16),
@@ -523,7 +539,9 @@ class _ArticulosTableState extends State<ArticulosTable> {
                 child: PlutoGrid(
                   key: ValueKey(widget.articulos.length),
                   columns: columns,
-                  rows: widget.articulos.map(_articuloToPlutoRow).toList(),
+                  rows: [
+                    for (int i = 0; i < widget.articulos.length; i++) _articuloToPlutoRow(i, widget.articulos[i])
+                  ],
                   onLoaded: (PlutoGridOnLoadedEvent event) {
                     stateManager = event.stateManager;
                     stateManager!.setShowColumnFilter(false);

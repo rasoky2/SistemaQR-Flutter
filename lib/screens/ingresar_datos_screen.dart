@@ -5,9 +5,9 @@ import 'package:inventario_qr/models/articulo.model.dart';
 import 'package:inventario_qr/providers/inventario.provider.dart';
 import 'package:inventario_qr/repositories/excel.repository.dart';
 import 'package:inventario_qr/screens/tutorial_screen.dart';
-import 'package:inventario_qr/utils/theme_colors.dart';
 import 'package:inventario_qr/widgets/articulos_table.dart';
 import 'package:inventario_qr/widgets/restriccion_dialog.dart';
+import 'package:inventario_qr/widgets/restriccion_fab.dart';
 import 'package:open_file/open_file.dart';
 import 'package:provider/provider.dart';
 import 'package:unicons/unicons.dart';
@@ -271,6 +271,7 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
         },
       ),
       ),
+      floatingActionButton: const RestriccionFab(),
     );
   }
 
@@ -281,21 +282,7 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Row(
-              children: [
-                Icon(UniconsLine.plus, color: MDSJColors.primary),
-                SizedBox(width: 12),
-                Text(
-                  'Nuevo Artículo',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: MDSJColors.textPrimary,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 8),
             Form(
               key: _formKey,
               child: Column(
@@ -325,16 +312,13 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
                           label: 'Demanda Anual (unidades)',
                           focusNode: _demandaFocus,
                           nextFocusNode: _costoPedidoFocus,
-                          step: 1,
-                          allowDecimal: false,
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
                               return 'La demanda es requerida';
                             }
-                            if (double.tryParse(value) == null) {
-                              return 'Debe ser un número válido';
-                            }
-                            if (double.parse(value) <= 0) {
+                            final v = _parseNum(value);
+                            if (v == null) return 'Debe ser un número válido';
+                            if (v <= 0) {
                               return 'Debe ser mayor a 0';
                             }
                             return null;
@@ -352,15 +336,14 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
                           label: 'Costo por Pedido (soles)',
                           focusNode: _costoPedidoFocus,
                           nextFocusNode: _costoMantenimientoFocus,
-                          step: 1,
+                          step: 0.1,
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
                               return 'El costo es requerido';
                             }
-                            if (double.tryParse(value) == null) {
-                              return 'Debe ser un número válido';
-                            }
-                            if (double.parse(value) <= 0) {
+                            final v = _parseNum(value);
+                            if (v == null) return 'Debe ser un número válido';
+                            if (v <= 0) {
                               return 'Debe ser mayor a 0';
                             }
                             return null;
@@ -379,10 +362,9 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
                             if (value == null || value.trim().isEmpty) {
                               return 'El costo es requerido';
                             }
-                            if (double.tryParse(value) == null) {
-                              return 'Debe ser un número válido';
-                            }
-                            if (double.parse(value) <= 0) {
+                            final v = _parseNum(value);
+                            if (v == null) return 'Debe ser un número válido';
+                            if (v <= 0) {
                               return 'Debe ser mayor a 0';
                             }
                             return null;
@@ -405,10 +387,9 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
                             if (value == null || value.trim().isEmpty) {
                               return 'El costo es requerido';
                             }
-                            if (double.tryParse(value) == null) {
-                              return 'Debe ser un número válido';
-                            }
-                            if (double.parse(value) <= 0) {
+                            final v = _parseNum(value);
+                            if (v == null) return 'Debe ser un número válido';
+                            if (v <= 0) {
                               return 'Debe ser mayor a 0';
                             }
                             return null;
@@ -427,10 +408,9 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
                             if (value == null || value.trim().isEmpty) {
                               return 'El costo es requerido';
                             }
-                            if (double.tryParse(value) == null) {
-                              return 'Debe ser un número válido';
-                            }
-                            if (double.parse(value) <= 0) {
+                            final v = _parseNum(value);
+                            if (v == null) return 'Debe ser un número válido';
+                            if (v <= 0) {
                               return 'Debe ser mayor a 0';
                             }
                             return null;
@@ -454,10 +434,9 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
                             if (value == null || value.trim().isEmpty) {
                               return 'El espacio es requerido';
                             }
-                            if (double.tryParse(value) == null) {
-                              return 'Debe ser un número válido';
-                            }
-                            if (double.parse(value) <= 0) {
+                            final v = _parseNum(value);
+                            if (v == null) return 'Debe ser un número válido';
+                            if (v <= 0) {
                               return 'Debe ser mayor a 0';
                             }
                             return null;
@@ -477,10 +456,9 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
                             if (value == null || value.trim().isEmpty) {
                               return 'La desviación es requerida';
                             }
-                            if (double.tryParse(value) == null) {
-                              return 'Debe ser un número válido';
-                            }
-                            if (double.parse(value) < 0) {
+                            final v = _parseNum(value);
+                            if (v == null) return 'Debe ser un número válido';
+                            if (v < 0) {
                               return 'Debe ser mayor o igual a 0';
                             }
                             return null;
@@ -498,16 +476,13 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
                           label: 'Punto de Reorden (unidades)',
                           focusNode: _puntoReordenFocus,
                           nextFocusNode: _tamanoLoteFocus,
-                          step: 1,
-                          allowDecimal: false,
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
                               return 'El punto de reorden es requerido';
                             }
-                            if (double.tryParse(value) == null) {
-                              return 'Debe ser un número válido';
-                            }
-                            if (double.parse(value) < 0) {
+                            final v = _parseNum(value);
+                            if (v == null) return 'Debe ser un número válido';
+                            if (v < 0) {
                               return 'Debe ser mayor o igual a 0';
                             }
                             return null;
@@ -522,16 +497,13 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
                           focusNode: _tamanoLoteFocus,
                           textInputAction: TextInputAction.done,
                           onSubmitted: (_) => _agregarArticulo(),
-                          step: 1,
-                          allowDecimal: false,
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
                               return 'El tamaño de lote es requerido';
                             }
-                            if (double.tryParse(value) == null) {
-                              return 'Debe ser un número válido';
-                            }
-                            if (double.parse(value) <= 0) {
+                            final v = _parseNum(value);
+                            if (v == null) return 'Debe ser un número válido';
+                            if (v <= 0) {
                               return 'Debe ser mayor a 0';
                             }
                             return null;
