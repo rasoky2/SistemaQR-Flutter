@@ -4,6 +4,7 @@ import 'package:inventario_qr/providers/inventario.provider.dart';
 import 'package:inventario_qr/screens/ingresar_datos_screen.dart';
 import 'package:inventario_qr/screens/resultados_screen.dart';
 import 'package:inventario_qr/screens/tutorial_screen.dart';
+import 'package:inventario_qr/utils/logger.dart';
 import 'package:inventario_qr/utils/page_transitions.dart';
 import 'package:inventario_qr/widgets/articulos_table.dart';
 import 'package:inventario_qr/widgets/restriccion_dialog.dart';
@@ -36,7 +37,7 @@ class HomeScreen extends StatelessWidget {
       ),
       body: Consumer<InventarioProvider>(
         builder: (context, provider, child) {
-          debugPrint('🏠 HomeScreen: Consumer reconstruyendo - Artículos: ${provider.articulos.length}');
+          logDebug('🏠 HomeScreen: Consumer reconstruyendo - Artículos: ${provider.articulos.length}');
           return SingleChildScrollView(
             padding: const EdgeInsets.all(24.0),
             child: Column(
@@ -218,9 +219,9 @@ class HomeScreen extends StatelessWidget {
   }
 
   Widget _buildArticulosTable(InventarioProvider provider, BuildContext context) {
-    debugPrint('🏠 HomeScreen: Construyendo tabla de artículos');
-    debugPrint('🏠 HomeScreen: Total de artículos en provider: ${provider.articulos.length}');
-    debugPrint('🏠 HomeScreen: Nombres de artículos: ${provider.articulos.map((a) => a.nombre).toList()}');
+    logDebug('🏠 HomeScreen: Construyendo tabla de artículos');
+    logDebug('🏠 HomeScreen: Total de artículos en provider: ${provider.articulos.length}');
+    logDebug('🏠 HomeScreen: Nombres de artículos: ${provider.articulos.map((a) => a.nombre).toList()}');
     
     return ArticulosTable(
       articulos: provider.articulos,

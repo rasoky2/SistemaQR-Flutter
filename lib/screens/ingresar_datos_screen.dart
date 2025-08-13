@@ -558,7 +558,7 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
                         child: ElevatedButton.icon(
                           onPressed: () async {
                             final provider = context.read<InventarioProvider>();
-                            debugPrint('🔍 Iniciando proceso de importación Excel (directo por plantilla)...');
+                            logDebug('🔍 Iniciando proceso de importación Excel (directo por plantilla)...');
                             await provider.seleccionarArchivo();
                             await provider.importarArticulos();
                           },
@@ -707,12 +707,12 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
 
   Future<void> _generarPlantillaExcel(BuildContext context) async {
     try {
-      debugPrint('📋 Iniciando generación de plantilla Excel...');
+      logDebug('📋 Iniciando generación de plantilla Excel...');
       
       // Generar la plantilla usando el repositorio
       final filePath = await ExcelRepository.generarPlantilla();
       
-      debugPrint('✅ Plantilla generada exitosamente en: $filePath');
+      logDebug('✅ Plantilla generada exitosamente en: $filePath');
       
       // En Web no se puede abrir el archivo con OpenFile, solo informar
       if (kIsWeb) {
@@ -752,10 +752,10 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
         );
 
         if (abrirArchivo == true) {
-          debugPrint('📂 Abriendo plantilla Excel...');
+          logDebug('📂 Abriendo plantilla Excel...');
           final result = await OpenFile.open(filePath);
           if (result.type != ResultType.done) {
-            debugPrint('❌ Error al abrir archivo: ${result.message}');
+            logDebug('❌ Error al abrir archivo: ${result.message}');
             if (context.mounted) {
               showDialog(
                 context: context,
@@ -777,7 +777,7 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
         }
       }
     } catch (e) {
-      debugPrint('❌ Error al generar plantilla: $e');
+      logDebug('❌ Error al generar plantilla: $e');
       
       // Mostrar mensaje de error
       if (context.mounted) {

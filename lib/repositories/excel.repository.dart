@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:inventario_qr/models/articulo.model.dart';
 import 'package:inventario_qr/models/resultado.model.dart';
+import 'package:inventario_qr/utils/logger.dart';
 // Descarga web con import condicional
 import 'package:inventario_qr/utils/web_download_stub.dart'
     if (dart.library.html) 'package:inventario_qr/utils/web_download_html.dart';
@@ -225,11 +226,11 @@ class ExcelRepository {
   /// ✅ IMPLEMENTACIÓN MEJORADA: Lee columnas con fallback inteligente para web
   static Future<List<String>> leerColumnasExcel(String? filePath, [Uint8List? fileBytes]) async {
     try {
-      debugPrint('🔍 Iniciando lectura MEJORADA de columnas Excel...');
+      logDebug('🔍 Iniciando lectura MEJORADA de columnas Excel...');
       
       // Si no hay path ni bytes, usar columnas estándar
       if ((filePath == null || filePath.isEmpty) && fileBytes == null) {
-        debugPrint('📁 No se proporcionó archivo, usando columnas estándar');
+        logDebug('📁 No se proporcionó archivo, usando columnas estándar');
         return _obtenerColumnasEstandar();
       }
       
@@ -237,7 +238,7 @@ class ExcelRepository {
       
       if (fileBytes != null) {
         bytes = fileBytes;
-        debugPrint('📄 Usando bytes proporcionados: ${bytes.length} bytes');
+        logDebug('📄 Usando bytes proporcionados: ${bytes.length} bytes');
       } else if (!kIsWeb && filePath != null) {
         // Leer archivo del sistema (móvil/desktop)
         final file = File(filePath);
@@ -245,9 +246,9 @@ class ExcelRepository {
           throw Exception('Archivo no encontrado: $filePath');
         }
         bytes = await file.readAsBytes();
-        debugPrint('📄 Archivo leído: $filePath (${bytes.length} bytes)');
+        logDebug('📄 Archivo leído: $filePath (${bytes.length} bytes)');
       } else {
-        debugPrint('🌐 Plataforma Web sin bytes - usando columnas estándar');
+        logDebug('🌐 Plataforma Web sin bytes - usando columnas estándar');
         return _obtenerColumnasEstandar();
       }
       
@@ -261,7 +262,7 @@ class ExcelRepository {
       // Fallback a librería 'excel' estándar
       try {
         final excel = Excel.decodeBytes(List<int>.from(bytes));
-        debugPrint('📊 Excel decodificado con librería excel');
+        logDebug('📊 Excel decodificado con librería excel');
         
         if (excel.tables.isEmpty) {
           return _obtenerColumnasEstandar();
@@ -284,38 +285,38 @@ class ExcelRepository {
             if (cellValue.isNotEmpty) {
               columnas.add(cellValue);
             }
-            debugPrint('🧭 Header[excel] idx=$i => "$cellValue" (${cell.value.runtimeType})');
+            logDebug('🧭 Header[excel] idx=$i => "$cellValue" (${cell.value.runtimeType})');
           }
         }
         
         if (columnas.isNotEmpty) {
-          debugPrint('✅ Columnas leídas con librería excel: ${columnas.length}');
+          logDebug('✅ Columnas leídas con librería excel: ${columnas.length}');
           return columnas;
         }
       } catch (e) {
-        debugPrint('❌ Error con librería excel: $e');
+        logDebug('❌ Error con librería excel: $e');
         if (kIsWeb) {
           // Fallback Web: parsear XLSX (ZIP) y extraer primera hoja encabezados
           try {
             final columnas = await _leerEncabezadosXlsxFallback(bytes);
             for (int i = 0; i < columnas.length; i++) {
-              debugPrint('🧭 Header[zip] idx=$i => "${columnas[i]}"');
+              logDebug('🧭 Header[zip] idx=$i => "${columnas[i]}"');
             }
             if (columnas.isNotEmpty) {
-              debugPrint('✅ Columnas leídas con fallback ZIP/XML: ${columnas.length}');
+              logDebug('✅ Columnas leídas con fallback ZIP/XML: ${columnas.length}');
               return columnas;
             }
           } catch (e2) {
-            debugPrint('❌ Fallback ZIP/XML falló: $e2');
+            logDebug('❌ Fallback ZIP/XML falló: $e2');
           }
         }
       }
       
-      debugPrint('🔄 Usando columnas estándar como último recurso');
+      logDebug('🔄 Usando columnas estándar como último recurso');
       return _obtenerColumnasEstandar();
       
     } catch (e) {
-      debugPrint('❌ Error general al leer columnas: $e');
+      logDebug('❌ Error general al leer columnas: $e');
       return _obtenerColumnasEstandar();
     }
   }
@@ -340,13 +341,13 @@ class ExcelRepository {
   /// Lee el archivo Excel especificado y extrae los datos según las columnas seleccionadas
   static Future<List<Articulo>> importarArticulosConColumnas(Set<String> columnasSeleccionadas, String filePath, [Uint8List? fileBytes]) async {
     try {
-      debugPrint('🚀 Iniciando importación REAL desde archivo Excel usando librería excel...');
-      debugPrint('📄 Archivo: $filePath');
-      debugPrint('📋 Columnas seleccionadas: $columnasSeleccionadas');
+      logDebug('🚀 Iniciando importación REAL desde archivo Excel usando librería excel...');
+      logDebug('📄 Archivo: $filePath');
+      logDebug('📋 Columnas seleccionadas: $columnasSeleccionadas');
       
       // Si no hay path ni bytes, retornar vacío
       if ((filePath.isEmpty) && fileBytes == null) {
-        debugPrint('📁 No se proporcionó archivo');
+        logDebug('📁 No se proporcionó archivo');
         return [];
       }
       
@@ -355,7 +356,7 @@ class ExcelRepository {
       if (fileBytes != null) {
         // Usar bytes proporcionados (desde web o file_picker)
         bytes = fileBytes;
-        debugPrint('📄 Usando bytes proporcionados: ${bytes.length} bytes');
+        logDebug('📄 Usando bytes proporcionados: ${bytes.length} bytes');
       } else if (!kIsWeb) {
         // Leer archivo del sistema (móvil/desktop)
         final file = File(filePath);
@@ -363,9 +364,9 @@ class ExcelRepository {
           throw Exception('Archivo no encontrado: $filePath');
         }
         bytes = await file.readAsBytes();
-        debugPrint('📄 Archivo leído: $filePath (${bytes.length} bytes)');
+        logDebug('📄 Archivo leído: $filePath (${bytes.length} bytes)');
       } else {
-        debugPrint('🌐 Plataforma Web sin bytes');
+        logDebug('🌐 Plataforma Web sin bytes');
         return [];
       }
       
@@ -378,7 +379,7 @@ class ExcelRepository {
       // Decodificar Excel usando librería 'excel'
       try {
         final excel = Excel.decodeBytes(List<int>.from(bytes));
-        debugPrint('📊 Excel decodificado exitosamente');
+        logDebug('📊 Excel decodificado exitosamente');
         // ... resto continúa
         
         // Obtener la primera hoja
@@ -392,7 +393,7 @@ class ExcelRepository {
         }
         // Usar mapeo fijo por plantilla
         final columnMap = Map<String, int>.from(_templateColumnIndex);
-        debugPrint('🗺️ Mapeo fijo por plantilla aplicado: $columnMap');
+        logDebug('🗺️ Mapeo fijo por plantilla aplicado: $columnMap');
         // Procesar filas
         final articulos = <Articulo>[];
         for (int rowIndex = 1; rowIndex < sheet.rows.length; rowIndex++) {
@@ -401,16 +402,16 @@ class ExcelRepository {
             final nombreIndex = columnMap['Nombre del Artículo'] ?? 0;
             final nombre = _getCellStringValueFromRow(row, nombreIndex);
             if (nombre.isEmpty) {
-              debugPrint('⚠️ Fila ${rowIndex + 1}: Nombre vacío, saltando...');
+              logDebug('⚠️ Fila ${rowIndex + 1}: Nombre vacío, saltando...');
               continue;
             }
             if (rowIndex <= 5) {
-              debugPrint('🔎 Fila ${rowIndex + 1} raw:');
+              logDebug('🔎 Fila ${rowIndex + 1} raw:');
               columnMap.forEach((key, idx) {
                 final raw = (idx >= 0 && idx < row.length && row[idx] != null) ? row[idx]!.value : null;
                 final asStr = _getCellStringValueFromRow(row, idx);
                 final asNum = _getCellDoubleValueFromRow(row, idx, double.nan);
-                debugPrint('   [$key] idx=$idx raw=${raw?.runtimeType} val="$asStr" num=$asNum');
+                logDebug('   [$key] idx=$idx raw=${raw?.runtimeType} val="$asStr" num=$asNum');
               });
             }
             final articulo = Articulo(
@@ -426,22 +427,22 @@ class ExcelRepository {
               tamanoLote: _getCellDoubleValueFromRow(row, columnMap['Tamaño de Lote (unidades)'] ?? -1, 1),
             );
             articulos.add(articulo);
-            debugPrint('✅ Fila ${rowIndex + 1}: Artículo creado - ${articulo.nombre}');
+            logDebug('✅ Fila ${rowIndex + 1}: Artículo creado - ${articulo.nombre}');
           } catch (e) {
-            debugPrint('❌ Error en fila ${rowIndex + 1}: $e');
+            logDebug('❌ Error en fila ${rowIndex + 1}: $e');
           }
         }
-        debugPrint('🎉 Importación completada. Total de artículos: ${articulos.length}');
+        logDebug('🎉 Importación completada. Total de artículos: ${articulos.length}');
         return articulos;
       } catch (e) {
-        debugPrint('❌ Error al decodificar con excel: $e');
+        logDebug('❌ Error al decodificar con excel: $e');
         if (kIsWeb) {
           // Fallback Web: parsear ZIP/XML
           try {
             final datos = await _leerHojaCompletaXlsxFallback(bytes);
             // Usar mapeo fijo por plantilla para fallback
             final columnMap = Map<String, int>.from(_templateColumnIndex);
-            debugPrint('🗺️ Mapeo fijo por plantilla aplicado (zip): $columnMap');
+            logDebug('🗺️ Mapeo fijo por plantilla aplicado (zip): $columnMap');
             final articulos = <Articulo>[];
             for (int rowIndex = 1; rowIndex < datos.length; rowIndex++) {
               final row = datos[rowIndex];
@@ -465,11 +466,11 @@ class ExcelRepository {
                 continue;
               }
               if (rowIndex <= 5) {
-                debugPrint('🔎 Fila[zip] ${rowIndex + 1} raw:');
+                logDebug('🔎 Fila[zip] ${rowIndex + 1} raw:');
                 columnMap.forEach((key, idx) {
                   final s = getStr(idx);
                   final n = double.tryParse(s);
-                  debugPrint('   [$key] idx=$idx val="$s" num=${n ?? 'NaN'}');
+                  logDebug('   [$key] idx=$idx val="$s" num=${n ?? 'NaN'}');
                 });
               }
               articulos.add(Articulo(
@@ -485,16 +486,16 @@ class ExcelRepository {
                 tamanoLote: getNum(columnMap['Tamaño de Lote (unidades)'] ?? -1, 1),
               ));
             }
-            debugPrint('✅ Importación con fallback ZIP/XML. Filas: ${articulos.length}');
+            logDebug('✅ Importación con fallback ZIP/XML. Filas: ${articulos.length}');
             return articulos;
           } catch (e2) {
-            debugPrint('❌ Fallback ZIP/XML falló: $e2');
+            logDebug('❌ Fallback ZIP/XML falló: $e2');
           }
         }
         throw Exception('Error al importar desde Excel: $e');
       }
     } catch (e) {
-      debugPrint('❌ Error al importar desde Excel: $e');
+      logDebug('❌ Error al importar desde Excel: $e');
       throw Exception('Error al importar desde Excel: $e');
     }
   }
@@ -575,7 +576,7 @@ class ExcelRepository {
   /// Exporta resultados a un archivo Excel usando librería 'excel'
   static Future<String> exportarResultados(ResultadoSistema resultado) async {
     try {
-      debugPrint('📤 Iniciando exportación de resultados con librería excel...');
+      logDebug('📤 Iniciando exportación de resultados con librería excel...');
       
       // Crear nuevo Excel
       final excel = Excel.createExcel();
@@ -642,14 +643,14 @@ class ExcelRepository {
       if (kIsWeb) {
         // En Web, la propia librería excel descarga el archivo
         excel.save(fileName: fileName);
-        debugPrint('📥 Web: descarga iniciada por excel.save(fileName: ...)');
+        logDebug('📥 Web: descarga iniciada por excel.save(fileName: ...)');
         return fileName;
       } else {
         final bytes = excel.save();
         if (bytes == null || bytes.isEmpty) {
           throw Exception('Error: Los bytes del archivo Excel están vacíos');
         }
-        debugPrint('📊 Excel generado: ${bytes.length} bytes');
+        logDebug('📊 Excel generado: ${bytes.length} bytes');
         final filePath = await _guardarArchivo(bytes, fileName);
         return filePath;
       }
@@ -661,11 +662,11 @@ class ExcelRepository {
   /// Proporciona la plantilla Excel pregenerada desde assets
   static Future<String> generarPlantilla() async {
     try {
-      debugPrint('📋 Proporcionando plantilla Excel pregenerada...');
+      logDebug('📋 Proporcionando plantilla Excel pregenerada...');
       // Cargar SIEMPRE la plantilla desde assets
       final byteData = await rootBundle.load('assets/templates/plantilla_inventario.xlsx');
       final uint8bytes = byteData.buffer.asUint8List();
-      debugPrint('✅ Plantilla cargada desde assets: ${uint8bytes.length} bytes');
+      logDebug('✅ Plantilla cargada desde assets: ${uint8bytes.length} bytes');
 
       if (kIsWeb) {
         await downloadBytesWeb(
@@ -679,8 +680,8 @@ class ExcelRepository {
       }
       
     } catch (e) {
-      debugPrint('❌ Error al cargar plantilla pregenerada: $e');
-      debugPrint('🔄 Creando plantilla básica como fallback...');
+      logDebug('❌ Error al cargar plantilla pregenerada: $e');
+      logDebug('🔄 Creando plantilla básica como fallback...');
       
       // Fallback: si falla la carga del asset, reportar error
       rethrow;
@@ -695,7 +696,7 @@ class ExcelRepository {
     final file = File(path);
     await file.writeAsBytes(bytes);
     
-    debugPrint('💾 Archivo guardado en: $path');
+    logDebug('💾 Archivo guardado en: $path');
     return path;
   }
 } 

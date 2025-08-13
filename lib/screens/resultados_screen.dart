@@ -679,12 +679,12 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
     }
 
     try {
-      debugPrint('📤 Iniciando exportación de resultados a Excel...');
+      logDebug('📤 Iniciando exportación de resultados a Excel...');
       
       // Usar el método del ExcelRepository que maneja automáticamente web/móvil
       final filePath = await provider.exportarResultadosExcel();
       
-      debugPrint('✅ Resultados exportados exitosamente en: $filePath');
+      logDebug('✅ Resultados exportados exitosamente en: $filePath');
       
       // Mostrar mensaje de éxito
       if (context.mounted) {
@@ -692,7 +692,7 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
       }
       
     } catch (e) {
-      debugPrint('❌ Error al exportar resultados: $e');
+      logDebug('❌ Error al exportar resultados: $e');
       
       if (context.mounted) {
         _mostrarDialogoError(context, 'Error al exportar resultados: $e');
