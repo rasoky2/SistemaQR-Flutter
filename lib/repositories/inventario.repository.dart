@@ -42,8 +42,15 @@ class InventarioRepository {
 
       // Cálculo de costos
       final costoPedidos = (articulo.demandaAnual / articulo.tamanoLote) * articulo.costoPedido;
-      final costoMantenimiento = ((articulo.tamanoLote - backordersEsperados) / 2) * articulo.costoMantenimiento;
-      final costoServicio = backordersEsperados * articulo.costoFaltante;
+      // Inventario promedio: Q/2 + SS - E[BO], con SS = max(0, R - μL)
+      final double stockSeguridad = (articulo.puntoReorden - demandaLeadTime) > 0
+          ? (articulo.puntoReorden - demandaLeadTime)
+          : 0.0;
+      final double inventarioPromedio = (articulo.tamanoLote / 2) + stockSeguridad - backordersEsperados;
+      final double inventarioPromedioNoNegativo = inventarioPromedio > 0 ? inventarioPromedio : 0.0;
+      final costoMantenimiento = inventarioPromedioNoNegativo * articulo.costoMantenimiento;
+      // Costo de faltante anual: p * (D/Q) * E[BO]
+      final costoServicio = (articulo.demandaAnual / articulo.tamanoLote) * backordersEsperados * articulo.costoFaltante;
       final costoTotal = costoPedidos + costoMantenimiento + costoServicio;
 
       // Espacio usado
@@ -110,54 +117,75 @@ class InventarioRepository {
     );
   }
 
-  /// Genera datos de ejemplo para pruebas
-  static List<Articulo> generarDatosEjemplo() {
-    return [
-      const Articulo(
-        nombre: 'Artículo 1',
-        demandaAnual: 1200.0,
-        costoPedido: 100.0,
-        costoMantenimiento: 2.0,
-        costoFaltante: 5.0,
-        costoUnitario: 20.0,
-        espacioUnidad: 0.5,
-        desviacionDiaria: 2.0,
-        puntoReorden: 120.0,
-        tamanoLote: 200.0,
-      ),
-      const Articulo(
-        nombre: 'Artículo 2',
-        demandaAnual: 800.0,
-        costoPedido: 80.0,
-        costoMantenimiento: 3.0,
-        costoFaltante: 6.0,
-        costoUnitario: 30.0,
-        espacioUnidad: 1.0,
-        desviacionDiaria: 3.0,
-        puntoReorden: 90.0,
-        tamanoLote: 160.0,
-      ),
-    ];
-  }
+  // Datos de ejemplo eliminados (no usados)
 
   /// Calcula estadísticas adicionales del sistema
   static Map<String, dynamic> calcularEstadisticas(ResultadoSistema resultado) {
-    final costosPromedio = resultado.resultados.map((r) => r.costoTotal).reduce((a, b) => a + b) / resultado.resultados.length;
-    final espacioPromedio = resultado.resultados.map((r) => r.espacioUsado).reduce((a, b) => a + b) / resultado.resultados.length;
-    final zScorePromedio = resultado.resultados.map((r) => r.zScore).reduce((a, b) => a + b) / resultado.resultados.length;
-    
-    final costosOrdenados = resultado.resultados.map((r) => r.costoTotal).toList()..sort();
-    final medianaCosto = costosOrdenados[costosOrdenados.length ~/ 2];
-    
+    final resultados = resultado.resultados;
+    if (resultados.isEmpty) {
+      return {
+        'costoPromedio': 0.0,
+        'espacioPromedio': 0.0,
+        'zScorePromedio': 0.0,
+        'medianaCosto': 0.0,
+        'articuloMasCostoso': '',
+        'articuloMenosCostoso': '',
+        'articuloMasEspacio': '',
+        'articuloMenosEspacio': '',
+      };
+    }
+
+    double sumaCostos = 0.0;
+    double sumaEspacio = 0.0;
+    double sumaZ = 0.0;
+    double maxCosto = double.negativeInfinity;
+    double minCosto = double.infinity;
+    double maxEspacio = double.negativeInfinity;
+    double minEspacio = double.infinity;
+    String maxCostoNombre = '';
+    String minCostoNombre = '';
+    String maxEspacioNombre = '';
+    String minEspacioNombre = '';
+
+    final costosParaMediana = <double>[];
+
+    for (final r in resultados) {
+      sumaCostos += r.costoTotal;
+      sumaEspacio += r.espacioUsado;
+      sumaZ += r.zScore;
+      costosParaMediana.add(r.costoTotal);
+
+      if (r.costoTotal > maxCosto) {
+        maxCosto = r.costoTotal;
+        maxCostoNombre = r.nombre;
+      }
+      if (r.costoTotal < minCosto) {
+        minCosto = r.costoTotal;
+        minCostoNombre = r.nombre;
+      }
+      if (r.espacioUsado > maxEspacio) {
+        maxEspacio = r.espacioUsado;
+        maxEspacioNombre = r.nombre;
+      }
+      if (r.espacioUsado < minEspacio) {
+        minEspacio = r.espacioUsado;
+        minEspacioNombre = r.nombre;
+      }
+    }
+
+    costosParaMediana.sort();
+    final medianaCosto = costosParaMediana[costosParaMediana.length ~/ 2];
+    final n = resultados.length.toDouble();
+
     return {
-      'costoPromedio': costosPromedio,
-      'espacioPromedio': espacioPromedio,
-      'zScorePromedio': zScorePromedio,
+      'costoPromedio': sumaCostos / n,
+      'espacioPromedio': sumaEspacio / n,
+      'zScorePromedio': sumaZ / n,
       'medianaCosto': medianaCosto,
-      'articuloMasCostoso': resultado.resultados.reduce((a, b) => a.costoTotal > b.costoTotal ? a : b).nombre,
-      'articuloMenosCostoso': resultado.resultados.reduce((a, b) => a.costoTotal < b.costoTotal ? a : b).nombre,
-      'articuloMasEspacio': resultado.resultados.reduce((a, b) => a.espacioUsado > b.espacioUsado ? a : b).nombre,
-      'articuloMenosEspacio': resultado.resultados.reduce((a, b) => a.espacioUsado < b.espacioUsado ? a : b).nombre,
+      'articuloMasCostoso': maxCostoNombre,
+      'articuloMenosCostoso': minCostoNombre,
+      'articuloMasEspacio': maxEspacioNombre,
+      'articuloMenosEspacio': minEspacioNombre,
     };
   }
 } 

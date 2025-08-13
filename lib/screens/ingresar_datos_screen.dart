@@ -5,6 +5,7 @@ import 'package:inventario_qr/models/articulo.model.dart';
 import 'package:inventario_qr/providers/inventario.provider.dart';
 import 'package:inventario_qr/repositories/excel.repository.dart';
 import 'package:inventario_qr/screens/tutorial_screen.dart';
+import 'package:inventario_qr/utils/logger.dart';
 import 'package:inventario_qr/widgets/articulos_table.dart';
 import 'package:inventario_qr/widgets/restriccion_dialog.dart';
 import 'package:inventario_qr/widgets/restriccion_fab.dart';
@@ -154,12 +155,12 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
 
   void _agregarArticulo() {
     if (_formKey.currentState?.validate() ?? false) {
-      debugPrint('📝 Iniciando agregar artículo manual...');
+      logDebug('📝 Iniciando agregar artículo manual...');
       
       // Validación adicional para el tamaño de lote
       final tamanoLote = _parseNum(_tamanoLoteController.text);
       if (tamanoLote == null || tamanoLote <= 0) {
-        debugPrint('❌ Tamaño de lote inválido: ${_tamanoLoteController.text}');
+        logDebug('❌ Tamaño de lote inválido: ${_tamanoLoteController.text}');
         // Mostrar mensaje de error usando AlertDialog
         showDialog(
           context: context,
@@ -193,22 +194,22 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
         tamanoLote: tamanoLote,
       );
 
-      debugPrint('📦 Artículo creado: ${articulo.nombre}');
-      debugPrint('   - Demanda anual: ${articulo.demandaAnual}');
-      debugPrint('   - Costo pedido: ${articulo.costoPedido}');
-      debugPrint('   - Costo mantenimiento: ${articulo.costoMantenimiento}');
-      debugPrint('   - Costo faltante: ${articulo.costoFaltante}');
-      debugPrint('   - Costo unitario: ${articulo.costoUnitario}');
-      debugPrint('   - Espacio unidad: ${articulo.espacioUnidad}');
-      debugPrint('   - Desviación diaria: ${articulo.desviacionDiaria}');
-      debugPrint('   - Punto reorden: ${articulo.puntoReorden}');
-      debugPrint('   - Tamaño lote: ${articulo.tamanoLote}');
+      logDebug('📦 Artículo creado: ${articulo.nombre}');
+      logDebug('   - Demanda anual: ${articulo.demandaAnual}');
+      logDebug('   - Costo pedido: ${articulo.costoPedido}');
+      logDebug('   - Costo mantenimiento: ${articulo.costoMantenimiento}');
+      logDebug('   - Costo faltante: ${articulo.costoFaltante}');
+      logDebug('   - Costo unitario: ${articulo.costoUnitario}');
+      logDebug('   - Espacio unidad: ${articulo.espacioUnidad}');
+      logDebug('   - Desviación diaria: ${articulo.desviacionDiaria}');
+      logDebug('   - Punto reorden: ${articulo.puntoReorden}');
+      logDebug('   - Tamaño lote: ${articulo.tamanoLote}');
 
       // Agregar el artículo al provider
       final provider = context.read<InventarioProvider>()
       ..agregarArticulo(articulo);
       
-      debugPrint('✅ Artículo agregado al provider. Total de artículos: ${provider.articulos.length}');
+      logDebug('✅ Artículo agregado al provider. Total de artículos: ${provider.articulos.length}');
       
       _limpiarFormulario();
       
@@ -222,7 +223,7 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
         );
       }
     } else {
-      debugPrint('❌ Validación del formulario falló');
+      logDebug('❌ Validación del formulario falló');
     }
   }
 
@@ -317,7 +318,9 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
                               return 'La demanda es requerida';
                             }
                             final v = _parseNum(value);
-                            if (v == null) return 'Debe ser un número válido';
+                            if (v == null) {
+                              return 'Debe ser un número válido';
+                            }
                             if (v <= 0) {
                               return 'Debe ser mayor a 0';
                             }
@@ -342,7 +345,9 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
                               return 'El costo es requerido';
                             }
                             final v = _parseNum(value);
-                            if (v == null) return 'Debe ser un número válido';
+                            if (v == null) {
+                              return 'Debe ser un número válido';
+                            }
                             if (v <= 0) {
                               return 'Debe ser mayor a 0';
                             }
@@ -363,7 +368,9 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
                               return 'El costo es requerido';
                             }
                             final v = _parseNum(value);
-                            if (v == null) return 'Debe ser un número válido';
+                            if (v == null) {
+                              return 'Debe ser un número válido';
+                            }
                             if (v <= 0) {
                               return 'Debe ser mayor a 0';
                             }
@@ -388,7 +395,9 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
                               return 'El costo es requerido';
                             }
                             final v = _parseNum(value);
-                            if (v == null) return 'Debe ser un número válido';
+                            if (v == null) {
+                              return 'Debe ser un número válido';
+                            }
                             if (v <= 0) {
                               return 'Debe ser mayor a 0';
                             }
@@ -409,7 +418,9 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
                               return 'El costo es requerido';
                             }
                             final v = _parseNum(value);
-                            if (v == null) return 'Debe ser un número válido';
+                            if (v == null) {
+                              return 'Debe ser un número válido';
+                            }
                             if (v <= 0) {
                               return 'Debe ser mayor a 0';
                             }
@@ -435,7 +446,9 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
                               return 'El espacio es requerido';
                             }
                             final v = _parseNum(value);
-                            if (v == null) return 'Debe ser un número válido';
+                            if (v == null) {
+                              return 'Debe ser un número válido';
+                            }
                             if (v <= 0) {
                               return 'Debe ser mayor a 0';
                             }
@@ -457,7 +470,9 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
                               return 'La desviación es requerida';
                             }
                             final v = _parseNum(value);
-                            if (v == null) return 'Debe ser un número válido';
+                            if (v == null) {
+                              return 'Debe ser un número válido';
+                            }
                             if (v < 0) {
                               return 'Debe ser mayor o igual a 0';
                             }
@@ -481,7 +496,9 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
                               return 'El punto de reorden es requerido';
                             }
                             final v = _parseNum(value);
-                            if (v == null) return 'Debe ser un número válido';
+                            if (v == null) {
+                              return 'Debe ser un número válido';
+                            }
                             if (v < 0) {
                               return 'Debe ser mayor o igual a 0';
                             }
@@ -502,7 +519,9 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
                               return 'El tamaño de lote es requerido';
                             }
                             final v = _parseNum(value);
-                            if (v == null) return 'Debe ser un número válido';
+                            if (v == null) {
+                              return 'Debe ser un número válido';
+                            }
                             if (v <= 0) {
                               return 'Debe ser mayor a 0';
                             }

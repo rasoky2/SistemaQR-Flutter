@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:inventario_qr/models/resultado.model.dart';
 import 'package:inventario_qr/providers/inventario.provider.dart';
 import 'package:inventario_qr/repositories/inventario.repository.dart';
+import 'package:inventario_qr/utils/logger.dart';
 import 'package:inventario_qr/utils/math_utils.dart';
 import 'package:inventario_qr/utils/theme_colors.dart';
 import 'package:inventario_qr/widgets/articulos_table.dart';
@@ -11,14 +12,6 @@ import 'package:inventario_qr/widgets/resultados_charts.dart';
 import 'package:open_file/open_file.dart';
 import 'package:provider/provider.dart';
 import 'package:unicons/unicons.dart';
-
-
-// Clase de datos para los gráficos
-class ChartData {
-  ChartData(this.nombre, this.valor);
-  final String nombre;
-  final double valor;
-}
 
 
 
@@ -60,12 +53,12 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
       ),
       body: Consumer<InventarioProvider>(
         builder: (context, provider, child) {
-          debugPrint('📊 ResultadosScreen: Consumer reconstruyendo');
-          debugPrint('📊 ResultadosScreen: Resultado disponible: ${provider.resultado != null}');
-          debugPrint('📊 ResultadosScreen: Artículos disponibles: ${provider.articulos.length}');
+          logDebug('📊 ResultadosScreen: Consumer reconstruyendo');
+          logDebug('📊 ResultadosScreen: Resultado disponible: ${provider.resultado != null}');
+          logDebug('📊 ResultadosScreen: Artículos disponibles: ${provider.articulos.length}');
           
           if (provider.resultado == null) {
-            debugPrint('📊 ResultadosScreen: No hay resultados disponibles');
+            logDebug('📊 ResultadosScreen: No hay resultados disponibles');
             return const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -92,7 +85,7 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
             );
           }
 
-          debugPrint('📊 ResultadosScreen: Mostrando resultados');
+          logDebug('📊 ResultadosScreen: Mostrando resultados');
           return SingleChildScrollView(
             padding: const EdgeInsets.all(24.0),
             child: Column(
@@ -116,7 +109,9 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
 
   Widget _buildSystemSummary(InventarioProvider provider) {
     final resultado = provider.resultado!;
-    final estadisticas = InventarioRepository.calcularEstadisticas(resultado);
+    final estadisticas = provider.estadisticas.isNotEmpty
+        ? provider.estadisticas
+        : InventarioRepository.calcularEstadisticas(resultado);
     
     return Card(
       child: Padding(
@@ -439,7 +434,13 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
                   child: _buildSummaryItemWithDetails(
                     'Artículo Más Costoso',
                     estadisticas['articuloMasCostoso'] as String,
-                    MathUtils.formatearMoneda(resultado.resultados.reduce((a, b) => a.costoTotal > b.costoTotal ? a : b).costoTotal),
+                    // mostramos el valor formateado usando el nombre y buscando una vez
+                    MathUtils.formatearMoneda(
+                      (resultado.resultados.firstWhere(
+                        (r) => r.nombre == (estadisticas['articuloMasCostoso'] as String),
+                        orElse: () => resultado.resultados.first,
+                      ).costoTotal),
+                    ),
                     UniconsLine.exclamation_triangle,
                     MDSJColors.error,
                   ),
@@ -448,7 +449,12 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
                   child: _buildSummaryItemWithDetails(
                     'Artículo Menos Costoso',
                     estadisticas['articuloMenosCostoso'] as String,
-                    MathUtils.formatearMoneda(resultado.resultados.reduce((a, b) => a.costoTotal < b.costoTotal ? a : b).costoTotal),
+                    MathUtils.formatearMoneda(
+                      (resultado.resultados.firstWhere(
+                        (r) => r.nombre == (estadisticas['articuloMenosCostoso'] as String),
+                        orElse: () => resultado.resultados.first,
+                      ).costoTotal),
+                    ),
                     UniconsLine.check_circle,
                     MDSJColors.success,
                   ),
@@ -457,7 +463,13 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
                   child: _buildSummaryItemWithDetails(
                     'Mayor Espacio',
                     estadisticas['articuloMasEspacio'] as String,
-                    MathUtils.formatearUnidades(resultado.resultados.reduce((a, b) => a.espacioUsado > b.espacioUsado ? a : b).espacioUsado, 'm²'),
+                    MathUtils.formatearUnidades(
+                      (resultado.resultados.firstWhere(
+                        (r) => r.nombre == (estadisticas['articuloMasEspacio'] as String),
+                        orElse: () => resultado.resultados.first,
+                      ).espacioUsado),
+                      'm²',
+                    ),
                     UniconsLine.store,
                     MDSJColors.info,
                   ),
@@ -466,7 +478,13 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
                   child: _buildSummaryItemWithDetails(
                     'Menor Espacio',
                     estadisticas['articuloMenosEspacio'] as String,
-                    MathUtils.formatearUnidades(resultado.resultados.reduce((a, b) => a.espacioUsado < b.espacioUsado ? a : b).espacioUsado, 'm²'),
+                    MathUtils.formatearUnidades(
+                      (resultado.resultados.firstWhere(
+                        (r) => r.nombre == (estadisticas['articuloMenosEspacio'] as String),
+                        orElse: () => resultado.resultados.first,
+                      ).espacioUsado),
+                      'm²',
+                    ),
                     UniconsLine.store,
                     MDSJColors.info,
                   ),

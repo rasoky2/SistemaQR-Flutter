@@ -31,10 +31,7 @@ class MDSJColors {
   
   // Color de texto principal
   static const Color textPrimary = Color(0xFF104152);
-  
-  // Color de texto secundario
-  static const Color textSecondaryColor = Color(0xFFACACAC);
-  
+    
   // Color de borde
   static const Color border = Color(0xFFACACAC);
   

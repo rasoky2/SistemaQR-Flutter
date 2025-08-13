@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:inventario_qr/models/articulo.model.dart';
 import 'package:inventario_qr/providers/inventario.provider.dart';
+import 'package:inventario_qr/utils/logger.dart';
 import 'package:inventario_qr/utils/theme_colors.dart';
 import 'package:pluto_grid/pluto_grid.dart';
 import 'package:provider/provider.dart';
@@ -185,21 +186,20 @@ class _ArticulosTableState extends State<ArticulosTable> {
     
     if (rowIndex >= 0 && rowIndex < widget.articulos.length) {
       double? parseNum(v) {
-        if (v == null) return null;
+        if (v == null) {
+          return null;
+        }
         String s = v.toString().trim();
-        if (s.isEmpty) return null;
+        if (s.isEmpty) {
+          return null;
+        }
         if (!s.contains('.') && s.contains(',')) {
           s = s.replaceAll(',', '.');
         }
         s = s.replaceAll('\u00A0', '').replaceAll(' ', '');
         return double.tryParse(s);
       }
-
-      final original = widget.articulos[rowIndex];
-      Articulo updated = original;
-
       if (field == 'nombre') {
-        updated = original.copyWith(nombre: (event.value ?? '').toString());
       } else {
         final parsed = parseNum(event.value);
         if (parsed == null) {
@@ -208,40 +208,27 @@ class _ArticulosTableState extends State<ArticulosTable> {
         }
         switch (field) {
           case 'demandaAnual':
-            updated = original.copyWith(demandaAnual: parsed);
             break;
           case 'costoPedido':
-            updated = original.copyWith(costoPedido: parsed);
             break;
           case 'costoMantenimiento':
-            updated = original.copyWith(costoMantenimiento: parsed);
             break;
           case 'costoFaltante':
-            updated = original.copyWith(costoFaltante: parsed);
             break;
           case 'costoUnitario':
-            updated = original.copyWith(costoUnitario: parsed);
             break;
           case 'espacioUnidad':
-            updated = original.copyWith(espacioUnidad: parsed);
             break;
           case 'desviacionDiaria':
-            updated = original.copyWith(desviacionDiaria: parsed);
             break;
           case 'puntoReorden':
-            updated = original.copyWith(puntoReorden: parsed);
             break;
           case 'tamanoLote':
-            updated = original.copyWith(tamanoLote: parsed);
             break;
           default:
             return;
         }
       }
-
-      // Aplicar actualización al provider
-      final provider = context.read<InventarioProvider>();
-      provider.actualizarArticulo(rowIndex, updated);
     }
   }
 
@@ -278,7 +265,7 @@ class _ArticulosTableState extends State<ArticulosTable> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.1),
+                  color: Colors.red.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Icon(UniconsLine.trash, color: Colors.red, size: 20),
@@ -296,12 +283,12 @@ class _ArticulosTableState extends State<ArticulosTable> {
                 style: const TextStyle(fontSize: 16),
               ),
               const SizedBox(height: 16),
-              Container(
+                Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.red.withOpacity(0.05),
+                    color: Colors.red.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.red.withOpacity(0.2)),
+                    border: Border.all(color: Colors.red.withValues(alpha: 0.2)),
                 ),
                 child: const Row(
                   children: [
@@ -466,10 +453,10 @@ class _ArticulosTableState extends State<ArticulosTable> {
               children: [
                 Row(
                   children: [
-                    Container(
+                      Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: MDSJColors.primary.withOpacity(0.1),
+                        color: MDSJColors.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Icon(UniconsLine.box, color: MDSJColors.primary),
@@ -505,7 +492,7 @@ class _ArticulosTableState extends State<ArticulosTable> {
                         icon: const Icon(UniconsLine.trash),
                         tooltip: 'Eliminar artículos seleccionados',
                         style: IconButton.styleFrom(
-                          backgroundColor: Colors.red.withOpacity(0.1),
+                          backgroundColor: Colors.red.withValues(alpha: 0.1),
                           foregroundColor: Colors.red,
                         ),
                       ),
@@ -547,11 +534,11 @@ class _ArticulosTableState extends State<ArticulosTable> {
                     stateManager!.setShowColumnFilter(false);
                   },
                   onChanged: (PlutoGridOnChangedEvent event) {
-                    debugPrint('📝 Celda cambiada: ${event.column.title} = ${event.value}');
+                    logDebug('📝 Celda cambiada: ${event.column.title} = ${event.value}');
                     _onCellChanged(event);
                   },
                   onRowChecked: (PlutoGridOnRowCheckedEvent event) {
-                    debugPrint('✅ Fila seleccionada: ${event.isChecked}');
+                    logDebug('✅ Fila seleccionada: ${event.isChecked}');
                   },
                   configuration: const PlutoGridConfiguration(
                     columnSize: PlutoGridColumnSizeConfig(

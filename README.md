@@ -57,16 +57,24 @@ Screens → Providers → Repositories → Models
 
 ## 📊 Fórmulas del Modelo QR
 
-### Función Objetivo
+### Función Objetivo (revisada)
 ```
-TC = Σ(Dᵢ/Qᵢ × Kᵢ + (Qᵢ - E[Bᵢ])/2 × hᵢ + E[Bᵢ] × pᵢ)
+TC = Σ( Dᵢ/Qᵢ × Kᵢ
+      + (Qᵢ/2 + max(0, Rᵢ − μLᵢ) − E[Bᵢ]) × hᵢ
+      + (Dᵢ/Qᵢ) × E[Bᵢ] × pᵢ )
 ```
 
 ### Cálculos Intermedios
-- **Demanda en Lead Time**: μ_L = D × L
-- **Desviación en Lead Time**: σ_L = σ × √(L × 365)
+- **Demanda en Lead Time**: μ_L = D × (L/365)
+- **Desviación en Lead Time**: σ_L = σ × √L
 - **Z-Score**: z = (R - μ_L) / σ_L
 - **Backorders Esperados**: E[B] = σ_L × L(z)
+## 📝 Roadmap y notas
+
+- [ ] Autocalcular Q y R cuando falten datos
+  - Q*: sqrt(2·D·S/H)
+  - R: d·L + z·σL, con d = D/365 y z configurable
+
 
 Donde L(z) es la función de pérdida normal estándar.
 

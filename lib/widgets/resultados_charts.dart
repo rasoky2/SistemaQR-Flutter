@@ -1,7 +1,16 @@
+// ignore: directives_ordering
+import 'dart:io' show File if (dart.library.html) '';
+import 'dart:ui' as ui;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:inventario_qr/models/resultado.model.dart';
 import 'package:inventario_qr/utils/theme_colors.dart';
+import 'package:inventario_qr/utils/web_download_stub.dart'
+    if (dart.library.html) 'package:inventario_qr/utils/web_download_html.dart';
+import 'package:open_file/open_file.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 
 enum ChartDisplayType {
@@ -9,7 +18,6 @@ enum ChartDisplayType {
   barCosts,               // Barras: costos por artículo
   stackedCostBreakdown,   // Barras apiladas: costoPedidos, costoMantenimiento, costoServicio
   barSpaceUsed,           // Barras horizontales: espacio usado por artículo
-  scatterQvsCosto,        // Dispersión: Q vs Costo Total
   barBackorders,          // Barras: Backorders esperados por artículo
   zScoreDistribution,     // Barras: Z-Score por artículo
 }
@@ -32,13 +40,14 @@ class ResultadosCharts extends StatefulWidget {
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties.add(DiagnosticsProperty<ResultadoSistema>('resultado', resultado));
-    properties.add(EnumProperty<ChartDisplayType>('initialType', initialType));
+    properties..add(DiagnosticsProperty<ResultadoSistema>('resultado', resultado))
+    ..add(EnumProperty<ChartDisplayType>('initialType', initialType));
   }
 }
 
 class _ResultadosChartsState extends State<ResultadosCharts> {
   late ChartDisplayType _type;
+  final GlobalKey _chartKey = GlobalKey();
 
   @override
   void initState() {
@@ -77,6 +86,13 @@ class _ResultadosChartsState extends State<ResultadosCharts> {
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: MDSJColors.textPrimary),
             ),
             const Spacer(),
+            Tooltip(
+              message: 'Exportar gráfico como PNG',
+              child: IconButton(
+                icon: const Icon(Icons.download),
+                onPressed: _exportChartAsImage,
+              ),
+            ),
             DropdownButtonHideUnderline(
               child: DropdownButton<ChartDisplayType>(
                 value: _type,
@@ -98,10 +114,6 @@ class _ResultadosChartsState extends State<ResultadosCharts> {
                     child: Text('Barras: Espacio usado (m²)'),
                   ),
                   DropdownMenuItem(
-                    value: ChartDisplayType.scatterQvsCosto,
-                    child: Text('Dispersión: Q vs Costo total'),
-                  ),
-                  DropdownMenuItem(
                     value: ChartDisplayType.barBackorders,
                     child: Text('Barras: Backorders esperados'),
                   ),
@@ -116,23 +128,36 @@ class _ResultadosChartsState extends State<ResultadosCharts> {
           ],
         ),
         const SizedBox(height: 16),
-        switch (_type) {
-          ChartDisplayType.combinedLine => _buildCombined(resultados),
-          ChartDisplayType.barCosts => _buildBars(resultados),
-          ChartDisplayType.stackedCostBreakdown => _buildStackedCosts(resultados),
-          ChartDisplayType.barSpaceUsed => _buildSpaceBars(resultados),
-          ChartDisplayType.scatterQvsCosto => _buildScatterQvsCosto(resultados),
-          ChartDisplayType.barBackorders => _buildBackordersBars(resultados),
-          ChartDisplayType.zScoreDistribution => _buildZScoreBars(resultados),
-        },
+        RepaintBoundary(
+          key: _chartKey,
+          child: switch (_type) {
+            ChartDisplayType.combinedLine => _buildCombined(resultados),
+            ChartDisplayType.barCosts => _buildBars(resultados),
+            ChartDisplayType.stackedCostBreakdown => _buildStackedCosts(resultados),
+            ChartDisplayType.barSpaceUsed => _buildSpaceBars(resultados),
+            ChartDisplayType.barBackorders => _buildBackordersBars(resultados),
+            ChartDisplayType.zScoreDistribution => _buildZScoreBars(resultados),
+          },
+        ),
       ],
     );
   }
 
   Widget _buildCombined(List<ResultadoArticulo> resultados) {
-    final maxCosto = resultados.map((r) => r.costoTotal).reduce((a, b) => a > b ? a : b);
-    final maxEspacio = resultados.map((r) => r.espacioUsado).reduce((a, b) => a > b ? a : b);
-    final maxZScore = resultados.map((r) => r.zScore).reduce((a, b) => a > b ? a : b);
+    double maxCosto = 0;
+    double maxEspacio = 0;
+    double maxZScore = 0;
+    for (final r in resultados) {
+      if (r.costoTotal > maxCosto) {
+        maxCosto = r.costoTotal;
+      }
+      if (r.espacioUsado > maxEspacio) {
+        maxEspacio = r.espacioUsado;
+      }
+      if (r.zScore > maxZScore) {
+        maxZScore = r.zScore;
+      }
+    }
 
     final costos = resultados.map((r) => ChartData(_truncar(r.nombre), (r.costoTotal / maxCosto) * 100)).toList();
     final espacios = resultados.map((r) => ChartData(_truncar(r.nombre), (r.espacioUsado / maxEspacio) * 100)).toList();
@@ -179,9 +204,7 @@ class _ResultadosChartsState extends State<ResultadosCharts> {
   }
 
   Widget _buildBars(List<ResultadoArticulo> resultados) {
-    final data = resultados
-        .map((r) => ChartData(_truncar(r.nombre), r.costoTotal))
-        .toList();
+    final data = resultados.map((r) => ChartData(_truncar(r.nombre), r.costoTotal)).toList();
     return SizedBox(
       height: 320,
       child: SfCartesianChart(
@@ -262,26 +285,7 @@ class _ResultadosChartsState extends State<ResultadosCharts> {
     );
   }
 
-  Widget _buildScatterQvsCosto(List<ResultadoArticulo> resultados) {
-    // Dispersión usando Q como X y Costo Total como Y
-    return SizedBox(
-      height: 340,
-      child: SfCartesianChart(
-        primaryXAxis: const NumericAxis(title: AxisTitle(text: 'Q (Tamaño de lote)'), labelStyle: TextStyle(fontSize: 10)),
-        primaryYAxis: const NumericAxis(title: AxisTitle(text: 'Costo Total (S/)'), labelStyle: TextStyle(fontSize: 10)),
-        tooltipBehavior: TooltipBehavior(enable: true, format: 'Q: point.x\nS/: point.y'),
-        series: <CartesianSeries<dynamic, dynamic>>[
-          ScatterSeries<ResultadoArticulo, double>(
-            dataSource: resultados,
-            xValueMapper: (r, _) => r.tamanoLote,
-            yValueMapper: (r, _) => r.costoTotal,
-            markerSettings: const MarkerSettings(isVisible: true, width: 10, height: 10),
-            color: MDSJColors.primary,
-          ),
-        ],
-      ),
-    );
-  }
+  // (Eliminado: gráfico de dispersión Q vs Costo por decisión de UX)
 
   Widget _buildBackordersBars(List<ResultadoArticulo> resultados) {
     final data = resultados.map((r) => ChartData(_truncar(r.nombre), r.backordersEsperados)).toList();
@@ -321,6 +325,36 @@ class _ResultadosChartsState extends State<ResultadosCharts> {
         ],
       ),
     );
+  }
+
+  Future<void> _exportChartAsImage() async {
+    try {
+      final boundary = _chartKey.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      if (boundary == null) {
+        return;
+      }
+      final ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+      final ByteData? byteData = await image.toByteData(format: ui.ImageByteFormat.png);
+      if (byteData == null) {
+        return;
+      }
+      final Uint8List bytes = byteData.buffer.asUint8List();
+      final fileName = 'grafico_${DateTime.now().millisecondsSinceEpoch}.png';
+      if (kIsWeb) {
+        await downloadBytesWeb(bytes, fileName, mimeType: 'image/png');
+        // no usar context después del await
+        return;
+      } else {
+        final dir = await getApplicationDocumentsDirectory();
+        final path = '${dir.path}/$fileName';
+        final file = File(path);
+        await file.writeAsBytes(bytes);
+        // Intentar abrir
+        await OpenFile.open(path);
+      }
+    } catch (e) {
+      // Silenciar errores en UI para evitar usar context tras awaits.
+    }
   }
 }
 

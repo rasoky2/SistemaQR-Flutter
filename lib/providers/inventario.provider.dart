@@ -4,6 +4,7 @@ import 'package:inventario_qr/models/articulo.model.dart';
 import 'package:inventario_qr/models/resultado.model.dart';
 import 'package:inventario_qr/repositories/excel.repository.dart';
 import 'package:inventario_qr/repositories/inventario.repository.dart';
+import 'package:inventario_qr/utils/logger.dart';
 import 'package:inventario_qr/utils/math_utils.dart';
 
 /// Provider para manejar el estado del sistema de inventario
@@ -21,9 +22,8 @@ class InventarioProvider extends ChangeNotifier {
   double _presupuestoMaximo = 10000.0;
   double _numeroMaximoPedidos = 100.0;
 
-  // Columnas para importación
   // Usar los nombres exactos de la plantilla oficial
-  final Set<String> _columnasImportar = {
+  final Set<String> _columnasImportar = const {
     'Nombre del Artículo',
     'Demanda Anual (unidades)',
     'Costo por Pedido (soles)',
@@ -52,51 +52,21 @@ class InventarioProvider extends ChangeNotifier {
   double get espacioMaximo => _espacioMaximo;
   double get presupuestoMaximo => _presupuestoMaximo;
   double get numeroMaximoPedidos => _numeroMaximoPedidos;
-  Set<String> get columnasImportar => _columnasImportar;
+  
 
-  /// Carga datos de ejemplo
-  Future<void> cargarDatosEjemplo() async {
-    _setLoading(true);
-    try {
-      _articulos = InventarioRepository.generarDatosEjemplo();
-      await calcularResultados();
-      _error = null;
-    } catch (e) {
-      _error = 'Error al cargar datos de ejemplo: $e';
-    } finally {
-      _setLoading(false);
-    }
-  }
-
-  /// Lee las columnas del archivo Excel seleccionado
-  Future<List<String>> leerColumnasExcel() async {
-    try {
-      debugPrint('🔍 Provider: Leyendo columnas del archivo...');
-      final columnas = await ExcelRepository.leerColumnasExcel(
-        _archivoSeleccionado,
-        _archivoBytesWeb,
-      );
-      debugPrint('✅ Provider: Columnas leídas exitosamente: $columnas');
-      return columnas;
-    } catch (e) {
-      debugPrint('❌ Provider: Error al leer columnas: $e');
-      _error = 'Error al leer columnas: $e';
-      notifyListeners();
-      rethrow;
-    }
-  }
+  
 
   /// Importa artículos desde Excel
   Future<void> importarArticulos() async {
-    debugPrint('🚀 Provider: Iniciando importación de artículos...');
+    logDebug('🚀 Provider: Iniciando importación de artículos...');
     _setLoading(true);
     try {
       if (_archivoSeleccionado == null && _archivoBytesWeb == null) {
         throw Exception('No se ha seleccionado ningún archivo');
       }
       
-      debugPrint('📋 Provider: Columnas seleccionadas: $_columnasImportar');
-      debugPrint('📄 Provider: Archivo: $_archivoSeleccionado');
+      logDebug('📋 Provider: Columnas seleccionadas: $_columnasImportar');
+      logDebug('📄 Provider: Archivo: $_archivoSeleccionado');
       
       // Importar directamente según plantilla conocida (sin diálogo de columnas)
       _articulos = await ExcelRepository.importarArticulosConColumnas(
@@ -104,8 +74,8 @@ class InventarioProvider extends ChangeNotifier {
         _archivoSeleccionado ?? '',
         _archivoBytesWeb,
       );
-      debugPrint('✅ Provider: Artículos importados: ${_articulos.length}');
-      debugPrint('📋 Provider: Lista de artículos después de importar: ${_articulos.map((a) => a.nombre).toList()}');
+      logDebug('✅ Provider: Artículos importados: ${_articulos.length}');
+      logDebug('📋 Provider: Lista de artículos después de importar: ${_articulos.map((a) => a.nombre).toList()}');
       
       // Verificar si hay artículos con campos faltantes
       final articulosConProblemas = <String>[];
@@ -146,17 +116,17 @@ class InventarioProvider extends ChangeNotifier {
       
       if (articulosConProblemas.isNotEmpty) {
         _error = 'Algunos artículos tienen campos faltantes o inválidos. Por favor, revise y complete los datos.';
-        debugPrint('⚠️ Provider: Artículos con problemas: $articulosConProblemas');
+         logDebug('⚠️ Provider: Artículos con problemas: $articulosConProblemas');
       } else {
         _error = null;
       }
       
       await calcularResultados();
-      debugPrint('🎉 Provider: Importación completada exitosamente');
-      debugPrint('📊 Provider: Total de artículos en provider: ${_articulos.length}');
+      logDebug('🎉 Provider: Importación completada exitosamente');
+      logDebug('📊 Provider: Total de artículos en provider: ${_articulos.length}');
       notifyListeners(); // Asegurar que la UI se actualice
     } catch (e) {
-      debugPrint('❌ Provider: Error al importar artículos: $e');
+      logDebug('❌ Provider: Error al importar artículos: $e');
       _error = 'Error al importar artículos: $e';
     } finally {
       _setLoading(false);
@@ -166,7 +136,7 @@ class InventarioProvider extends ChangeNotifier {
   /// Selecciona un archivo para importación
   Future<void> seleccionarArchivo() async {
     try {
-      debugPrint('📁 Provider: Abriendo FilePicker...');
+      logDebug('📁 Provider: Abriendo FilePicker...');
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['xlsx'],
@@ -178,12 +148,12 @@ class InventarioProvider extends ChangeNotifier {
         _archivoSeleccionado = picked.path; // en web puede ser null
         _archivoBytesWeb = picked.bytes; // en nativo puede ser null
         _error = null;
-        debugPrint('✅ Provider: Archivo seleccionado: ${_archivoSeleccionado ?? '(bytes en web)'}');
+        logDebug('✅ Provider: Archivo seleccionado: ${_archivoSeleccionado ?? '(bytes en web)'}');
       } else {
         throw Exception('No se seleccionó ningún archivo');
       }
     } catch (e) {
-      debugPrint('❌ Provider: Error al seleccionar archivo: $e');
+      logDebug('❌ Provider: Error al seleccionar archivo: $e');
       _error = 'Error al seleccionar archivo: $e';
     }
     notifyListeners();
@@ -223,18 +193,18 @@ class InventarioProvider extends ChangeNotifier {
 
   /// Calcula los resultados del modelo QR
   Future<void> calcularResultados() async {
-    debugPrint('🧮 Provider: Iniciando cálculo de resultados...');
-    debugPrint('🧮 Provider: Total de artículos: ${_articulos.length}');
+    logDebug('🧮 Provider: Iniciando cálculo de resultados...');
+    logDebug('🧮 Provider: Total de artículos: ${_articulos.length}');
     
     if (_articulos.isEmpty) {
-      debugPrint('❌ Provider: No hay artículos para calcular');
+      logDebug('❌ Provider: No hay artículos para calcular');
       _error = 'No hay artículos para calcular';
       notifyListeners();
       return;
     }
 
     try {
-      debugPrint('🧮 Provider: Llamando a InventarioRepository.evaluarModeloQR...');
+      logDebug('🧮 Provider: Llamando a InventarioRepository.evaluarModeloQR...');
       _resultado = InventarioRepository.evaluarModeloQR(
         _articulos,
         leadTimeDias: _leadTimeDias,
@@ -242,28 +212,28 @@ class InventarioProvider extends ChangeNotifier {
         presupuestoMaximo: _presupuestoMaximo,
         numeroMaximoPedidos: _numeroMaximoPedidos,
       );
-      debugPrint('✅ Provider: Resultados calculados exitosamente');
+      logDebug('✅ Provider: Resultados calculados exitosamente');
 
       // Validar restricciones
-      debugPrint('🧮 Provider: Validando restricciones...');
+      logDebug('🧮 Provider: Validando restricciones...');
       _restricciones = InventarioRepository.validarRestricciones(
         _resultado!,
         espacioMaximo: _espacioMaximo,
         presupuestoMaximo: _presupuestoMaximo,
         numeroMaximoPedidos: _numeroMaximoPedidos,
       );
-      debugPrint('✅ Provider: Restricciones validadas');
+      logDebug('✅ Provider: Restricciones validadas');
 
       // Calcular estadísticas
-      debugPrint('🧮 Provider: Calculando estadísticas...');
+      logDebug('🧮 Provider: Calculando estadísticas...');
       _estadisticas = InventarioRepository.calcularEstadisticas(_resultado!);
-      debugPrint('✅ Provider: Estadísticas calculadas');
+      logDebug('✅ Provider: Estadísticas calculadas');
       _error = null;
     } catch (e) {
-      debugPrint('❌ Provider: Error al calcular resultados: $e');
+      logDebug('❌ Provider: Error al calcular resultados: $e');
       _error = 'Error al calcular resultados: $e';
     }
-    debugPrint('🧮 Provider: Finalizando cálculo de resultados');
+    logDebug('🧮 Provider: Finalizando cálculo de resultados');
     notifyListeners();
   }
 
@@ -321,33 +291,17 @@ class InventarioProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Agrega una columna a la lista de importación
-  void agregarColumnaImportar(String columna) {
-    _columnasImportar.add(columna);
-    notifyListeners();
-  }
-
-  /// Elimina una columna de la lista de importación
-  void eliminarColumnaImportar(String columna) {
-    _columnasImportar.remove(columna);
-    notifyListeners();
-  }
-
-  /// Limpia todas las columnas de importación
-  void limpiarColumnasImportar() {
-    _columnasImportar.clear();
-    notifyListeners();
-  }
+  
 
   /// Agrega un artículo a la lista
   void agregarArticulo(Articulo articulo) {
-    debugPrint('📝 Provider: Agregando artículo: ${articulo.nombre}');
-    debugPrint('📝 Provider: Total de artículos antes: ${_articulos.length}');
+    logDebug('📝 Provider: Agregando artículo: ${articulo.nombre}');
+    logDebug('📝 Provider: Total de artículos antes: ${_articulos.length}');
     
     _articulos.add(articulo);
     
-    debugPrint('📝 Provider: Total de artículos después: ${_articulos.length}');
-    debugPrint('📝 Provider: Lista de artículos: ${_articulos.map((a) => a.nombre).toList()}');
+    logDebug('📝 Provider: Total de artículos después: ${_articulos.length}');
+    logDebug('📝 Provider: Lista de artículos: ${_articulos.map((a) => a.nombre).toList()}');
     
     calcularResultados();
   }

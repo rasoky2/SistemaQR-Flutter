@@ -55,9 +55,15 @@ class _RestriccionFabState extends State<RestriccionFab> {
           });
           ratio = maxVal.clamp(0.0, 1.2);
 
-          if (maxKey == 'Espacio') centerIcon = UniconsLine.store;
-          if (maxKey == 'Presupuesto') centerIcon = UniconsLine.money_bill;
-          if (maxKey == 'Pedidos') centerIcon = UniconsLine.box;
+          if (maxKey == 'Espacio') {
+            centerIcon = UniconsLine.store;
+          }
+          if (maxKey == 'Presupuesto') {
+            centerIcon = UniconsLine.money_bill;
+          }
+          if (maxKey == 'Pedidos') {
+            centerIcon = UniconsLine.box;
+          }
 
           if (ratio >= 1.0) {
             color = Colors.red;
@@ -147,12 +153,12 @@ class _RestriccionFabState extends State<RestriccionFab> {
                           borderRadius: BorderRadius.circular(16),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.06),
+                              color: Colors.black.withValues(alpha: 0.06),
                               blurRadius: 10,
                               offset: const Offset(0, 2),
                             ),
                           ],
-                          border: Border.all(color: color.withOpacity(0.4)),
+                          border: Border.all(color: color.withValues(alpha: 0.4)),
                         ),
                         child: Row(
                           children: [

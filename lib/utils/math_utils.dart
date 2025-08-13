@@ -93,18 +93,6 @@ class MathUtils {
     return demandaAnual / tamanoLote;
   }
 
-  /// Calcula el presupuesto total de compra
-  /// Presupuesto = Σ (c * R)
-  static double calcularPresupuestoTotal(List<Map<String, dynamic>> articulos) {
-    double presupuesto = 0;
-    for (final articulo in articulos) {
-      final costoUnitario = articulo['costoUnitario'] as double;
-      final puntoReorden = articulo['puntoReorden'] as double;
-      presupuesto += costoUnitario * puntoReorden;
-    }
-    return presupuesto;
-  }
-
   /// Valida las restricciones del sistema
   /// Retorna un mapa con el cumplimiento de cada restricción
   static Map<String, bool> validarRestricciones({
@@ -125,11 +113,6 @@ class MathUtils {
   /// Formatea un valor como moneda
   static String formatearMoneda(double valor) {
     return 'S/ ${valor.toStringAsFixed(2)}';
-  }
-
-  /// Formatea un número como porcentaje
-  static String formatearPorcentaje(double valor) {
-    return '${(valor * 100).toStringAsFixed(2)}%';
   }
 
   /// Formatea un número con unidades

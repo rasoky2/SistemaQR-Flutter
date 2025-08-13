@@ -33,8 +33,8 @@ class TutorialScreen extends StatelessWidget {
               _Bullet('Costo Unitario: precio por unidad del artículo.'),
               _Bullet('Espacio por Unidad (m²): área ocupada por cada unidad.'),
               _Bullet('Desviación Estándar Diaria (σd): variabilidad de la demanda diaria.'),
-              _Bullet('Punto de Reorden (R) [opcional si se recalcula]: puedes dejarlo vacío si deseas que el sistema lo calcule.'),
-              _Bullet('Tamaño de Lote (Q) [opcional si se recalcula]: puedes dejarlo vacío si deseas que el sistema lo calcule.'),
+              _Bullet('Punto de Reorden (R): nivel de inventario a partir del cual se emite un pedido.'),
+              _Bullet('Tamaño de Lote (Q): cantidad de unidades por pedido.'),
             ]),
 
             const SizedBox(height: 24),
@@ -53,6 +53,22 @@ class TutorialScreen extends StatelessWidget {
               const _Bullet('L: lead time (días) configurado en Restricciones.'),
               const _Bullet('σd: desviación estándar diaria.'),
               const _Bullet('z: factor de servicio (derivado del nivel de servicio objetivo).'),
+            ]),
+
+            const SizedBox(height: 24),
+            _sectionTitle('Componentes de costo (política Q,R con backorders)'),
+            _infoCard(children: const [
+              _Formula('Inventario promedio anual:', r"\bar{I} = \frac{Q}{2} + \max(0, R - \mu_L) - E[BO]"),
+              SizedBox(height: 8),
+              _Formula('Costo de mantenimiento anual:', r"C_h = H \cdot \bar{I}"),
+              _Formula('Costo de faltante anual:', r"C_p = p \cdot \frac{D}{Q} \cdot E[BO]"),
+              _Formula('Costo de pedidos anual:', r"C_K = \frac{D}{Q} \cdot S"),
+              SizedBox(height: 8),
+              _Formula('Costo total anual:', r"C = C_K + C_h + C_p"),
+              SizedBox(height: 8),
+              _Plain('Notas:'),
+              _Bullet('μL: demanda esperada durante el lead time (μL = D · L/365).'),
+              _Bullet('E[BO]: backorders esperados (usando la función de pérdida normal estándar).'),
             ]),
 
             const SizedBox(height: 24),
@@ -191,8 +207,8 @@ class _Formula extends StatelessWidget {
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties.add(StringProperty('label', label));
-    properties.add(StringProperty('latex', latex));
+    properties..add(StringProperty('label', label))
+    ..add(StringProperty('latex', latex));
   }
 }
 
