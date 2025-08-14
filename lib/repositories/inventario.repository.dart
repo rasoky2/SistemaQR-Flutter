@@ -1,5 +1,6 @@
 import 'package:inventario_qr/models/articulo.model.dart';
 import 'package:inventario_qr/models/resultado.model.dart';
+import 'package:inventario_qr/utils/logger.dart';
 import 'package:inventario_qr/utils/math_utils.dart';
 
 /// Repositorio para manejar los cálculos del modelo QR de inventario
@@ -18,7 +19,10 @@ class InventarioRepository {
     double presupuestoTotal = 0;
     double numeroTotalPedidos = 0;
 
+    logDebug('🧮 Repo: evaluarModeloQR -> artículos=${articulos.length}, leadTime=$leadTimeDias, espacioMax=$espacioMaximo, presupuestoMax=$presupuestoMaximo, pedidosMax=$numeroMaximoPedidos');
+
     for (final articulo in articulos) {
+      logDebug('➡️  Artículo: ${articulo.nombre} | D=${articulo.demandaAnual} K=${articulo.costoPedido} h=${articulo.costoMantenimiento} p=${articulo.costoFaltante} c=${articulo.costoUnitario} s=${articulo.espacioUnidad} σd=${articulo.desviacionDiaria} R=${articulo.puntoReorden} Q=${articulo.tamanoLote}');
       // Cálculos del lead time
       final demandaLeadTime = MathUtils.calcularDemandaLeadTime(
         articulo.demandaAnual,
@@ -30,28 +34,40 @@ class InventarioRepository {
       );
 
       // Z-score y backorders esperados
+      final double safeDesviacionLeadTime = desviacionLeadTime.abs() < 1e-9 ? 1e-9 : desviacionLeadTime;
       final zScore = MathUtils.calcularZScore(
         articulo.puntoReorden,
         demandaLeadTime,
-        desviacionLeadTime,
+        safeDesviacionLeadTime,
       );
       final backordersEsperados = MathUtils.calcularBackordersEsperados(
-        desviacionLeadTime,
+        safeDesviacionLeadTime,
         zScore,
       );
 
-      // Cálculo de costos
-      final costoPedidos = (articulo.demandaAnual / articulo.tamanoLote) * articulo.costoPedido;
+      // Recalcular SIEMPRE Q usando EOQ clásico para evitar valores inflados/cachés de Excel
+      final double qEoq = MathUtils.calcularEOQ(
+        articulo.demandaAnual,
+        articulo.costoPedido,
+        articulo.costoMantenimiento,
+      );
+      // Elegimos SIEMPRE EOQ; ignoramos Q importado (suele venir cacheado/incorrecto)
+      final double safeTamanoLote = qEoq;
+      logDebug('   Q_importado=${articulo.tamanoLote} Q_eoq=$qEoq -> Q_usado(EOQ)=$safeTamanoLote');
+      final costoPedidos = (articulo.demandaAnual / safeTamanoLote) * articulo.costoPedido;
       // Inventario promedio: Q/2 + SS - E[BO], con SS = max(0, R - μL)
       final double stockSeguridad = (articulo.puntoReorden - demandaLeadTime) > 0
           ? (articulo.puntoReorden - demandaLeadTime)
           : 0.0;
-      final double inventarioPromedio = (articulo.tamanoLote / 2) + stockSeguridad - backordersEsperados;
+      final double inventarioPromedio = (safeTamanoLote / 2) + stockSeguridad - backordersEsperados;
       final double inventarioPromedioNoNegativo = inventarioPromedio > 0 ? inventarioPromedio : 0.0;
       final costoMantenimiento = inventarioPromedioNoNegativo * articulo.costoMantenimiento;
       // Costo de faltante anual: p * (D/Q) * E[BO]
-      final costoServicio = (articulo.demandaAnual / articulo.tamanoLote) * backordersEsperados * articulo.costoFaltante;
+      final costoServicio = (articulo.demandaAnual / safeTamanoLote) * backordersEsperados * articulo.costoFaltante;
       final costoTotal = costoPedidos + costoMantenimiento + costoServicio;
+
+      logDebug('   μL=$demandaLeadTime σL=$safeDesviacionLeadTime z=$zScore E[BO]=$backordersEsperados SS=$stockSeguridad');
+      logDebug('   Q=${safeTamanoLote} invProm=${inventarioPromedioNoNegativo} Ck=$costoPedidos Ch=$costoMantenimiento Cp=$costoServicio Ctotal=$costoTotal');
 
       // Espacio usado
       final espacioUsado = MathUtils.calcularEspacioUsado(
@@ -62,7 +78,7 @@ class InventarioRepository {
       // Número de pedidos
       final numeroPedidos = MathUtils.calcularNumeroPedidos(
         articulo.demandaAnual,
-        articulo.tamanoLote,
+        safeTamanoLote,
       );
 
       // Presupuesto para este artículo
@@ -74,10 +90,12 @@ class InventarioRepository {
       presupuestoTotal += presupuestoArticulo;
       numeroTotalPedidos += numeroPedidos;
 
+      logDebug('   espacioUsado=$espacioUsado pedidos=$numeroPedidos presupuestoArt=$presupuestoArticulo');
+
       // Crear resultado del artículo
       final resultado = ResultadoArticulo(
         nombre: articulo.nombre,
-        tamanoLote: articulo.tamanoLote,
+        tamanoLote: safeTamanoLote,
         puntoReorden: articulo.puntoReorden,
         zScore: zScore,
         backordersEsperados: backordersEsperados,
@@ -90,6 +108,8 @@ class InventarioRepository {
 
       resultados.add(resultado);
     }
+
+    logDebug('✅ Totales -> costoSistema=$costoTotalSistema espacioTotal=$espacioTotalUsado presupuestoTotal=$presupuestoTotal numeroPedidos=${numeroTotalPedidos.round()}');
 
     return ResultadoSistema(
       resultados: resultados,

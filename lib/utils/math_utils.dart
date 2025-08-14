@@ -81,6 +81,20 @@ class MathUtils {
     return costoPedidos + costoMantenimientoInv + costoServicio;
   }
 
+  /// Calcula el tamaño de lote EOQ clásico
+  /// Q* = sqrt( 2 * D * K / h )
+  static double calcularEOQ(double demandaAnual, double costoPedido, double costoMantenimiento) {
+    if (demandaAnual <= 0 || costoPedido <= 0 || costoMantenimiento <= 0) {
+      return 1.0;
+    }
+    final valor = 2 * demandaAnual * costoPedido / costoMantenimiento;
+    final q = sqrt(valor);
+    if (!q.isFinite || q <= 0) {
+      return 1.0;
+    }
+    return q;
+  }
+
   /// Calcula el espacio usado por un artículo
   /// Espacio = R * s
   static double calcularEspacioUsado(double puntoReorden, double espacioUnidad) {

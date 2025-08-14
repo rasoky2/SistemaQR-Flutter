@@ -337,8 +337,6 @@ class ExcelRepository {
     ];
   }
 
-  /// ✅ IMPLEMENTACIÓN REAL: Importa artículos desde archivo Excel usando librería 'excel'
-  /// Lee el archivo Excel especificado y extrae los datos según las columnas seleccionadas
   static Future<List<Articulo>> importarArticulosConColumnas(Set<String> columnasSeleccionadas, String filePath, [Uint8List? fileBytes]) async {
     try {
       logDebug('🚀 Iniciando importación REAL desde archivo Excel usando librería excel...');
@@ -391,9 +389,23 @@ class ExcelRepository {
         if (sheet == null || sheet.rows.isEmpty) {
           throw Exception('La hoja Excel está vacía');
         }
-        // Usar mapeo fijo por plantilla
-        final columnMap = Map<String, int>.from(_templateColumnIndex);
-        logDebug('🗺️ Mapeo fijo por plantilla aplicado: $columnMap');
+        // Construir mapeo dinámico por encabezados si existen, con fallback a plantilla
+        final headerRow = sheet.rows.first;
+        final headerToIndex = <String, int>{};
+        for (int i = 0; i < headerRow.length; i++) {
+          final cell = headerRow[i];
+          if (cell != null) {
+            final text = _getCellStringValue(cell).trim();
+            if (text.isNotEmpty) {
+              headerToIndex[text] = i;
+            }
+          }
+        }
+        final columnMap = <String, int>{};
+        for (final key in _templateColumnIndex.keys) {
+          columnMap[key] = headerToIndex[key] ?? _templateColumnIndex[key]!;
+        }
+        logDebug('🗺️ Mapeo por encabezados aplicado (fallback a plantilla cuando falta): $columnMap');
         // Procesar filas
         final articulos = <Articulo>[];
         for (int rowIndex = 1; rowIndex < sheet.rows.length; rowIndex++) {
@@ -447,20 +459,7 @@ class ExcelRepository {
             for (int rowIndex = 1; rowIndex < datos.length; rowIndex++) {
               final row = datos[rowIndex];
               String getStr(int idx) => (idx >= 0 && idx < row.length && row[idx] != null) ? row[idx].toString() : '';
-              double getNum(int idx, double def) {
-                String s = getStr(idx).trim();
-                if (s.isEmpty) {
-                  return def;
-                }
-                // Si NO hay punto y SÍ hay coma, asume coma como separador decimal
-                if (!s.contains('.') && s.contains(',')) {
-                  s = s.replaceAll(',', '.');
-                }
-                // Eliminar espacios finos o normales usados como separador de miles
-                s = s.replaceAll('\u00A0', '').replaceAll(' ', '');
-                final parsed = double.tryParse(s);
-                return parsed ?? def;
-              }
+              double getNum(int idx, double def) => _parseDoubleFromString(getStr(idx), def);
               final nombre = getStr(columnMap['Nombre del Artículo'] ?? 0);
               if (nombre.isEmpty) {
                 continue;
@@ -469,8 +468,8 @@ class ExcelRepository {
                 logDebug('🔎 Fila[zip] ${rowIndex + 1} raw:');
                 columnMap.forEach((key, idx) {
                   final s = getStr(idx);
-                  final n = double.tryParse(s);
-                  logDebug('   [$key] idx=$idx val="$s" num=${n ?? 'NaN'}');
+                  final n = _parseDoubleFromString(s, double.nan);
+                  logDebug('   [$key] idx=$idx val="$s" num=$n');
                 });
               }
               articulos.add(Articulo(
@@ -501,6 +500,44 @@ class ExcelRepository {
   }
 
   /// Métodos helper para trabajar con la librería 'excel'
+
+  /// Parser robusto para números localizados (maneja comas decimales y separadores de miles)
+  static double _parseDoubleFromString(String stringValue, double defaultValue) {
+    String s = stringValue.trim();
+    if (s.isEmpty) {
+      return defaultValue;
+    }
+    // Eliminar símbolos y espacios comunes (moneda, NBSP, etc.) conservando dígitos, signos y separadores
+    s = s
+        .replaceAll('\u00A0', '')
+        .replaceAll(' ', '')
+        .replaceAll(RegExp(r'[^0-9,\.\-]'), '');
+
+    if (s.isEmpty) {
+      return defaultValue;
+    }
+
+    final hasComma = s.contains(',');
+    final hasDot = s.contains('.');
+
+    if (hasComma && hasDot) {
+      // Si ambos existen, inferir decimal por el separador que aparece más a la derecha
+      final lastComma = s.lastIndexOf(',');
+      final lastDot = s.lastIndexOf('.');
+      if (lastComma > lastDot) {
+        // Formato tipo 1.234,56 -> quitar puntos (miles) y cambiar coma a punto
+        s = s.replaceAll('.', '').replaceAll(',', '.');
+      } else {
+        // Formato tipo 1,234.56 -> quitar comas (miles), dejar punto como decimal
+        s = s.replaceAll(',', '');
+      }
+    } else if (hasComma && !hasDot) {
+      // Solo coma: asumir coma decimal
+      s = s.replaceAll(',', '.');
+    }
+
+    return double.tryParse(s) ?? defaultValue;
+  }
 
   /// Extrae valor string de celda Excel (librería 'excel')
   static String _getCellStringValue(Data cell) {
@@ -558,19 +595,13 @@ class ExcelRepository {
       case 'DoubleCellValue':
         return (value as DoubleCellValue).value;
       case 'TextCellValue':
-        final stringValue = (value as TextCellValue).value.toString().trim();
-        if (stringValue.isEmpty) {
-          return defaultValue;
-        }
-        return double.tryParse(stringValue) ?? defaultValue;
+        final stringValue = (value as TextCellValue).value.toString();
+        return _parseDoubleFromString(stringValue, defaultValue);
       case 'BoolCellValue':
         return (value as BoolCellValue).value ? 1.0 : 0.0;
       default:
-        final stringValue = value.toString().trim();
-        if (stringValue.isEmpty) {
-          return defaultValue;
-        }
-        return double.tryParse(stringValue) ?? defaultValue;
+        final stringValue = value.toString();
+        return _parseDoubleFromString(stringValue, defaultValue);
     }
   }
   /// Exporta resultados a un archivo Excel usando librería 'excel'
