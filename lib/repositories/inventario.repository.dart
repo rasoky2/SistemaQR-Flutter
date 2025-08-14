@@ -38,15 +38,15 @@ class InventarioRepository {
       final zScore = MathUtils.calcularZScore(articulo.puntoReorden, demandaLeadTime, safeDesviacionLeadTime);
       final backordersEsperados = MathUtils.calcularBackordersEsperados(safeDesviacionLeadTime, zScore);
 
-      // Recalcular SIEMPRE Q usando EOQ clásico para evitar valores inflados/cachés de Excel
+      // Determinar Q: usar el tamaño de lote ingresado si es válido; de lo contrario, calcular EOQ
       final double qEoq = MathUtils.calcularEOQ(
         articulo.demandaAnual,
         articulo.costoPedido,
         articulo.costoMantenimiento,
       );
-      // Elegimos SIEMPRE EOQ; ignoramos Q importado (suele venir cacheado/incorrecto)
-      final double safeTamanoLote = qEoq;
-      logDebug('   Q_importado=${articulo.tamanoLote} Q_eoq=$qEoq -> Q_usado(EOQ)=$safeTamanoLote');
+      final double safeTamanoLote =
+          (articulo.tamanoLote > 0 && articulo.tamanoLote.isFinite) ? articulo.tamanoLote : qEoq;
+      logDebug('   Q_importado=${articulo.tamanoLote} Q_eoq=$qEoq -> Q_usado=$safeTamanoLote');
       // Inventario promedio y componentes de costo movidos a MathUtils
       final double stockSeguridad = MathUtils.calcularStockSeguridad(articulo.puntoReorden, demandaLeadTime);
       final double inventarioPromedioNoNegativo = MathUtils.calcularInventarioPromedio(safeTamanoLote, stockSeguridad, backordersEsperados);
