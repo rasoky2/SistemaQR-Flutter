@@ -4,9 +4,11 @@ import 'package:flutter/services.dart';
 import 'package:inventario_qr/models/articulo.model.dart';
 import 'package:inventario_qr/providers/inventario.provider.dart';
 import 'package:inventario_qr/repositories/excel.repository.dart';
+import 'package:inventario_qr/screens/resultados_screen.dart';
 import 'package:inventario_qr/screens/tutorial_screen.dart';
 import 'package:inventario_qr/utils/logger.dart';
 import 'package:inventario_qr/utils/math_utils.dart';
+import 'package:inventario_qr/utils/page_transitions.dart';
 import 'package:inventario_qr/widgets/articulos_table.dart';
 import 'package:inventario_qr/widgets/restriccion_dialog.dart';
 import 'package:inventario_qr/widgets/restriccion_fab.dart';
@@ -208,7 +210,7 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
       logDebug('   - Tamaño lote: ${articulo.tamanoLote}');
 
       // Agregar el artículo al provider
-      context.read<InventarioProvider>()..agregarArticulo(articulo);
+      context.read<InventarioProvider>().agregarArticulo(articulo);
       
       logDebug('✅ Artículo agregado al provider. Total de artículos: ${provider.articulos.length}');
       
@@ -239,9 +241,9 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
         ),
         actions: [
           IconButton(
-            onPressed: () => Navigator.push(
+            onPressed: () => NavigationHelper.pushSlideLeft(
               context,
-              MaterialPageRoute(builder: (_) => const TutorialScreen()),
+              const TutorialScreen(),
             ),
             icon: const Icon(UniconsLine.question_circle),
             tooltip: 'Ayuda',
@@ -589,6 +591,24 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
                           label: const Text('Limpiar Todos los Datos'),
                         ),
                       ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Consumer<InventarioProvider>(
+                          builder: (context, provider, _) {
+                            final enabled = provider.resultado != null;
+                            return ElevatedButton.icon(
+                          onPressed: enabled
+                              ? () => NavigationHelper.pushSlideLeft(
+                                    context,
+                                    const ResultadosScreen(),
+                                  )
+                                  : null,
+                              icon: const Icon(UniconsLine.chart),
+                              label: const Text('Ver Resultados'),
+                            );
+                          },
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -802,6 +822,4 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
       }
     }
   }
-
-  // Dialogo de importación eliminado; importación directa con plantilla
 } 

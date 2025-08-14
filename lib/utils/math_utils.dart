@@ -61,6 +61,60 @@ class MathUtils {
     return desviacionLeadTime * lz;
   }
 
+  /// Calcula el stock de seguridad
+  /// SS = max(0, R - μL)
+  static double calcularStockSeguridad(double puntoReorden, double demandaLeadTime) {
+    final ss = puntoReorden - demandaLeadTime;
+    return ss > 0 ? ss : 0.0;
+  }
+
+  /// Inventario promedio anual con backorders en política (Q, R)
+  /// \bar{I} = Q/2 + SS - E[BO], truncado a 0
+  static double calcularInventarioPromedio(
+    double tamanoLote,
+    double stockSeguridad,
+    double backordersEsperados,
+  ) {
+    final inv = (tamanoLote / 2.0) + stockSeguridad - backordersEsperados;
+    return inv > 0 ? inv : 0.0;
+  }
+
+  /// Componente: Costo de pedidos anual Ck = (D/Q) * K
+  static double calcularCostoPedidosComponent(double demandaAnual, double tamanoLote, double costoPedido) {
+    return (demandaAnual / tamanoLote) * costoPedido;
+  }
+
+  /// Componente: Costo de mantenimiento anual Ch = \bar{I} * h
+  static double calcularCostoMantenimientoComponent(double inventarioPromedio, double costoMantenimiento) {
+    return inventarioPromedio * costoMantenimiento;
+  }
+
+  /// Componente: Costo de faltante anual Cp = (D/Q) * E[BO] * p
+  static double calcularCostoServicioComponent(
+    double demandaAnual,
+    double tamanoLote,
+    double backordersEsperados,
+    double costoFaltante,
+  ) {
+    return (demandaAnual / tamanoLote) * backordersEsperados * costoFaltante;
+  }
+
+  /// Costo total anual C = Ck + Ch + Cp (política Q,R con backorders)
+  static double calcularCostoTotalQR({
+    required double demandaAnual,
+    required double tamanoLote,
+    required double costoPedido,
+    required double inventarioPromedio,
+    required double costoMantenimiento,
+    required double backordersEsperados,
+    required double costoFaltante,
+  }) {
+    final cK = calcularCostoPedidosComponent(demandaAnual, tamanoLote, costoPedido);
+    final cH = calcularCostoMantenimientoComponent(inventarioPromedio, costoMantenimiento);
+    final cP = calcularCostoServicioComponent(demandaAnual, tamanoLote, backordersEsperados, costoFaltante);
+    return cK + cH + cP;
+  }
+
   /// Calcula el costo total de un artículo
   /// C = (D/Q)*K + ((Q - E[BO])/2)*h + E[BO]*p
   static double calcularCostoTotal({
@@ -105,6 +159,11 @@ class MathUtils {
   /// N = D / Q
   static double calcularNumeroPedidos(double demandaAnual, double tamanoLote) {
     return demandaAnual / tamanoLote;
+  }
+
+  /// Presupuesto para un artículo: c * R
+  static double calcularPresupuestoArticulo(double costoUnitario, double puntoReorden) {
+    return costoUnitario * puntoReorden;
   }
 
   /// Valida las restricciones del sistema

@@ -1,5 +1,6 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:inventario_qr/models/articulo.model.dart';
 import 'package:inventario_qr/models/resultado.model.dart';
 import 'package:inventario_qr/repositories/excel.repository.dart';
@@ -15,6 +16,7 @@ class InventarioProvider extends ChangeNotifier {
   String? _error;
   Map<String, bool> _restricciones = {};
   Map<String, dynamic> _estadisticas = {};
+  bool _recalcScheduled = false;
 
   // Configuración del sistema
   double _leadTimeDias = 36.5;
@@ -240,8 +242,52 @@ class InventarioProvider extends ChangeNotifier {
   /// Actualiza un artículo existente
   void actualizarArticulo(int index, Articulo articulo) {
     if (index >= 0 && index < _articulos.length) {
+      final anterior = _articulos[index];
+      final cambios = <String>[];
+      if (anterior.nombre != articulo.nombre) {
+        cambios.add('nombre: "${anterior.nombre}" -> "${articulo.nombre}"');
+      }
+      if (anterior.demandaAnual != articulo.demandaAnual) {
+        cambios.add('demandaAnual: ${anterior.demandaAnual} -> ${articulo.demandaAnual}');
+      }
+      if (anterior.costoPedido != articulo.costoPedido) {
+        cambios.add('costoPedido: ${anterior.costoPedido} -> ${articulo.costoPedido}');
+      }
+      if (anterior.costoMantenimiento != articulo.costoMantenimiento) {
+        cambios.add('costoMantenimiento: ${anterior.costoMantenimiento} -> ${articulo.costoMantenimiento}');
+      }
+      if (anterior.costoFaltante != articulo.costoFaltante) {
+        cambios.add('costoFaltante: ${anterior.costoFaltante} -> ${articulo.costoFaltante}');
+      }
+      if (anterior.costoUnitario != articulo.costoUnitario) {
+        cambios.add('costoUnitario: ${anterior.costoUnitario} -> ${articulo.costoUnitario}');
+      }
+      if (anterior.espacioUnidad != articulo.espacioUnidad) {
+        cambios.add('espacioUnidad: ${anterior.espacioUnidad} -> ${articulo.espacioUnidad}');
+      }
+      if (anterior.desviacionDiaria != articulo.desviacionDiaria) {
+        cambios.add('desviacionDiaria: ${anterior.desviacionDiaria} -> ${articulo.desviacionDiaria}');
+      }
+      if (anterior.puntoReorden != articulo.puntoReorden) {
+        cambios.add('puntoReorden: ${anterior.puntoReorden} -> ${articulo.puntoReorden}');
+      }
+      if (anterior.tamanoLote != articulo.tamanoLote) {
+        cambios.add('tamanoLote: ${anterior.tamanoLote} -> ${articulo.tamanoLote}');
+      }
+
+      logDebug('📝 Provider.actualizarArticulo -> index=$index cambios=${cambios.isEmpty ? 'sin cambios' : cambios.join(', ')}');
+
       _articulos[index] = articulo;
-      calcularResultados();
+      // Programar recálculo al final del frame para evitar "widget tree locked"
+      if (!_recalcScheduled) {
+        _recalcScheduled = true;
+        logDebug('🧮 Provider.actualizarArticulo: programando recálculo al final del frame...');
+        SchedulerBinding.instance.addPostFrameCallback((_) async {
+          _recalcScheduled = false;
+          logDebug('🧮 Provider.actualizarArticulo: ejecutando recálculo programado');
+          await calcularResultados();
+        });
+      }
     }
   }
 

@@ -21,9 +21,9 @@ class HomeScreen extends StatelessWidget {
         title: const Text('Sistema de Inventario MDSJ'),
         actions: [
           IconButton(
-            onPressed: () => Navigator.push(
+            onPressed: () => NavigationHelper.pushSlideUp(
               context,
-              MaterialPageRoute(builder: (_) => const TutorialScreen()),
+              const TutorialScreen(),
             ),
             icon: const Icon(UniconsLine.question_circle),
             tooltip: 'Ayuda',

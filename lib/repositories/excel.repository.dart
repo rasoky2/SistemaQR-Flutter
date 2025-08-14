@@ -10,6 +10,7 @@ import 'package:flutter/services.dart';
 import 'package:inventario_qr/models/articulo.model.dart';
 import 'package:inventario_qr/models/resultado.model.dart';
 import 'package:inventario_qr/utils/logger.dart';
+import 'package:inventario_qr/utils/math_utils.dart';
 // Descarga web con import condicional
 import 'package:inventario_qr/utils/web_download_stub.dart'
     if (dart.library.html) 'package:inventario_qr/utils/web_download_html.dart';
@@ -426,17 +427,47 @@ class ExcelRepository {
                 logDebug('   [$key] idx=$idx raw=${raw?.runtimeType} val="$asStr" num=$asNum');
               });
             }
+            // Extraer base
+            final demanda = _getCellDoubleValueFromRow(row, columnMap['Demanda Anual (unidades)'] ?? -1, 0);
+            final costoPedido = _getCellDoubleValueFromRow(row, columnMap['Costo por Pedido (soles)'] ?? -1, 0);
+            final costoMantenimiento = _getCellDoubleValueFromRow(row, columnMap['Costo Mantenimiento (soles/unidad)'] ?? -1, 0);
+            final costoFaltante = _getCellDoubleValueFromRow(row, columnMap['Costo por Faltante (soles/unidad)'] ?? -1, 0);
+            final costoUnitario = _getCellDoubleValueFromRow(row, columnMap['Costo Unitario (soles)'] ?? -1, 0);
+            final espacioUnidad = _getCellDoubleValueFromRow(row, columnMap['Espacio por Unidad (m²)'] ?? -1, 0);
+            final desviacionDiaria = _getCellDoubleValueFromRow(row, columnMap['Desviación Estándar Diaria'] ?? -1, 0);
+            // Punto de reorden
+            double puntoReorden = _getCellDoubleValueFromRow(row, columnMap['Punto de Reorden (unidades)'] ?? -1, 0);
+            final int rIdx = columnMap['Punto de Reorden (unidades)'] ?? -1;
+            final bool rEsFormula = (rIdx >= 0 && rIdx < row.length && row[rIdx] != null) &&
+                row[rIdx]!.value.runtimeType.toString().contains('FormulaCellValue');
+            if (rEsFormula) {
+              // Fallback: usar μL con leadTime por defecto (36.5) si viene como fórmula
+              final muL = MathUtils.calcularDemandaLeadTime(demanda, 36.5);
+              puntoReorden = muL;
+              logDebug('ℹ️ R calculado (μL) por fórmula detectada en R: $puntoReorden');
+            }
+            // Tamaño de lote (EOQ si fórmula o inválido)
+            double tamanoLote = _getCellDoubleValueFromRow(row, columnMap['Tamaño de Lote (unidades)'] ?? -1, 0);
+            final int qIdx = columnMap['Tamaño de Lote (unidades)'] ?? -1;
+            final bool qEsFormula = (qIdx >= 0 && qIdx < row.length && row[qIdx] != null) &&
+                row[qIdx]!.value.runtimeType.toString().contains('FormulaCellValue');
+            if (qEsFormula || tamanoLote <= 0) {
+              final qCalc = MathUtils.calcularEOQ(demanda, costoPedido, costoMantenimiento);
+              logDebug('📐 Q calculado por EOQ (fórmula/0 detectado): $qCalc');
+              tamanoLote = qCalc;
+            }
+
             final articulo = Articulo(
               nombre: nombre,
-              demandaAnual: _getCellDoubleValueFromRow(row, columnMap['Demanda Anual (unidades)'] ?? -1, 0),
-              costoPedido: _getCellDoubleValueFromRow(row, columnMap['Costo por Pedido (soles)'] ?? -1, 0),
-              costoMantenimiento: _getCellDoubleValueFromRow(row, columnMap['Costo Mantenimiento (soles/unidad)'] ?? -1, 0),
-              costoFaltante: _getCellDoubleValueFromRow(row, columnMap['Costo por Faltante (soles/unidad)'] ?? -1, 0),
-              costoUnitario: _getCellDoubleValueFromRow(row, columnMap['Costo Unitario (soles)'] ?? -1, 0),
-              espacioUnidad: _getCellDoubleValueFromRow(row, columnMap['Espacio por Unidad (m²)'] ?? -1, 0),
-              desviacionDiaria: _getCellDoubleValueFromRow(row, columnMap['Desviación Estándar Diaria'] ?? -1, 0),
-              puntoReorden: _getCellDoubleValueFromRow(row, columnMap['Punto de Reorden (unidades)'] ?? -1, 0),
-              tamanoLote: _getCellDoubleValueFromRow(row, columnMap['Tamaño de Lote (unidades)'] ?? -1, 1),
+              demandaAnual: demanda,
+              costoPedido: costoPedido,
+              costoMantenimiento: costoMantenimiento,
+              costoFaltante: costoFaltante,
+              costoUnitario: costoUnitario,
+              espacioUnidad: espacioUnidad,
+              desviacionDiaria: desviacionDiaria,
+              puntoReorden: puntoReorden,
+              tamanoLote: tamanoLote,
             );
             articulos.add(articulo);
             logDebug('✅ Fila ${rowIndex + 1}: Artículo creado - ${articulo.nombre}');
@@ -472,17 +503,38 @@ class ExcelRepository {
                   logDebug('   [$key] idx=$idx val="$s" num=$n');
                 });
               }
+              // Base
+              final demanda = getNum(columnMap['Demanda Anual (unidades)'] ?? -1, 0);
+              final costoPedido = getNum(columnMap['Costo por Pedido (soles)'] ?? -1, 0);
+              final costoMantenimiento = getNum(columnMap['Costo Mantenimiento (soles/unidad)'] ?? -1, 0);
+              final costoFaltante = getNum(columnMap['Costo por Faltante (soles/unidad)'] ?? -1, 0);
+              final costoUnitario = getNum(columnMap['Costo Unitario (soles)'] ?? -1, 0);
+              final espacioUnidad = getNum(columnMap['Espacio por Unidad (m²)'] ?? -1, 0);
+              final desviacionDiaria = getNum(columnMap['Desviación Estándar Diaria'] ?? -1, 0);
+              // Punto de reorden: si es fórmula (detectamos por texto que contiene '=' o letras), usamos μL
+              final rStr = getStr(columnMap['Punto de Reorden (unidades)'] ?? -1);
+              double puntoReorden = getNum(columnMap['Punto de Reorden (unidades)'] ?? -1, 0);
+              if (rStr.contains('=') || rStr.contains('SQRT') || rStr.contains('(')) {
+                puntoReorden = MathUtils.calcularDemandaLeadTime(demanda, 36.5);
+              }
+              // Q: si parece fórmula, usar EOQ
+              final qStr = getStr(columnMap['Tamaño de Lote (unidades)'] ?? -1);
+              double tamanoLote = getNum(columnMap['Tamaño de Lote (unidades)'] ?? -1, 1);
+              if (qStr.contains('=') || qStr.toUpperCase().contains('SQRT') || tamanoLote <= 0) {
+                tamanoLote = MathUtils.calcularEOQ(demanda, costoPedido, costoMantenimiento);
+              }
+
               articulos.add(Articulo(
                 nombre: nombre,
-                demandaAnual: getNum(columnMap['Demanda Anual (unidades)'] ?? -1, 0),
-                costoPedido: getNum(columnMap['Costo por Pedido (soles)'] ?? -1, 0),
-                costoMantenimiento: getNum(columnMap['Costo Mantenimiento (soles/unidad)'] ?? -1, 0),
-                costoFaltante: getNum(columnMap['Costo por Faltante (soles/unidad)'] ?? -1, 0),
-                costoUnitario: getNum(columnMap['Costo Unitario (soles)'] ?? -1, 0),
-                espacioUnidad: getNum(columnMap['Espacio por Unidad (m²)'] ?? -1, 0),
-                desviacionDiaria: getNum(columnMap['Desviación Estándar Diaria'] ?? -1, 0),
-                puntoReorden: getNum(columnMap['Punto de Reorden (unidades)'] ?? -1, 0),
-                tamanoLote: getNum(columnMap['Tamaño de Lote (unidades)'] ?? -1, 1),
+                demandaAnual: demanda,
+                costoPedido: costoPedido,
+                costoMantenimiento: costoMantenimiento,
+                costoFaltante: costoFaltante,
+                costoUnitario: costoUnitario,
+                espacioUnidad: espacioUnidad,
+                desviacionDiaria: desviacionDiaria,
+                puntoReorden: puntoReorden,
+                tamanoLote: tamanoLote,
               ));
             }
             logDebug('✅ Importación con fallback ZIP/XML. Filas: ${articulos.length}');

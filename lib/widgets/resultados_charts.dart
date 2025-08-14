@@ -169,7 +169,14 @@ class _ResultadosChartsState extends State<ResultadosCharts> {
         primaryXAxis: const CategoryAxis(labelStyle: TextStyle(fontSize: 10), labelRotation: 45),
         primaryYAxis: const NumericAxis(labelStyle: TextStyle(fontSize: 10), minimum: 0, maximum: 100, interval: 20),
         legend: const Legend(isVisible: true, position: LegendPosition.bottom),
-        tooltipBehavior: TooltipBehavior(enable: true, format: 'point.x\npoint.y%', header: 'series.name'),
+        tooltipBehavior: TooltipBehavior(enable: true),
+        onTooltipRender: (TooltipArgs args) {
+          final CartesianChartPoint<dynamic> point =
+              args.dataPoints![args.pointIndex!.toInt()] as CartesianChartPoint<dynamic>;
+          final num yNum = point.y is num ? point.y as num : 0;
+          args..header = ''
+          ..text = '${point.x}\n${yNum.toStringAsFixed(0)}%';
+        },
         series: <CartesianSeries<dynamic, dynamic>>[
           LineSeries<ChartData, String>(
             dataSource: costos,
@@ -210,8 +217,14 @@ class _ResultadosChartsState extends State<ResultadosCharts> {
       child: SfCartesianChart(
         primaryXAxis: const CategoryAxis(labelStyle: TextStyle(fontSize: 10), labelRotation: 45),
         primaryYAxis: const NumericAxis(labelStyle: TextStyle(fontSize: 10)),
-        // legend false by default
-        tooltipBehavior: TooltipBehavior(enable: true, format: 'point.x\nS/ point.y'),
+        tooltipBehavior: TooltipBehavior(enable: true),
+        onTooltipRender: (TooltipArgs args) {
+          final CartesianChartPoint<dynamic> point =
+              args.dataPoints![args.pointIndex!.toInt()] as CartesianChartPoint<dynamic>;
+          final num yNum = point.y is num ? point.y as num : 0;
+          args..header = ''
+          ..text = '${point.x}\nS/ ${yNum.toStringAsFixed(2)}';
+        },
         series: <CartesianSeries<dynamic, dynamic>>[
           ColumnSeries<ChartData, String>(
             dataSource: data,
@@ -236,7 +249,14 @@ class _ResultadosChartsState extends State<ResultadosCharts> {
         primaryXAxis: const CategoryAxis(labelStyle: TextStyle(fontSize: 10), labelRotation: 45),
         primaryYAxis: const NumericAxis(labelStyle: TextStyle(fontSize: 10)),
         legend: const Legend(isVisible: true, position: LegendPosition.bottom),
-        tooltipBehavior: TooltipBehavior(enable: true, format: 'point.x\nS/ point.y', header: 'series.name'),
+        tooltipBehavior: TooltipBehavior(enable: true),
+        onTooltipRender: (TooltipArgs args) {
+          final CartesianChartPoint<dynamic> point =
+              args.dataPoints![args.pointIndex!.toInt()] as CartesianChartPoint<dynamic>;
+          final num yNum = point.y is num ? point.y as num : 0;
+          args..header = ''
+          ..text = '${point.x}\nS/ ${yNum.toStringAsFixed(2)}';
+        },
         series: <CartesianSeries<dynamic, dynamic>>[
           StackedColumnSeries<double, String>(
             dataSource: pedidos,
@@ -272,7 +292,14 @@ class _ResultadosChartsState extends State<ResultadosCharts> {
         isTransposed: true,
         primaryXAxis: const CategoryAxis(labelStyle: TextStyle(fontSize: 10)),
         primaryYAxis: const NumericAxis(labelStyle: TextStyle(fontSize: 10)),
-        tooltipBehavior: TooltipBehavior(enable: true, format: 'point.x\npoint.y m²'),
+        tooltipBehavior: TooltipBehavior(enable: true),
+        onTooltipRender: (TooltipArgs args) {
+          final CartesianChartPoint<dynamic> point =
+              args.dataPoints![args.pointIndex!.toInt()] as CartesianChartPoint<dynamic>;
+          final num yNum = point.y is num ? point.y as num : 0;
+          args..header = ''
+          ..text = '${point.x}\n${yNum.toStringAsFixed(2)} m²';
+        },
         series: <CartesianSeries<dynamic, dynamic>>[
           BarSeries<ChartData, String>(
             dataSource: data,
@@ -294,7 +321,14 @@ class _ResultadosChartsState extends State<ResultadosCharts> {
       child: SfCartesianChart(
         primaryXAxis: const CategoryAxis(labelStyle: TextStyle(fontSize: 10), labelRotation: 45),
         primaryYAxis: const NumericAxis(labelStyle: TextStyle(fontSize: 10)),
-        tooltipBehavior: TooltipBehavior(enable: true, format: 'point.x\npoint.y'),
+        tooltipBehavior: TooltipBehavior(enable: true),
+        onTooltipRender: (TooltipArgs args) {
+          final CartesianChartPoint<dynamic> point =
+              args.dataPoints![args.pointIndex!.toInt()] as CartesianChartPoint<dynamic>;
+          final num yNum = point.y is num ? point.y as num : 0;
+          args..header = ''
+          ..text = '${point.x}\n${yNum.toStringAsFixed(2)}';
+        },
         series: <CartesianSeries<dynamic, dynamic>>[
           ColumnSeries<ChartData, String>(
             dataSource: data,
@@ -314,7 +348,14 @@ class _ResultadosChartsState extends State<ResultadosCharts> {
       child: SfCartesianChart(
         primaryXAxis: const CategoryAxis(labelStyle: TextStyle(fontSize: 10), labelRotation: 45),
         primaryYAxis: const NumericAxis(labelStyle: TextStyle(fontSize: 10)),
-        tooltipBehavior: TooltipBehavior(enable: true, format: 'point.x\nZ: point.y'),
+        tooltipBehavior: TooltipBehavior(enable: true),
+        onTooltipRender: (TooltipArgs args) {
+          final CartesianChartPoint<dynamic> point =
+              args.dataPoints![args.pointIndex!.toInt()] as CartesianChartPoint<dynamic>;
+          final num yNum = point.y is num ? point.y as num : 0;
+          args..header = ''
+          ..text = '${point.x}\nZ: ${yNum.toStringAsFixed(2)}';
+        },
         series: <CartesianSeries<dynamic, dynamic>>[
           ColumnSeries<ChartData, String>(
             dataSource: data,

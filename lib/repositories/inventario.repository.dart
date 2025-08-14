@@ -35,15 +35,8 @@ class InventarioRepository {
 
       // Z-score y backorders esperados
       final double safeDesviacionLeadTime = desviacionLeadTime.abs() < 1e-9 ? 1e-9 : desviacionLeadTime;
-      final zScore = MathUtils.calcularZScore(
-        articulo.puntoReorden,
-        demandaLeadTime,
-        safeDesviacionLeadTime,
-      );
-      final backordersEsperados = MathUtils.calcularBackordersEsperados(
-        safeDesviacionLeadTime,
-        zScore,
-      );
+      final zScore = MathUtils.calcularZScore(articulo.puntoReorden, demandaLeadTime, safeDesviacionLeadTime);
+      final backordersEsperados = MathUtils.calcularBackordersEsperados(safeDesviacionLeadTime, zScore);
 
       // Recalcular SIEMPRE Q usando EOQ clásico para evitar valores inflados/cachés de Excel
       final double qEoq = MathUtils.calcularEOQ(
@@ -54,17 +47,21 @@ class InventarioRepository {
       // Elegimos SIEMPRE EOQ; ignoramos Q importado (suele venir cacheado/incorrecto)
       final double safeTamanoLote = qEoq;
       logDebug('   Q_importado=${articulo.tamanoLote} Q_eoq=$qEoq -> Q_usado(EOQ)=$safeTamanoLote');
-      final costoPedidos = (articulo.demandaAnual / safeTamanoLote) * articulo.costoPedido;
-      // Inventario promedio: Q/2 + SS - E[BO], con SS = max(0, R - μL)
-      final double stockSeguridad = (articulo.puntoReorden - demandaLeadTime) > 0
-          ? (articulo.puntoReorden - demandaLeadTime)
-          : 0.0;
-      final double inventarioPromedio = (safeTamanoLote / 2) + stockSeguridad - backordersEsperados;
-      final double inventarioPromedioNoNegativo = inventarioPromedio > 0 ? inventarioPromedio : 0.0;
-      final costoMantenimiento = inventarioPromedioNoNegativo * articulo.costoMantenimiento;
-      // Costo de faltante anual: p * (D/Q) * E[BO]
-      final costoServicio = (articulo.demandaAnual / safeTamanoLote) * backordersEsperados * articulo.costoFaltante;
-      final costoTotal = costoPedidos + costoMantenimiento + costoServicio;
+      // Inventario promedio y componentes de costo movidos a MathUtils
+      final double stockSeguridad = MathUtils.calcularStockSeguridad(articulo.puntoReorden, demandaLeadTime);
+      final double inventarioPromedioNoNegativo = MathUtils.calcularInventarioPromedio(safeTamanoLote, stockSeguridad, backordersEsperados);
+      final double costoPedidos = MathUtils.calcularCostoPedidosComponent(articulo.demandaAnual, safeTamanoLote, articulo.costoPedido);
+      final double costoMantenimiento = MathUtils.calcularCostoMantenimientoComponent(inventarioPromedioNoNegativo, articulo.costoMantenimiento);
+      final double costoServicio = MathUtils.calcularCostoServicioComponent(articulo.demandaAnual, safeTamanoLote, backordersEsperados, articulo.costoFaltante);
+      final double costoTotal = MathUtils.calcularCostoTotalQR(
+        demandaAnual: articulo.demandaAnual,
+        tamanoLote: safeTamanoLote,
+        costoPedido: articulo.costoPedido,
+        inventarioPromedio: inventarioPromedioNoNegativo,
+        costoMantenimiento: articulo.costoMantenimiento,
+        backordersEsperados: backordersEsperados,
+        costoFaltante: articulo.costoFaltante,
+      );
 
       logDebug('   μL=$demandaLeadTime σL=$safeDesviacionLeadTime z=$zScore E[BO]=$backordersEsperados SS=$stockSeguridad');
       logDebug('   Q=$safeTamanoLote invProm=$inventarioPromedioNoNegativo Ck=$costoPedidos Ch=$costoMantenimiento Cp=$costoServicio Ctotal=$costoTotal');
@@ -82,7 +79,7 @@ class InventarioRepository {
       );
 
       // Presupuesto para este artículo
-      final presupuestoArticulo = articulo.costoUnitario * articulo.puntoReorden;
+      final presupuestoArticulo = MathUtils.calcularPresupuestoArticulo(articulo.costoUnitario, articulo.puntoReorden);
 
       // Acumular totales
       costoTotalSistema += costoTotal;

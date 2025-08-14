@@ -50,6 +50,34 @@ class _ArticulosTableState extends State<ArticulosTable> {
   late List<PlutoColumn> columns;
   List<PlutoRow> rows = [];
 
+  String _computeArticlesSignature() {
+    final buffer = StringBuffer();
+    for (final a in widget.articulos) {
+      buffer
+        ..write(a.nombre)
+        ..write('|')
+        ..write(a.demandaAnual)
+        ..write('|')
+        ..write(a.costoPedido)
+        ..write('|')
+        ..write(a.costoMantenimiento)
+        ..write('|')
+        ..write(a.costoFaltante)
+        ..write('|')
+        ..write(a.costoUnitario)
+        ..write('|')
+        ..write(a.espacioUnidad)
+        ..write('|')
+        ..write(a.desviacionDiaria)
+        ..write('|')
+        ..write(a.puntoReorden)
+        ..write('|')
+        ..write(a.tamanoLote)
+        ..write(';');
+    }
+    return buffer.toString();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -199,7 +227,16 @@ class _ArticulosTableState extends State<ArticulosTable> {
         s = s.replaceAll('\u00A0', '').replaceAll(' ', '');
         return double.tryParse(s);
       }
+      final provider = context.read<InventarioProvider>();
+      final original = provider.articulos[rowIndex];
+      Articulo actualizado = original;
+
       if (field == 'nombre') {
+        final nuevoNombre = (event.value ?? '').toString().trim();
+        if (nuevoNombre.isEmpty) {
+          return;
+        }
+        actualizado = original.copyWith(nombre: nuevoNombre);
       } else {
         final parsed = parseNum(event.value);
         if (parsed == null) {
@@ -208,27 +245,39 @@ class _ArticulosTableState extends State<ArticulosTable> {
         }
         switch (field) {
           case 'demandaAnual':
+            actualizado = original.copyWith(demandaAnual: parsed);
             break;
           case 'costoPedido':
+            actualizado = original.copyWith(costoPedido: parsed);
             break;
           case 'costoMantenimiento':
+            actualizado = original.copyWith(costoMantenimiento: parsed);
             break;
           case 'costoFaltante':
+            actualizado = original.copyWith(costoFaltante: parsed);
             break;
           case 'costoUnitario':
+            actualizado = original.copyWith(costoUnitario: parsed);
             break;
           case 'espacioUnidad':
+            actualizado = original.copyWith(espacioUnidad: parsed);
             break;
           case 'desviacionDiaria':
+            actualizado = original.copyWith(desviacionDiaria: parsed);
             break;
           case 'puntoReorden':
+            actualizado = original.copyWith(puntoReorden: parsed);
             break;
           case 'tamanoLote':
+            actualizado = original.copyWith(tamanoLote: parsed);
             break;
           default:
             return;
         }
       }
+
+      // Persistir cambio y recalcular
+      provider.actualizarArticulo(rowIndex, actualizado);
     }
   }
 
@@ -524,7 +573,7 @@ class _ArticulosTableState extends State<ArticulosTable> {
                   ),
                 ),
                 child: PlutoGrid(
-                  key: ValueKey(widget.articulos.length),
+                  key: ValueKey(_computeArticlesSignature()),
                   columns: columns,
                   rows: [
                     for (int i = 0; i < widget.articulos.length; i++) _articuloToPlutoRow(i, widget.articulos[i])
