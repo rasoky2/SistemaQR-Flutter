@@ -567,7 +567,7 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
                             await provider.seleccionarArchivo();
                             await provider.importarArticulos();
                           },
-                          icon: const Icon(UniconsLine.upload_alt),
+                          icon: const Icon(UniconsLine.file_import),
                           label: const Text('Importar desde Excel'),
                         ),
                       ),
@@ -575,7 +575,7 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
                       Expanded(
                         child: OutlinedButton.icon(
                           onPressed: () => _generarPlantillaExcel(context),
-                          icon: const Icon(UniconsLine.download_alt),
+                          icon: const Icon(UniconsLine.file_export),
                           label: const Text('Generar Plantilla Excel'),
                         ),
                       ),

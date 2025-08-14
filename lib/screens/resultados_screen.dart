@@ -25,10 +25,22 @@ class ResultadosScreen extends StatefulWidget {
 class _ResultadosScreenState extends State<ResultadosScreen> {
   bool _isStatisticsExpanded = false;
   bool _isExtremesExpanded = false;
+  bool _isSystemSummaryExpanded = false;
   // charts state moved into ResultadosCharts widget
+  bool _recalcOnce = false;
 
   @override
   Widget build(BuildContext context) {
+    // Asegurar un recálculo al abrir la pantalla para reflejar cambios en fórmulas
+    if (!_recalcOnce) {
+      _recalcOnce = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final provider = context.read<InventarioProvider>();
+        if (provider.articulos.isNotEmpty) {
+          provider.calcularResultados();
+        }
+      });
+    }
     return Scaffold(
       appBar: AppBar(
         title: const Text('Resultados del Modelo QR'),
@@ -45,7 +57,7 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
               return IconButton(
                 onPressed: () => _exportarResultadosExcel(context),
                 icon: const Icon(UniconsLine.file_export),
-                tooltip: 'Exportar Excel',
+                tooltip: 'Exportar a Excel',
               );
             },
           ),
@@ -119,21 +131,47 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Row(
-              children: [
-                Icon(UniconsLine.info_circle, color: MDSJColors.primary),
-                SizedBox(width: 12),
-                Text(
-                  'Resumen del Sistema',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: MDSJColors.textPrimary,
-                  ),
+            InkWell(
+              onTap: () => setState(() => _isSystemSummaryExpanded = !_isSystemSummaryExpanded),
+              borderRadius: BorderRadius.circular(8),
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                decoration: BoxDecoration(
+                  color: Colors.grey.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-              ],
+                child: Row(
+                  children: [
+                    Icon(
+                      _isSystemSummaryExpanded ? UniconsLine.angle_up : UniconsLine.angle_down,
+                      color: MDSJColors.primary,
+                      size: 16,
+                    ),
+                    const SizedBox(width: 8),
+                    const Icon(UniconsLine.info_circle, color: MDSJColors.primary, size: 16),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Resumen del Sistema',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: MDSJColors.textPrimary,
+                      ),
+                    ),
+                    const Spacer(),
+                    Text(
+                      _isSystemSummaryExpanded ? 'Ocultar' : 'Mostrar',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        color: MDSJColors.primary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-            const SizedBox(height: 16),
+            if (_isSystemSummaryExpanded) ...[
+              const SizedBox(height: 16),
             
             // Primera fila - Métricas principales
             Row(
@@ -231,6 +269,7 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
             ),
             const SizedBox(height: 16),
             _buildExpandableStatistics(estadisticas),
+            ],
           ],
         ),
       ),

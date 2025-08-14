@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:intl/intl.dart';
 
 /// Utilidades matemáticas para el modelo QR de inventario
 class MathUtils {
@@ -79,6 +80,16 @@ class MathUtils {
     return inv > 0 ? inv : 0.0;
   }
 
+  /// Inventario promedio para costo de mantenimiento según fórmula
+  /// I_h = max(0, (Q - E[BO]) / 2)
+  static double calcularInventarioPromedioHolding(
+    double tamanoLote,
+    double backordersEsperados,
+  ) {
+    final inv = (tamanoLote - backordersEsperados) / 2.0;
+    return inv > 0 ? inv : 0.0;
+  }
+
   /// Componente: Costo de pedidos anual Ck = (D/Q) * K
   static double calcularCostoPedidosComponent(double demandaAnual, double tamanoLote, double costoPedido) {
     return (demandaAnual / tamanoLote) * costoPedido;
@@ -96,7 +107,16 @@ class MathUtils {
     double backordersEsperados,
     double costoFaltante,
   ) {
+    // Versión anual clásica: (D/Q) * E[BO] * p
     return (demandaAnual / tamanoLote) * backordersEsperados * costoFaltante;
+  }
+
+  /// Componente de costo de faltante usando solo E[BO] * p (sin factor D/Q)
+  static double calcularCostoServicioComponentEBOPuro(
+    double backordersEsperados,
+    double costoFaltante,
+  ) {
+    return backordersEsperados * costoFaltante;
   }
 
   /// Costo total anual C = Ck + Ch + Cp (política Q,R con backorders)
@@ -109,9 +129,11 @@ class MathUtils {
     required double backordersEsperados,
     required double costoFaltante,
   }) {
+    // Por requerimiento de negocio, el costo total debe seguir:
+    // C = (D/Q)*K + ((Q/2) - E[BO]) * h + E[BO] * p
     final cK = calcularCostoPedidosComponent(demandaAnual, tamanoLote, costoPedido);
     final cH = calcularCostoMantenimientoComponent(inventarioPromedio, costoMantenimiento);
-    final cP = calcularCostoServicioComponent(demandaAnual, tamanoLote, backordersEsperados, costoFaltante);
+    final cP = calcularCostoServicioComponentEBOPuro(backordersEsperados, costoFaltante);
     return cK + cH + cP;
   }
 
@@ -185,11 +207,17 @@ class MathUtils {
 
   /// Formatea un valor como moneda
   static String formatearMoneda(double valor) {
-    return 'S/ ${valor.toStringAsFixed(2)}';
+    final NumberFormat format = NumberFormat.currency(
+      locale: 'es_PE',
+      symbol: 'S/',
+      decimalDigits: 2,
+    );
+    return format.format(valor);
   }
 
   /// Formatea un número con unidades
   static String formatearUnidades(double valor, String unidad) {
-    return '${valor.toStringAsFixed(2)} $unidad';
+    final NumberFormat format = NumberFormat.decimalPattern('es_PE');
+    return '${format.format(double.parse(valor.toStringAsFixed(2)))} $unidad';
   }
 } 

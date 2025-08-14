@@ -49,22 +49,23 @@ class InventarioRepository {
       logDebug('   Q_importado=${articulo.tamanoLote} Q_eoq=$qEoq -> Q_usado=$safeTamanoLote');
       // Inventario promedio y componentes de costo movidos a MathUtils
       final double stockSeguridad = MathUtils.calcularStockSeguridad(articulo.puntoReorden, demandaLeadTime);
-      final double inventarioPromedioNoNegativo = MathUtils.calcularInventarioPromedio(safeTamanoLote, stockSeguridad, backordersEsperados);
+      // Inventario promedio para holding según fórmula requerida: (Q/2 - E[BO])^+
+      final double inventarioPromedioHolding = MathUtils.calcularInventarioPromedioHolding(safeTamanoLote, backordersEsperados);
       final double costoPedidos = MathUtils.calcularCostoPedidosComponent(articulo.demandaAnual, safeTamanoLote, articulo.costoPedido);
-      final double costoMantenimiento = MathUtils.calcularCostoMantenimientoComponent(inventarioPromedioNoNegativo, articulo.costoMantenimiento);
-      final double costoServicio = MathUtils.calcularCostoServicioComponent(articulo.demandaAnual, safeTamanoLote, backordersEsperados, articulo.costoFaltante);
+      final double costoMantenimiento = MathUtils.calcularCostoMantenimientoComponent(inventarioPromedioHolding, articulo.costoMantenimiento);
+      final double costoServicio = MathUtils.calcularCostoServicioComponentEBOPuro(backordersEsperados, articulo.costoFaltante);
       final double costoTotal = MathUtils.calcularCostoTotalQR(
         demandaAnual: articulo.demandaAnual,
         tamanoLote: safeTamanoLote,
         costoPedido: articulo.costoPedido,
-        inventarioPromedio: inventarioPromedioNoNegativo,
+        inventarioPromedio: inventarioPromedioHolding,
         costoMantenimiento: articulo.costoMantenimiento,
         backordersEsperados: backordersEsperados,
         costoFaltante: articulo.costoFaltante,
       );
 
       logDebug('   μL=$demandaLeadTime σL=$safeDesviacionLeadTime z=$zScore E[BO]=$backordersEsperados SS=$stockSeguridad');
-      logDebug('   Q=$safeTamanoLote invProm=$inventarioPromedioNoNegativo Ck=$costoPedidos Ch=$costoMantenimiento Cp=$costoServicio Ctotal=$costoTotal');
+      logDebug('   Q=$safeTamanoLote invPromHold=$inventarioPromedioHolding Ck=$costoPedidos Ch=$costoMantenimiento Cp=$costoServicio Ctotal=$costoTotal');
 
       // Espacio usado
       final espacioUsado = MathUtils.calcularEspacioUsado(

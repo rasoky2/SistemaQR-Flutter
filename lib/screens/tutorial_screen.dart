@@ -79,6 +79,12 @@ class TutorialScreen extends StatelessWidget {
               _Bullet('Número Máximo de Pedidos: tope anual de órdenes.'),
               _Bullet('Lead Time (días): tiempo promedio de reposición.'),
             ]),
+
+            const SizedBox(height: 24),
+            _sectionTitle('Información del programa'),
+            _infoCard(children: [
+              _versionInfo(),
+            ]),
           ],
         ),
       ),
@@ -108,6 +114,42 @@ class TutorialScreen extends StatelessWidget {
           children: children,
         ),
       ),
+    );
+  }
+
+  Widget _versionInfo() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const _Plain('Versión actual:'),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            const Icon(
+              UniconsLine.info_circle,
+              color: MDSJColors.textSecondary,
+              size: 16,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              'v1.0.2',
+              style: GoogleFonts.poppins(
+                fontSize: 14,
+                color: MDSJColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Sistema de inventario multi-artículo bajo modelo QR con restricciones',
+          style: GoogleFonts.poppins(
+            fontSize: 11,
+            color: MDSJColors.textSecondary.withValues(alpha: 0.7),
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+      ],
     );
   }
 }
