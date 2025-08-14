@@ -6,6 +6,7 @@ import 'package:inventario_qr/providers/inventario.provider.dart';
 import 'package:inventario_qr/repositories/excel.repository.dart';
 import 'package:inventario_qr/screens/tutorial_screen.dart';
 import 'package:inventario_qr/utils/logger.dart';
+import 'package:inventario_qr/utils/math_utils.dart';
 import 'package:inventario_qr/widgets/articulos_table.dart';
 import 'package:inventario_qr/widgets/restriccion_dialog.dart';
 import 'package:inventario_qr/widgets/restriccion_fab.dart';
@@ -157,40 +158,41 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
     if (_formKey.currentState?.validate() ?? false) {
       logDebug('📝 Iniciando agregar artículo manual...');
       
-      // Validación adicional para el tamaño de lote
-      final tamanoLote = _parseNum(_tamanoLoteController.text);
-      if (tamanoLote == null || tamanoLote <= 0) {
-        logDebug('❌ Tamaño de lote inválido: ${_tamanoLoteController.text}');
-        // Mostrar mensaje de error usando AlertDialog
-        showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: const Text('Error'),
-              content: const Text('El tamaño de lote debe ser mayor a 0'),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Aceptar'),
-                ),
-              ],
-            );
-          },
-        );
-        return;
-      }
+      // Tomamos provider para obtener lead time cuando se necesite calcular R
+      final provider = context.read<InventarioProvider>();
 
-      // Crear el artículo
+      // Parse de entradas base
+      final double demanda = _parseNum(_demandaController.text) ?? 0.0;
+      final double costoPedido = _parseNum(_costoPedidoController.text) ?? 0.0;
+      final double costoMantenimiento = _parseNum(_costoMantenimientoController.text) ?? 0.0;
+      final double costoFaltante = _parseNum(_costoFaltanteController.text) ?? 0.0;
+      final double costoUnitario = _parseNum(_costoUnitarioController.text) ?? 0.0;
+      final double espacioUnidad = _parseNum(_espacioUnidadController.text) ?? 0.0;
+      final double desviacionDiaria = _parseNum(_desviacionDiariaController.text) ?? 0.0;
+
+      // Punto de reorden opcional: si no se ingresa, usar μL = D * L/365 (sin SS)
+      final double? puntoReordenIngresado = _parseNum(_puntoReordenController.text);
+      final double puntoReorden = (puntoReordenIngresado == null)
+          ? MathUtils.calcularDemandaLeadTime(demanda, provider.leadTimeDias)
+          : (puntoReordenIngresado < 0 ? 0.0 : puntoReordenIngresado);
+
+      // Tamaño económico opcional: si no se ingresa o es inválido, usar EOQ
+      final double? tamanoLoteIngresado = _parseNum(_tamanoLoteController.text);
+      final double tamanoLote = (tamanoLoteIngresado == null || tamanoLoteIngresado <= 0)
+          ? MathUtils.calcularEOQ(demanda, costoPedido, costoMantenimiento)
+          : tamanoLoteIngresado;
+
+      // Crear el artículo con los valores finales (R/Q pueden ser calculados)
       final articulo = Articulo(
         nombre: _nombreController.text.trim(),
-        demandaAnual: _parseNum(_demandaController.text) ?? 0,
-        costoPedido: _parseNum(_costoPedidoController.text) ?? 0,
-        costoMantenimiento: _parseNum(_costoMantenimientoController.text) ?? 0,
-        costoFaltante: _parseNum(_costoFaltanteController.text) ?? 0,
-        costoUnitario: _parseNum(_costoUnitarioController.text) ?? 0,
-        espacioUnidad: _parseNum(_espacioUnidadController.text) ?? 0,
-        desviacionDiaria: _parseNum(_desviacionDiariaController.text) ?? 0,
-        puntoReorden: _parseNum(_puntoReordenController.text) ?? 0,
+        demandaAnual: demanda,
+        costoPedido: costoPedido,
+        costoMantenimiento: costoMantenimiento,
+        costoFaltante: costoFaltante,
+        costoUnitario: costoUnitario,
+        espacioUnidad: espacioUnidad,
+        desviacionDiaria: desviacionDiaria,
+        puntoReorden: puntoReorden,
         tamanoLote: tamanoLote,
       );
 
@@ -206,8 +208,7 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
       logDebug('   - Tamaño lote: ${articulo.tamanoLote}');
 
       // Agregar el artículo al provider
-      final provider = context.read<InventarioProvider>()
-      ..agregarArticulo(articulo);
+      context.read<InventarioProvider>()..agregarArticulo(articulo);
       
       logDebug('✅ Artículo agregado al provider. Total de artículos: ${provider.articulos.length}');
       
@@ -488,12 +489,13 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
                       Expanded(
                         child: _buildNumberField(
                           controller: _puntoReordenController,
-                          label: 'Punto de Reorden (unidades)',
+                          label: 'Punto de Reorden (unidades) — opcional',
                           focusNode: _puntoReordenFocus,
                           nextFocusNode: _tamanoLoteFocus,
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
-                              return 'El punto de reorden es requerido';
+                              // Opcional
+                              return null;
                             }
                             final v = _parseNum(value);
                             if (v == null) {
@@ -510,13 +512,14 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
                       Expanded(
                         child: _buildNumberField(
                           controller: _tamanoLoteController,
-                          label: 'Tamaño de Lote (unidades)',
+                          label: 'Tamaño Económico de Lote Q (unidades) — opcional',
                           focusNode: _tamanoLoteFocus,
                           textInputAction: TextInputAction.done,
                           onSubmitted: (_) => _agregarArticulo(),
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
-                              return 'El tamaño de lote es requerido';
+                              // Opcional (se calcula EOQ si falta)
+                              return null;
                             }
                             final v = _parseNum(value);
                             if (v == null) {

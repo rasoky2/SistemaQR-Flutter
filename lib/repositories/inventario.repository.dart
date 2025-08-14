@@ -67,7 +67,7 @@ class InventarioRepository {
       final costoTotal = costoPedidos + costoMantenimiento + costoServicio;
 
       logDebug('   μL=$demandaLeadTime σL=$safeDesviacionLeadTime z=$zScore E[BO]=$backordersEsperados SS=$stockSeguridad');
-      logDebug('   Q=${safeTamanoLote} invProm=${inventarioPromedioNoNegativo} Ck=$costoPedidos Ch=$costoMantenimiento Cp=$costoServicio Ctotal=$costoTotal');
+      logDebug('   Q=$safeTamanoLote invProm=$inventarioPromedioNoNegativo Ck=$costoPedidos Ch=$costoMantenimiento Cp=$costoServicio Ctotal=$costoTotal');
 
       // Espacio usado
       final espacioUsado = MathUtils.calcularEspacioUsado(
