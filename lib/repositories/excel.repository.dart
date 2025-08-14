@@ -440,12 +440,15 @@ class ExcelRepository {
             final int rIdx = columnMap['Punto de Reorden (unidades)'] ?? -1;
             final bool rEsFormula = (rIdx >= 0 && rIdx < row.length && row[rIdx] != null) &&
                 row[rIdx]!.value.runtimeType.toString().contains('FormulaCellValue');
-            if (rEsFormula) {
-              // Fallback: usar μL con leadTime por defecto (36.5) si viene como fórmula
+            
+            // Calcular punto de reorden automáticamente si es fórmula, inválido o no se proporciona
+            if (rEsFormula || puntoReorden <= 0) {
+              // Usar μL = D * L/365 (demanda durante lead time) como punto de reorden base
               final muL = MathUtils.calcularDemandaLeadTime(demanda, 36.5);
               puntoReorden = muL;
-              logDebug('ℹ️ R calculado (μL) por fórmula detectada en R: $puntoReorden');
+              logDebug('ℹ️ R calculado automáticamente (μL): $puntoReorden');
             }
+            
             // Tamaño de lote (EOQ si fórmula o inválido)
             double tamanoLote = _getCellDoubleValueFromRow(row, columnMap['Tamaño de Lote (unidades)'] ?? -1, 0);
             final int qIdx = columnMap['Tamaño de Lote (unidades)'] ?? -1;
@@ -514,14 +517,19 @@ class ExcelRepository {
               // Punto de reorden: si es fórmula (detectamos por texto que contiene '=' o letras), usamos μL
               final rStr = getStr(columnMap['Punto de Reorden (unidades)'] ?? -1);
               double puntoReorden = getNum(columnMap['Punto de Reorden (unidades)'] ?? -1, 0);
-              if (rStr.contains('=') || rStr.contains('SQRT') || rStr.contains('(')) {
+              
+              // Calcular punto de reorden automáticamente si es fórmula, inválido o no se proporciona
+              if (rStr.contains('=') || rStr.contains('SQRT') || rStr.contains('(') || puntoReorden <= 0) {
                 puntoReorden = MathUtils.calcularDemandaLeadTime(demanda, 36.5);
+                logDebug('ℹ️ R calculado automáticamente en fallback ZIP/XML (μL): $puntoReorden');
               }
+              
               // Q: si parece fórmula, usar EOQ
               final qStr = getStr(columnMap['Tamaño de Lote (unidades)'] ?? -1);
               double tamanoLote = getNum(columnMap['Tamaño de Lote (unidades)'] ?? -1, 1);
               if (qStr.contains('=') || qStr.toUpperCase().contains('SQRT') || tamanoLote <= 0) {
                 tamanoLote = MathUtils.calcularEOQ(demanda, costoPedido, costoMantenimiento);
+                logDebug('📐 Q calculado automáticamente en fallback ZIP/XML (EOQ): $tamanoLote');
               }
 
               articulos.add(Articulo(

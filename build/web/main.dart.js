@@ -29642,7 +29642,7 @@ e6=!1
 if(b1>=0)if(b1<J.aL(a0)){if(J.av(a0,b1)!=null){e2=A.fY(J.Y(J.av(a0,b1).b).a,null)
 e2=A.nr(e2,"FormulaCellValue",0)}else e2=e6
 e6=e2}b2=e6
-if(b2){b3=a3*0.1
+if(b2||b0<=0){b3=a3*0.1
 b0=b3
 A.l(b0)}e2=J.av(d,"Tama\xf1o de Lote (unidades)")
 if(e2==null)e2=-1
@@ -29724,9 +29724,9 @@ if(!A.nr(e2,"SQRT",0)){e2=d6
 e3=J.aF(e2)
 f0=e3.gv(e2)
 if(0>f0)A.P(A.da(0,0,e3.gv(e2),null,null))
-e2=A.nr(e2,"(",0)}else e2=e3}else e2=e3
-if(e2)d7=c9*0.1
-e2=J.av(c2,"Tama\xf1o de Lote (unidades)")
+e2=A.nr(e2,"(",0)||d7<=0}else e2=e3}else e2=e3
+if(e2){d7=c9*0.1
+A.l(d7)}e2=J.av(c2,"Tama\xf1o de Lote (unidades)")
 if(e2==null)e2=-1
 d8=c6.$1(e2)
 e2=J.av(c2,"Tama\xf1o de Lote (unidades)")
@@ -29738,8 +29738,8 @@ f0=e3.gv(e2)
 if(0>f0)A.P(A.da(0,0,e3.gv(e2),null,null))
 if(!A.nr(e2,"=",0)){e2=d8.toUpperCase()
 e2=A.nr(e2,"SQRT",0)||d9<=0}else e2=!0
-if(e2)d9=A.awm(c9,d0,d1)
-J.dW(c3,new A.mj(c8,c9,d0,d1,d2,d3,d4,d5,d7,d9))}J.aL(c3)
+if(e2){d9=A.awm(c9,d0,d1)
+A.l(d9)}J.dW(c3,new A.mj(c8,c9,d0,d1,d2,d3,d4,d5,d7,d9))}J.aL(c3)
 q=c3
 s=1
 break
