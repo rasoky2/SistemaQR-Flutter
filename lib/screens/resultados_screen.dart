@@ -13,8 +13,6 @@ import 'package:open_file/open_file.dart';
 import 'package:provider/provider.dart';
 import 'package:unicons/unicons.dart';
 
-
-
 class ResultadosScreen extends StatefulWidget {
   const ResultadosScreen({super.key});
 
@@ -66,9 +64,11 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
       body: Consumer<InventarioProvider>(
         builder: (context, provider, child) {
           logDebug('📊 ResultadosScreen: Consumer reconstruyendo');
-          logDebug('📊 ResultadosScreen: Resultado disponible: ${provider.resultado != null}');
-          logDebug('📊 ResultadosScreen: Artículos disponibles: ${provider.articulos.length}');
-          
+          logDebug(
+              '📊 ResultadosScreen: Resultado disponible: ${provider.resultado != null}');
+          logDebug(
+              '📊 ResultadosScreen: Artículos disponibles: ${provider.articulos.length}');
+
           if (provider.resultado == null) {
             logDebug('📊 ResultadosScreen: No hay resultados disponibles');
             return const Center(
@@ -124,7 +124,7 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
     final estadisticas = provider.estadisticas.isNotEmpty
         ? provider.estadisticas
         : InventarioRepository.calcularEstadisticas(resultado);
-    
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
@@ -132,10 +132,12 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             InkWell(
-              onTap: () => setState(() => _isSystemSummaryExpanded = !_isSystemSummaryExpanded),
+              onTap: () => setState(
+                  () => _isSystemSummaryExpanded = !_isSystemSummaryExpanded),
               borderRadius: BorderRadius.circular(8),
               child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                 decoration: BoxDecoration(
                   color: Colors.grey.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
@@ -143,12 +145,15 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
                 child: Row(
                   children: [
                     Icon(
-                      _isSystemSummaryExpanded ? UniconsLine.angle_up : UniconsLine.angle_down,
+                      _isSystemSummaryExpanded
+                          ? UniconsLine.angle_up
+                          : UniconsLine.angle_down,
                       color: MDSJColors.primary,
                       size: 16,
                     ),
                     const SizedBox(width: 8),
-                    const Icon(UniconsLine.info_circle, color: MDSJColors.primary, size: 16),
+                    const Icon(UniconsLine.info_circle,
+                        color: MDSJColors.primary, size: 16),
                     const SizedBox(width: 8),
                     const Text(
                       'Resumen del Sistema',
@@ -172,103 +177,115 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
             ),
             if (_isSystemSummaryExpanded) ...[
               const SizedBox(height: 16),
-            
-            // Primera fila - Métricas principales
-            Row(
-              children: [
-                Expanded(
-                  child:                   _buildSummaryItem(
-                    'Costo Total',
-                    MathUtils.formatearMoneda(resultado.costoTotalSistema),
-                    UniconsLine.money_bill,
-                    MDSJColors.success,
+
+              // Primera fila - Métricas principales
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildSummaryItem(
+                      'Costo Total',
+                      MathUtils.formatearMoneda(resultado.costoTotalSistema),
+                      UniconsLine.money_bill,
+                      MDSJColors.success,
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: _buildSummaryItemWithComparison(
-                    'Espacio Usado',
-                    MathUtils.formatearUnidades(resultado.espacioTotalUsado, 'm²'),
-                    UniconsLine.store,
-                    MDSJColors.info,
-                    (resultado.espacioTotalUsado / provider.espacioMaximo) * 100,
-                    MathUtils.formatearUnidades(provider.espacioMaximo, 'm²'),
+                  Expanded(
+                    child: _buildSummaryItemWithComparison(
+                      'Espacio Usado',
+                      MathUtils.formatearUnidades(
+                          resultado.espacioTotalUsado, 'm²'),
+                      UniconsLine.store,
+                      MDSJColors.info,
+                      (resultado.espacioTotalUsado / provider.espacioMaximo) *
+                          100,
+                      MathUtils.formatearUnidades(provider.espacioMaximo, 'm²'),
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: _buildSummaryItemWithComparison(
-                    'Presupuesto',
-                    MathUtils.formatearMoneda(resultado.presupuestoTotal),
-                    UniconsLine.calculator,
-                    MDSJColors.warning,
-                    (resultado.presupuestoTotal / provider.presupuestoMaximo) * 100,
-                    MathUtils.formatearMoneda(provider.presupuestoMaximo),
+                  Expanded(
+                    child: _buildSummaryItemWithComparison(
+                      'Presupuesto',
+                      MathUtils.formatearMoneda(resultado.presupuestoTotal),
+                      UniconsLine.calculator,
+                      MDSJColors.warning,
+                      (resultado.presupuestoTotal /
+                              provider.presupuestoMaximo) *
+                          100,
+                      MathUtils.formatearMoneda(provider.presupuestoMaximo),
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: _buildSummaryItemWithComparison(
-                    'Número de Pedidos',
-                    resultado.numeroTotalPedidos.toString(),
-                    UniconsLine.box,
-                    MDSJColors.secondary,
-                    (resultado.numeroTotalPedidos / provider.numeroMaximoPedidos) * 100,
-                    provider.numeroMaximoPedidos.toString(),
+                  Expanded(
+                    child: _buildSummaryItemWithComparison(
+                      'Número de Pedidos',
+                      resultado.numeroTotalPedidos.toString(),
+                      UniconsLine.box,
+                      MDSJColors.secondary,
+                      (resultado.numeroTotalPedidos /
+                              provider.numeroMaximoPedidos) *
+                          100,
+                      provider.numeroMaximoPedidos.toString(),
+                    ),
                   ),
-                ),
-              ],
-            ),
-            
-            const SizedBox(height: 24),
-            
-            // Segunda fila - Métricas adicionales
-            Row(
-              children: [
-                Expanded(
-                  child: _buildSummaryItem(
-                    'Total Artículos',
-                    resultado.resultados.length.toString(),
-                    UniconsLine.list_ul,
-                    MDSJColors.info,
+                ],
+              ),
+
+              const SizedBox(height: 24),
+
+              // Segunda fila - Métricas adicionales
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildSummaryItem(
+                      'Total Artículos',
+                      resultado.resultados.length.toString(),
+                      UniconsLine.list_ul,
+                      MDSJColors.info,
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: _buildSummaryItem(
-                    'Costo Promedio/Artículo',
-                    MathUtils.formatearMoneda(resultado.costoTotalSistema / resultado.resultados.length),
-                    UniconsLine.calculator,
-                    MDSJColors.success,
+                  Expanded(
+                    child: _buildSummaryItem(
+                      'Costo Promedio/Artículo',
+                      MathUtils.formatearMoneda(resultado.costoTotalSistema /
+                          resultado.resultados.length),
+                      UniconsLine.calculator,
+                      MDSJColors.success,
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: _buildSummaryItem(
-                    'Espacio Promedio/Artículo',
-                    MathUtils.formatearUnidades(resultado.espacioTotalUsado / resultado.resultados.length, 'm²'),
-                    UniconsLine.store,
-                    MDSJColors.info,
+                  Expanded(
+                    child: _buildSummaryItem(
+                      'Espacio Promedio/Artículo',
+                      MathUtils.formatearUnidades(
+                          resultado.espacioTotalUsado /
+                              resultado.resultados.length,
+                          'm²'),
+                      UniconsLine.store,
+                      MDSJColors.info,
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: _buildSummaryItem(
-                    'Pedidos Promedio/Artículo',
-                    (resultado.numeroTotalPedidos / resultado.resultados.length).toStringAsFixed(1),
-                    UniconsLine.box,
-                    MDSJColors.secondary,
+                  Expanded(
+                    child: _buildSummaryItem(
+                      'Pedidos Promedio/Artículo',
+                      (resultado.numeroTotalPedidos /
+                              resultado.resultados.length)
+                          .toStringAsFixed(1),
+                      UniconsLine.box,
+                      MDSJColors.secondary,
+                    ),
                   ),
-                ),
-              ],
-            ),
-            
-            const SizedBox(height: 24),
-            
-            // Tercera fila - Análisis de extremos (desplegable)
-            _buildExpandableExtremes(resultado, estadisticas),
-            
-            const SizedBox(height: 24),
-            Container(
-              height: 1,
-              color: Colors.grey.withValues(alpha: 0.3),
-            ),
-            const SizedBox(height: 16),
-            _buildExpandableStatistics(estadisticas),
+                ],
+              ),
+
+              const SizedBox(height: 24),
+
+              // Tercera fila - Análisis de extremos (desplegable)
+              _buildExpandableExtremes(resultado, estadisticas),
+
+              const SizedBox(height: 24),
+              Container(
+                height: 1,
+                color: Colors.grey.withValues(alpha: 0.3),
+              ),
+              const SizedBox(height: 16),
+              _buildExpandableStatistics(estadisticas),
             ],
           ],
         ),
@@ -276,7 +293,8 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
     );
   }
 
-  Widget _buildSummaryItem(String title, String value, IconData icon, Color color) {
+  Widget _buildSummaryItem(
+      String title, String value, IconData icon, Color color) {
     return Column(
       children: [
         Icon(icon, size: 32, color: color),
@@ -301,23 +319,32 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
     );
   }
 
-  Widget _buildSummaryItemWithComparison(String title, String value, IconData icon, Color color, double constraintPercentage, String maxValue) {
+  Widget _buildSummaryItemWithComparison(
+      String title,
+      String value,
+      IconData icon,
+      Color color,
+      double constraintPercentage,
+      String maxValue) {
     Color comparisonColor;
     String comparisonText;
     String comparisonDetail;
-    
+
     if (constraintPercentage <= 70) {
       comparisonColor = MDSJColors.success;
       comparisonText = 'Excelente';
-      comparisonDetail = '${constraintPercentage.toStringAsFixed(0)}% del máximo';
+      comparisonDetail =
+          '${constraintPercentage.toStringAsFixed(0)}% del máximo';
     } else if (constraintPercentage <= 90) {
       comparisonColor = MDSJColors.warning;
       comparisonText = 'Atención';
-      comparisonDetail = '${constraintPercentage.toStringAsFixed(0)}% del máximo';
+      comparisonDetail =
+          '${constraintPercentage.toStringAsFixed(0)}% del máximo';
     } else {
       comparisonColor = MDSJColors.error;
       comparisonText = 'Crítico';
-      comparisonDetail = '${constraintPercentage.toStringAsFixed(0)}% del máximo';
+      comparisonDetail =
+          '${constraintPercentage.toStringAsFixed(0)}% del máximo';
     }
 
     return Column(
@@ -385,7 +412,8 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
     );
   }
 
-  Widget _buildSummaryItemWithDetails(String title, String detail, String value, IconData icon, Color color) {
+  Widget _buildSummaryItemWithDetails(
+      String title, String detail, String value, IconData icon, Color color) {
     return Column(
       children: [
         Icon(icon, size: 32, color: color),
@@ -421,11 +449,13 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
     );
   }
 
-  Widget _buildExpandableExtremes(ResultadoSistema resultado, Map<String, dynamic> estadisticas) {
+  Widget _buildExpandableExtremes(
+      ResultadoSistema resultado, Map<String, dynamic> estadisticas) {
     return Column(
       children: [
         InkWell(
-          onTap: () => setState(() => _isExtremesExpanded = !_isExtremesExpanded),
+          onTap: () =>
+              setState(() => _isExtremesExpanded = !_isExtremesExpanded),
           borderRadius: BorderRadius.circular(8),
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
@@ -436,12 +466,15 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
             child: Row(
               children: [
                 Icon(
-                  _isExtremesExpanded ? UniconsLine.angle_up : UniconsLine.angle_down,
+                  _isExtremesExpanded
+                      ? UniconsLine.angle_up
+                      : UniconsLine.angle_down,
                   color: MDSJColors.primary,
                   size: 16,
                 ),
                 const SizedBox(width: 8),
-                const Icon(UniconsLine.chart, color: MDSJColors.primary, size: 16),
+                const Icon(UniconsLine.chart,
+                    color: MDSJColors.primary, size: 16),
                 const SizedBox(width: 8),
                 const Text(
                   'Análisis de Extremos',
@@ -475,10 +508,14 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
                     estadisticas['articuloMasCostoso'] as String,
                     // mostramos el valor formateado usando el nombre y buscando una vez
                     MathUtils.formatearMoneda(
-                      (resultado.resultados.firstWhere(
-                        (r) => r.nombre == (estadisticas['articuloMasCostoso'] as String),
-                        orElse: () => resultado.resultados.first,
-                      ).costoTotal),
+                      (resultado.resultados
+                          .firstWhere(
+                            (r) =>
+                                r.nombre ==
+                                (estadisticas['articuloMasCostoso'] as String),
+                            orElse: () => resultado.resultados.first,
+                          )
+                          .costoTotal),
                     ),
                     UniconsLine.exclamation_triangle,
                     MDSJColors.error,
@@ -489,10 +526,15 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
                     'Artículo Menos Costoso',
                     estadisticas['articuloMenosCostoso'] as String,
                     MathUtils.formatearMoneda(
-                      (resultado.resultados.firstWhere(
-                        (r) => r.nombre == (estadisticas['articuloMenosCostoso'] as String),
-                        orElse: () => resultado.resultados.first,
-                      ).costoTotal),
+                      (resultado.resultados
+                          .firstWhere(
+                            (r) =>
+                                r.nombre ==
+                                (estadisticas['articuloMenosCostoso']
+                                    as String),
+                            orElse: () => resultado.resultados.first,
+                          )
+                          .costoTotal),
                     ),
                     UniconsLine.check_circle,
                     MDSJColors.success,
@@ -503,10 +545,14 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
                     'Mayor Espacio',
                     estadisticas['articuloMasEspacio'] as String,
                     MathUtils.formatearUnidades(
-                      (resultado.resultados.firstWhere(
-                        (r) => r.nombre == (estadisticas['articuloMasEspacio'] as String),
-                        orElse: () => resultado.resultados.first,
-                      ).espacioUsado),
+                      (resultado.resultados
+                          .firstWhere(
+                            (r) =>
+                                r.nombre ==
+                                (estadisticas['articuloMasEspacio'] as String),
+                            orElse: () => resultado.resultados.first,
+                          )
+                          .espacioUsado),
                       'm²',
                     ),
                     UniconsLine.store,
@@ -518,10 +564,15 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
                     'Menor Espacio',
                     estadisticas['articuloMenosEspacio'] as String,
                     MathUtils.formatearUnidades(
-                      (resultado.resultados.firstWhere(
-                        (r) => r.nombre == (estadisticas['articuloMenosEspacio'] as String),
-                        orElse: () => resultado.resultados.first,
-                      ).espacioUsado),
+                      (resultado.resultados
+                          .firstWhere(
+                            (r) =>
+                                r.nombre ==
+                                (estadisticas['articuloMenosEspacio']
+                                    as String),
+                            orElse: () => resultado.resultados.first,
+                          )
+                          .espacioUsado),
                       'm²',
                     ),
                     UniconsLine.store,
@@ -577,9 +628,12 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
                       DataCell(Text(resultado.tamanoLote.toStringAsFixed(0))),
                       DataCell(Text(resultado.puntoReorden.toStringAsFixed(0))),
                       DataCell(Text(resultado.zScore.toStringAsFixed(2))),
-                      DataCell(Text(resultado.backordersEsperados.toStringAsFixed(2))),
-                      DataCell(Text(MathUtils.formatearMoneda(resultado.costoTotal))),
-                      DataCell(Text(MathUtils.formatearUnidades(resultado.espacioUsado, 'm²'))),
+                      DataCell(Text(
+                          resultado.backordersEsperados.toStringAsFixed(2))),
+                      DataCell(Text(
+                          MathUtils.formatearMoneda(resultado.costoTotal))),
+                      DataCell(Text(MathUtils.formatearUnidades(
+                          resultado.espacioUsado, 'm²'))),
                     ],
                   );
                 }).toList(),
@@ -600,13 +654,12 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
     );
   }
 
-
-
   Widget _buildExpandableStatistics(Map<String, dynamic> estadisticas) {
     return Column(
       children: [
         InkWell(
-          onTap: () => setState(() => _isStatisticsExpanded = !_isStatisticsExpanded),
+          onTap: () =>
+              setState(() => _isStatisticsExpanded = !_isStatisticsExpanded),
           borderRadius: BorderRadius.circular(8),
           child: Container(
             padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
@@ -617,12 +670,15 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
             child: Row(
               children: [
                 Icon(
-                  _isStatisticsExpanded ? UniconsLine.angle_up : UniconsLine.angle_down,
+                  _isStatisticsExpanded
+                      ? UniconsLine.angle_up
+                      : UniconsLine.angle_down,
                   color: MDSJColors.primary,
                   size: 16,
                 ),
                 const SizedBox(width: 8),
-                const Icon(UniconsLine.chart, color: MDSJColors.primary, size: 16),
+                const Icon(UniconsLine.chart,
+                    color: MDSJColors.primary, size: 16),
                 const SizedBox(width: 8),
                 const Text(
                   'Estadísticas Promedio',
@@ -653,7 +709,8 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
                 Expanded(
                   child: _buildSummaryItem(
                     'Costo Promedio',
-                    MathUtils.formatearMoneda(estadisticas['costoPromedio'] as double),
+                    MathUtils.formatearMoneda(
+                        estadisticas['costoPromedio'] as double),
                     UniconsLine.money_bill,
                     MDSJColors.success,
                   ),
@@ -661,7 +718,8 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
                 Expanded(
                   child: _buildSummaryItem(
                     'Espacio Promedio',
-                    MathUtils.formatearUnidades(estadisticas['espacioPromedio'] as double, 'm²'),
+                    MathUtils.formatearUnidades(
+                        estadisticas['espacioPromedio'] as double, 'm²'),
                     UniconsLine.store,
                     MDSJColors.info,
                   ),
@@ -669,7 +727,8 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
                 Expanded(
                   child: _buildSummaryItem(
                     'Z-Score Promedio',
-                    (estadisticas['zScorePromedio'] as double).toStringAsFixed(2),
+                    (estadisticas['zScorePromedio'] as double)
+                        .toStringAsFixed(2),
                     UniconsLine.calculator,
                     MDSJColors.warning,
                   ),
@@ -677,7 +736,8 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
                 Expanded(
                   child: _buildSummaryItem(
                     'Mediana Costo',
-                    MathUtils.formatearMoneda(estadisticas['medianaCosto'] as double),
+                    MathUtils.formatearMoneda(
+                        estadisticas['medianaCosto'] as double),
                     UniconsLine.chart,
                     MDSJColors.secondary,
                   ),
@@ -701,38 +761,32 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
 
   // Charts moved to ResultadosCharts widget
 
-
-
   // Combined chart and chart data moved to ResultadosCharts
-
-
-
-
 
   Future<void> _exportarResultadosExcel(BuildContext context) async {
     final provider = context.read<InventarioProvider>();
-    
+
     if (provider.resultado == null) {
-      _mostrarDialogoError(context, 'No hay resultados disponibles para exportar');
+      _mostrarDialogoError(
+          context, 'No hay resultados disponibles para exportar');
       return;
     }
 
     try {
       logDebug('📤 Iniciando exportación de resultados a Excel...');
-      
+
       // Usar el método del ExcelRepository que maneja automáticamente web/móvil
       final filePath = await provider.exportarResultadosExcel();
-      
+
       logDebug('✅ Resultados exportados exitosamente en: $filePath');
-      
+
       // Mostrar mensaje de éxito
       if (context.mounted) {
         _mostrarDialogoExito(context, filePath);
       }
-      
     } catch (e) {
       logDebug('❌ Error al exportar resultados: $e');
-      
+
       if (context.mounted) {
         _mostrarDialogoError(context, 'Error al exportar resultados: $e');
       }
@@ -815,7 +869,8 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
                       builder: (BuildContext context) {
                         return AlertDialog(
                           title: const Text('Error'),
-                          content: Text('No se pudo abrir el archivo: ${result.message}'),
+                          content: Text(
+                              'No se pudo abrir el archivo: ${result.message}'),
                           actions: [
                             TextButton(
                               onPressed: () => Navigator.pop(context),
@@ -834,4 +889,4 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
       },
     );
   }
-} 
+}

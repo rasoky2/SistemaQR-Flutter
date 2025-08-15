@@ -1,6 +1,5 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:inventario_qr/models/articulo.model.dart';
 import 'package:inventario_qr/models/resultado.model.dart';
 import 'package:inventario_qr/repositories/excel.repository.dart';
@@ -16,7 +15,6 @@ class InventarioProvider extends ChangeNotifier {
   String? _error;
   Map<String, bool> _restricciones = {};
   Map<String, dynamic> _estadisticas = {};
-  bool _recalcScheduled = false;
 
   // Configuración del sistema
   double _leadTimeDias = 36.5;
@@ -42,8 +40,39 @@ class InventarioProvider extends ChangeNotifier {
   String? _archivoSeleccionado;
   Uint8List? _archivoBytesWeb;
 
+  // ✅ Nuevas propiedades para rastrear cálculos automáticos
+  List<String> _articulosConCalculosAutomaticos = [];
+  List<String> _detallesCalculos = [];
+  
+  // ✅ TRACKING DE CELDAS CALCULADAS AUTOMÁTICAMENTE (persistente entre navegaciones)
+  // Map<nombreArticulo, Set<field>> para rastrear qué celdas fueron calculadas automáticamente
+  final Map<String, Set<String>> _celdasCalculadasAutomaticas = {};
+
   // Getters
   List<Articulo> get articulos => _articulos;
+  List<String> get articulosConCalculosAutomaticos => _articulosConCalculosAutomaticos;
+  List<String> get detallesCalculos => _detallesCalculos;
+  bool get tieneCalculosAutomaticos => _articulosConCalculosAutomaticos.isNotEmpty;
+  
+  // ✅ GETTERS PARA TRACKING DE CELDAS
+  Map<String, Set<String>> get celdasCalculadasAutomaticas => _celdasCalculadasAutomaticas;
+  
+  // ✅ VERIFICAR SI UNA CELDA FUE CALCULADA AUTOMÁTICAMENTE
+  bool esCeldaCalculadaAutomaticamente(String nombreArticulo, String field) {
+    return _celdasCalculadasAutomaticas.containsKey(nombreArticulo) && 
+           _celdasCalculadasAutomaticas[nombreArticulo]!.contains(field);
+  }
+  
+  // ✅ REMOVER TRACKING DE CELDA CALCULADA AUTOMÁTICAMENTE
+  void removerTrackingCeldaCalculada(String nombreArticulo, String field) {
+    if (_celdasCalculadasAutomaticas.containsKey(nombreArticulo)) {
+      _celdasCalculadasAutomaticas[nombreArticulo]!.remove(field);
+      if (_celdasCalculadasAutomaticas[nombreArticulo]!.isEmpty) {
+        _celdasCalculadasAutomaticas.remove(nombreArticulo);
+      }
+      notifyListeners();
+    }
+  }
   ResultadoSistema? get resultado => _resultado;
   bool get isLoading => _isLoading;
   String? get error => _error;
@@ -70,14 +99,29 @@ class InventarioProvider extends ChangeNotifier {
       logDebug('📋 Provider: Columnas seleccionadas: $_columnasImportar');
       logDebug('📄 Provider: Archivo: $_archivoSeleccionado');
       
-      // Importar directamente según plantilla conocida (sin diálogo de columnas)
-      _articulos = await ExcelRepository.importarArticulosConColumnas(
+      // ✅ Importar con detección de cálculos automáticos
+      final resultadoImportacion = await ExcelRepository.importarArticulosConColumnas(
         _columnasImportar,
         _archivoSeleccionado ?? '',
         _archivoBytesWeb,
+        _leadTimeDias, // ✅ Pasar el lead time configurado
       );
+      
+      // ✅ Actualizar artículos y cálculos automáticos
+      _articulos = resultadoImportacion.articulos;
+      _articulosConCalculosAutomaticos = resultadoImportacion.articulosConCalculosAutomaticos;
+      _detallesCalculos = resultadoImportacion.detallesCalculos;
+      
+      // ✅ INICIALIZAR TRACKING DE CELDAS CALCULADAS AUTOMÁTICAMENTE
+      _celdasCalculadasAutomaticas.clear();
+      for (final nombreArticulo in _articulosConCalculosAutomaticos) {
+        // Marcar las celdas de Punto Reorden y Tamaño Lote como calculadas automáticamente
+        _celdasCalculadasAutomaticas[nombreArticulo] = {'puntoReorden', 'tamanoLote'};
+      }
+      
       logDebug('✅ Provider: Artículos importados: ${_articulos.length}');
       logDebug('📋 Provider: Lista de artículos después de importar: ${_articulos.map((a) => a.nombre).toList()}');
+      logDebug('🔧 Provider: Artículos con cálculos automáticos: ${_articulosConCalculosAutomaticos.length}');
       
       // Verificar si hay artículos con campos faltantes
       final articulosConProblemas = <String>[];
@@ -126,7 +170,10 @@ class InventarioProvider extends ChangeNotifier {
       await calcularResultados();
       logDebug('🎉 Provider: Importación completada exitosamente');
       logDebug('📊 Provider: Total de artículos en provider: ${_articulos.length}');
-      notifyListeners(); // Asegurar que la UI se actualice
+      
+      // ✅ Forzar actualización completa de la UI para mostrar Z-score inmediatamente
+      _error = null; // Limpiar errores previos
+      notifyListeners(); // Notificar cambios inmediatamente
     } catch (e) {
       logDebug('❌ Provider: Error al importar artículos: $e');
       _error = 'Error al importar artículos: $e';
@@ -193,6 +240,22 @@ class InventarioProvider extends ChangeNotifier {
     }
   }
 
+  /// ✅ DESCARGAR ARCHIVO ZIP DESDE ASSETS
+  Future<String?> descargarArchivoZip(String nombreArchivo) async {
+    try {
+      logDebug('📦 Provider: Descargando archivo ZIP: $nombreArchivo...');
+      final resultado = await ExcelRepository.descargarArchivoZip(nombreArchivo);
+      _error = null;
+      logDebug('✅ Provider: Archivo ZIP descargado: $resultado');
+      return resultado;
+    } catch (e) {
+      logDebug('❌ Provider: Error al descargar archivo ZIP: $e');
+      _error = 'Error al descargar archivo ZIP: $e';
+      notifyListeners();
+      return null;
+    }
+  }
+
   /// Calcula los resultados del modelo QR
   Future<void> calcularResultados() async {
     logDebug('🧮 Provider: Iniciando cálculo de resultados...');
@@ -236,8 +299,12 @@ class InventarioProvider extends ChangeNotifier {
       _error = 'Error al calcular resultados: $e';
     }
     logDebug('🧮 Provider: Finalizando cálculo de resultados');
+    
+    // ✅ Notificar cambios inmediatamente
     notifyListeners();
   }
+
+
 
   /// Actualiza un artículo existente
   void actualizarArticulo(int index, Articulo articulo) {
@@ -278,16 +345,27 @@ class InventarioProvider extends ChangeNotifier {
       logDebug('📝 Provider.actualizarArticulo -> index=$index cambios=${cambios.isEmpty ? 'sin cambios' : cambios.join(', ')}');
 
       _articulos[index] = articulo;
-      // Programar recálculo al final del frame para evitar "widget tree locked"
-      if (!_recalcScheduled) {
-        _recalcScheduled = true;
-        logDebug('🧮 Provider.actualizarArticulo: programando recálculo al final del frame...');
-        SchedulerBinding.instance.addPostFrameCallback((_) async {
-          _recalcScheduled = false;
-          logDebug('🧮 Provider.actualizarArticulo: ejecutando recálculo programado');
-          await calcularResultados();
-        });
+      
+      // ✅ REMOVER TRACKING DE CELDA CALCULADA AUTOMÁTICAMENTE SI SE EDITÓ
+      final nombreArticulo = articulo.nombre;
+      final camposEditados = <String>[];
+      
+      // Detectar qué campos cambiaron
+      if (anterior.puntoReorden != articulo.puntoReorden) {
+        camposEditados.add('puntoReorden');
       }
+      if (anterior.tamanoLote != articulo.tamanoLote) {
+        camposEditados.add('tamanoLote');
+      }
+      
+      // Remover tracking de campos editados
+      for (final field in camposEditados) {
+        removerTrackingCeldaCalculada(nombreArticulo, field);
+      }
+      
+      // ✅ Recalcular resultados inmediatamente
+      logDebug('🧮 Provider.actualizarArticulo: recalculando resultados...');
+      calcularResultados();
     }
   }
 
@@ -349,7 +427,9 @@ class InventarioProvider extends ChangeNotifier {
     logDebug('📝 Provider: Total de artículos después: ${_articulos.length}');
     logDebug('📝 Provider: Lista de artículos: ${_articulos.map((a) => a.nombre).toList()}');
     
+    // ✅ Calcular resultados y notificar cambios
     calcularResultados();
+    notifyListeners();
   }
 
   /// Elimina un artículo de la lista por índice

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:inventario_qr/models/articulo.model.dart';
 import 'package:inventario_qr/providers/inventario.provider.dart';
 import 'package:inventario_qr/utils/logger.dart';
@@ -35,13 +36,15 @@ class ArticulosTable extends StatefulWidget {
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties..add(IterableProperty<Articulo>('articulos', articulos))
-    ..add(DiagnosticsProperty<bool>('showDeleteButton', showDeleteButton))
-    ..add(DiagnosticsProperty<bool>('showEditButton', showEditButton))
-    ..add(ObjectFlagProperty<Function(Articulo p1)?>.has('onEdit', onEdit))
-    ..add(ObjectFlagProperty<Function(List<Articulo> p1)?>.has('onDelete', onDelete))
-    ..add(StringProperty('title', title))
-    ..add(DoubleProperty('height', height));
+    properties
+      ..add(IterableProperty<Articulo>('articulos', articulos))
+      ..add(DiagnosticsProperty<bool>('showDeleteButton', showDeleteButton))
+      ..add(DiagnosticsProperty<bool>('showEditButton', showEditButton))
+      ..add(ObjectFlagProperty<Function(Articulo p1)?>.has('onEdit', onEdit))
+      ..add(ObjectFlagProperty<Function(List<Articulo> p1)?>.has(
+          'onDelete', onDelete))
+      ..add(StringProperty('title', title))
+      ..add(DoubleProperty('height', height));
   }
 }
 
@@ -84,12 +87,6 @@ class _ArticulosTableState extends State<ArticulosTable> {
     _initializePlutoGridColumns();
   }
 
-  @override
-  void didUpdateWidget(covariant ArticulosTable oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // Forzamos rebuild de PlutoGrid mediante la key cuando cambia el length
-  }
-
   // Formatear valor monetario en soles peruanos
 
   void _initializePlutoGridColumns() {
@@ -102,79 +99,186 @@ class _ArticulosTableState extends State<ArticulosTable> {
         hide: true,
         readOnly: true,
       ),
-      PlutoColumn(
-        title: 'Nombre',
-        field: 'nombre',
-        type: PlutoColumnType.text(),
-        width: 150,
-        enableRowChecked: widget.showDeleteButton,
-      ),
-      PlutoColumn(
-        title: 'Demanda Anual',
-        field: 'demandaAnual',
-        type: PlutoColumnType.number(format: '#,##0.00'),
-        width: 120,
-        enableDropToResize: false,
-      ),
+                              PlutoColumn(
+                          title: 'Nombre',
+                          field: 'nombre',
+                          type: PlutoColumnType.text(),
+                          width: 150,
+                          enableRowChecked: widget.showDeleteButton,
+                          // ✅ EDICIÓN AUTOMÁTICA AL CAMBIAR DE CELDA (SIN ENTER)
+                          enableAutoEditing: true,
+                        ),
+                              PlutoColumn(
+                          title: 'Demanda Anual',
+                          field: 'demandaAnual',
+                          type: PlutoColumnType.number(
+                            format: '#,##0.00',
+                            applyFormatOnInit: false, // ✅ EVITAR SELECCIÓN AUTOMÁTICA DE TEXTO
+                          ),
+                          width: 120,
+                          enableDropToResize: false,
+                          // ✅ EDICIÓN AUTOMÁTICA AL CAMBIAR DE CELDA (SIN ENTER)
+                          enableAutoEditing: true,
+                        ),
       PlutoColumn(
         title: 'Costo Pedido (S/)',
         field: 'costoPedido',
-        type: PlutoColumnType.number(format: '#,##0.00'),
+        type: PlutoColumnType.number(
+          format: '#,##0.00',
+          applyFormatOnInit: false, // ✅ EVITAR SELECCIÓN AUTOMÁTICA DE TEXTO
+        ),
         width: 130,
         textAlign: PlutoColumnTextAlign.center,
         enableDropToResize: false,
+        // ✅ EDICIÓN AUTOMÁTICA AL CAMBIAR DE CELDA (SIN ENTER)
+        enableAutoEditing: true,
       ),
       PlutoColumn(
         title: 'Costo Mantenimiento (S/)',
         field: 'costoMantenimiento',
-        type: PlutoColumnType.number(format: '#,##0.00'),
+        type: PlutoColumnType.number(
+          format: '#,##0.00',
+          applyFormatOnInit: false, // ✅ EVITAR SELECCIÓN AUTOMÁTICA DE TEXTO
+        ),
         width: 170,
         textAlign: PlutoColumnTextAlign.center,
         enableDropToResize: false,
+        // ✅ EDICIÓN AUTOMÁTICA AL CAMBIAR DE CELDA (SIN ENTER)
+        enableAutoEditing: true,
       ),
       PlutoColumn(
         title: 'Costo Faltante (S/)',
         field: 'costoFaltante',
-        type: PlutoColumnType.number(format: '#,##0.00'),
+        type: PlutoColumnType.number(
+          format: '#,##0.00',
+          applyFormatOnInit: false, // ✅ EVITAR SELECCIÓN AUTOMÁTICA DE TEXTO
+        ),
         width: 150,
         textAlign: PlutoColumnTextAlign.center,
         enableDropToResize: false,
+        // ✅ EDICIÓN AUTOMÁTICA AL CAMBIAR DE CELDA (SIN ENTER)
+        enableAutoEditing: true,
       ),
       PlutoColumn(
         title: 'Costo Unitario (S/)',
         field: 'costoUnitario',
-        type: PlutoColumnType.number(format: '#,##0.00'),
+        type: PlutoColumnType.number(
+          format: '#,##0.00',
+          applyFormatOnInit: false, // ✅ EVITAR SELECCIÓN AUTOMÁTICA DE TEXTO
+        ),
         width: 150,
         textAlign: PlutoColumnTextAlign.center,
         enableDropToResize: false,
+        // ✅ EDICIÓN AUTOMÁTICA AL CAMBIAR DE CELDA (SIN ENTER)
+        enableAutoEditing: true,
       ),
       PlutoColumn(
         title: 'Espacio Unidad (m²)',
         field: 'espacioUnidad',
-        type: PlutoColumnType.number(format: '#,##0.00'),
+        type: PlutoColumnType.number(
+          format: '#,##0.00',
+          applyFormatOnInit: false, // ✅ EVITAR SELECCIÓN AUTOMÁTICA DE TEXTO
+        ),
         width: 150,
         enableDropToResize: false,
+        // ✅ EDICIÓN AUTOMÁTICA AL CAMBIAR DE CELDA (SIN ENTER)
+        enableAutoEditing: true,
       ),
       PlutoColumn(
         title: 'Desviación Diaria',
         field: 'desviacionDiaria',
-        type: PlutoColumnType.number(format: '#,##0.00'),
+        type: PlutoColumnType.number(
+          format: '#,##0.00',
+          applyFormatOnInit: false, // ✅ EVITAR SELECCIÓN AUTOMÁTICA DE TEXTO
+        ),
         width: 140,
         enableDropToResize: false,
+        // ✅ EDICIÓN AUTOMÁTICA AL CAMBIAR DE CELDA (SIN ENTER)
+        enableAutoEditing: true,
       ),
       PlutoColumn(
         title: 'Punto Reorden',
         field: 'puntoReorden',
-        type: PlutoColumnType.number(format: '#,##0.00'),
+        type: PlutoColumnType.number(
+          format: '#,##0.00',
+          applyFormatOnInit: false, // ✅ EVITAR SELECCIÓN AUTOMÁTICA DE TEXTO
+        ),
         width: 130,
         enableDropToResize: false,
+        // ✅ EDICIÓN AUTOMÁTICA AL CAMBIAR DE CELDA (SIN ENTER)
+        enableAutoEditing: true,
+        // ✅ RENDERER PERSONALIZADO PARA COLOREAR NÚMEROS CALCULADOS AUTOMÁTICAMENTE
+        renderer: (rendererContext) {
+          final idxCell = rendererContext.row.cells['_idx'];
+          if (idxCell?.value is num) {
+            final rowIndex = (idxCell!.value as num).toInt();
+            if (rowIndex >= 0 && rowIndex < widget.articulos.length) {
+              // Si la celda fue calculada automáticamente, colorear en azul
+              final provider = context.read<InventarioProvider>();
+              if (provider.esCeldaCalculadaAutomaticamente(
+                  widget.articulos[rowIndex].nombre, 'puntoReorden')) {
+                return Text(
+                  rendererContext.cell.value.toString(),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF0069A7),
+                  ),
+                );
+              }
+            }
+          }
+          // Celda normal sin coloreado
+          return Text(
+            rendererContext.cell.value.toString(),
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
+          );
+        },
       ),
       PlutoColumn(
         title: 'Tamaño Lote',
         field: 'tamanoLote',
-        type: PlutoColumnType.number(format: '#,##0.00'),
+        type: PlutoColumnType.number(
+          format: '#,##0.00',
+          applyFormatOnInit: false, // ✅ EVITAR SELECCIÓN AUTOMÁTICA DE TEXTO
+        ),
         width: 130,
         enableDropToResize: false,
+        // ✅ EDICIÓN AUTOMÁTICA AL CAMBIAR DE CELDA (SIN ENTER)
+        enableAutoEditing: true,
+        // ✅ RENDERER PERSONALIZADO PARA COLOREAR NÚMEROS CALCULADOS AUTOMÁTICAMENTE
+        renderer: (rendererContext) {
+          final idxCell = rendererContext.row.cells['_idx'];
+          if (idxCell?.value is num) {
+            final rowIndex = (idxCell!.value as num).toInt();
+            if (rowIndex >= 0 && rowIndex < widget.articulos.length) {
+              // Si la celda fue calculada automáticamente, colorear en azul
+              final provider = context.read<InventarioProvider>();
+              if (provider.esCeldaCalculadaAutomaticamente(
+                  widget.articulos[rowIndex].nombre, 'tamanoLote')) {
+                return Text(
+                  rendererContext.cell.value.toString(),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF0069A7),
+                  ),
+                );
+              }
+            }
+          }
+          // Celda normal sin coloreado
+          return Text(
+            rendererContext.cell.value.toString(),
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+            ),
+          );
+        },
       ),
     ];
   }
@@ -197,21 +301,16 @@ class _ArticulosTableState extends State<ArticulosTable> {
       },
     );
   }
-  // Extraer valor numérico de texto formateado
-
-  // Convertir string a double con soporte para comas y puntos
-
-  // Convertir string a double con soporte para comas y puntos
-
   // Manejar cambios en las celdas de PlutoGrid
   void _onCellChanged(PlutoGridOnChangedEvent event) {
     // Usar el índice real desde la columna oculta
     final idxCell = event.row.cells['_idx'];
-    final rowIndex = (idxCell?.value is num) ? (idxCell!.value as num).toInt() : -1;
+    final rowIndex =
+        (idxCell?.value is num) ? (idxCell!.value as num).toInt() : -1;
     final field = event.column.field;
-    
+
     debugPrint('📝 Celda cambiada: ${event.column.title} = ${event.value}');
-    
+
     if (rowIndex >= 0 && rowIndex < widget.articulos.length) {
       double? parseNum(v) {
         if (v == null) {
@@ -221,12 +320,32 @@ class _ArticulosTableState extends State<ArticulosTable> {
         if (s.isEmpty) {
           return null;
         }
-        if (!s.contains('.') && s.contains(',')) {
-          s = s.replaceAll(',', '.');
-        }
+        // Normaliza miles y decimales para formatos con coma o punto
+        // 1. elimina espacios y NBSP
         s = s.replaceAll('\u00A0', '').replaceAll(' ', '');
+        // 2. si tiene ambos (coma y punto), asume que el último símbolo es decimal
+        final hasComma = s.contains(',');
+        final hasDot = s.contains('.');
+        if (hasComma && hasDot) {
+          final lastComma = s.lastIndexOf(',');
+          final lastDot = s.lastIndexOf('.');
+          if (lastComma > lastDot) {
+            // coma decimal: quita puntos de miles y reemplaza coma por punto
+            s = s.replaceAll('.', '').replaceAll(',', '.');
+          } else {
+            // punto decimal: quita comas de miles
+            s = s.replaceAll(',', '');
+          }
+        } else if (hasComma && !hasDot) {
+          // solo coma: tratar como decimal
+          s = s.replaceAll('.', '').replaceAll(',', '.');
+        } else {
+          // solo punto o ninguno: quitar separadores de miles si los hubiera
+          s = s.replaceAll(',', '');
+        }
         return double.tryParse(s);
       }
+
       final provider = context.read<InventarioProvider>();
       final original = provider.articulos[rowIndex];
       Articulo actualizado = original;
@@ -276,8 +395,19 @@ class _ArticulosTableState extends State<ArticulosTable> {
         }
       }
 
-      // Persistir cambio y recalcular
-      provider.actualizarArticulo(rowIndex, actualizado);
+      // ✅ REMOVER TRACKING DE CELDA CALCULADA AUTOMÁTICAMENTE SI EL USUARIO LA EDITA
+      if (field == 'puntoReorden' || field == 'tamanoLote') {
+        // ✅ PROGRAMAR REMOCIÓN DE TRACKING PARA EVITAR ERROR DE WIDGET TREE LOCKED
+        SchedulerBinding.instance.addPostFrameCallback((_) {
+          provider.removerTrackingCeldaCalculada(
+              widget.articulos[rowIndex].nombre, field);
+        });
+      }
+
+      // ✅ PROGRAMAR ACTUALIZACIÓN DEL PROVIDER PARA EVITAR ERROR DE WIDGET TREE LOCKED
+      SchedulerBinding.instance.addPostFrameCallback((_) {
+        provider.actualizarArticulo(rowIndex, actualizado);
+      });
     }
   }
 
@@ -308,7 +438,8 @@ class _ArticulosTableState extends State<ArticulosTable> {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           title: Row(
             children: [
               Container(
@@ -317,7 +448,8 @@ class _ArticulosTableState extends State<ArticulosTable> {
                   color: Colors.red.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(UniconsLine.trash, color: Colors.red, size: 20),
+                child:
+                    const Icon(UniconsLine.trash, color: Colors.red, size: 20),
               ),
               const SizedBox(width: 12),
               const Text('Confirmar Eliminación'),
@@ -332,16 +464,17 @@ class _ArticulosTableState extends State<ArticulosTable> {
                 style: const TextStyle(fontSize: 16),
               ),
               const SizedBox(height: 16),
-                Container(
+              Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                    color: Colors.red.withValues(alpha: 0.05),
+                  color: Colors.red.withValues(alpha: 0.05),
                   borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.red.withValues(alpha: 0.2)),
+                  border: Border.all(color: Colors.red.withValues(alpha: 0.2)),
                 ),
                 child: const Row(
                   children: [
-                    Icon(UniconsLine.exclamation_triangle, color: Colors.red, size: 16),
+                    Icon(UniconsLine.exclamation_triangle,
+                        color: Colors.red, size: 16),
                     SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -373,29 +506,32 @@ class _ArticulosTableState extends State<ArticulosTable> {
                     .toSet()
                     .toList()
                   ..sort((a, b) => b.compareTo(a));
-                
+
                 final provider = context.read<InventarioProvider>();
                 for (final index in indices) {
                   if (index >= 0 && index < provider.articulos.length) {
                     provider.eliminarArticulo(index);
                   }
                 }
-                
+
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Row(
                       children: [
-                        const Icon(UniconsLine.check_circle, color: Colors.white),
+                        const Icon(UniconsLine.check_circle,
+                            color: Colors.white),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: Text('${selectedRows.length} artículo${selectedRows.length != 1 ? 's' : ''} eliminado${selectedRows.length != 1 ? 's' : ''} correctamente'),
+                          child: Text(
+                              '${selectedRows.length} artículo${selectedRows.length != 1 ? 's' : ''} eliminado${selectedRows.length != 1 ? 's' : ''} correctamente'),
                         ),
                       ],
                     ),
                     backgroundColor: Colors.green,
                     behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8)),
                     duration: const Duration(seconds: 3),
                   ),
                 );
@@ -413,9 +549,10 @@ class _ArticulosTableState extends State<ArticulosTable> {
   Widget build(BuildContext context) {
     // Actualizar filas de PlutoGrid
     rows = [
-      for (int i = 0; i < widget.articulos.length; i++) _articuloToPlutoRow(i, widget.articulos[i])
+      for (int i = 0; i < widget.articulos.length; i++)
+        _articuloToPlutoRow(i, widget.articulos[i])
     ];
-    
+
     if (widget.articulos.isEmpty) {
       return Card(
         elevation: 2,
@@ -458,7 +595,8 @@ class _ArticulosTableState extends State<ArticulosTable> {
                 ),
                 const SizedBox(height: 24),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
                     color: MDSJColors.infoBackground,
                     borderRadius: BorderRadius.circular(20),
@@ -502,13 +640,14 @@ class _ArticulosTableState extends State<ArticulosTable> {
               children: [
                 Row(
                   children: [
-                      Container(
+                    Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
                         color: MDSJColors.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(UniconsLine.box, color: MDSJColors.primary),
+                      child: const Icon(UniconsLine.box,
+                          color: MDSJColors.primary),
                     ),
                     const SizedBox(width: 16),
                     Expanded(
@@ -572,42 +711,57 @@ class _ArticulosTableState extends State<ArticulosTable> {
                     filled: false,
                   ),
                 ),
-                child: PlutoGrid(
-                  key: ValueKey(_computeArticlesSignature()),
-                  columns: columns,
-                  rows: [
-                    for (int i = 0; i < widget.articulos.length; i++) _articuloToPlutoRow(i, widget.articulos[i])
-                  ],
-                  onLoaded: (PlutoGridOnLoadedEvent event) {
-                    stateManager = event.stateManager;
-                    stateManager!.setShowColumnFilter(false);
-                  },
-                  onChanged: (PlutoGridOnChangedEvent event) {
-                    logDebug('📝 Celda cambiada: ${event.column.title} = ${event.value}');
-                    _onCellChanged(event);
-                  },
-                  onRowChecked: (PlutoGridOnRowCheckedEvent event) {
-                    logDebug('✅ Fila seleccionada: ${event.isChecked}');
-                  },
-                  configuration: const PlutoGridConfiguration(
-                    columnSize: PlutoGridColumnSizeConfig(
-                      autoSizeMode: PlutoAutoSizeMode.scale,
-                    ),
-                    style: PlutoGridStyleConfig(
-                      gridBorderColor: Color(0xFFE0E0E0),
-                      rowHeight: 56,
-                      columnTextStyle: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: MDSJColors.textPrimary,
+                child: Consumer<InventarioProvider>(
+                  builder: (context, provider, _) {
+                    return PlutoGrid(
+                      key: ValueKey(_computeArticlesSignature()),
+                      columns: columns,
+                      rows: [
+                        for (int i = 0; i < widget.articulos.length; i++)
+                          _articuloToPlutoRow(i, widget.articulos[i])
+                      ],
+                      onLoaded: (PlutoGridOnLoadedEvent event) {
+                        stateManager = event.stateManager;
+                        stateManager!.setShowColumnFilter(false);
+                      },
+                      onChanged: (PlutoGridOnChangedEvent event) {
+                        logDebug(
+                            '📝 Celda cambiada: ${event.column.title} = ${event.value}');
+                        _onCellChanged(event);
+                      },
+                      onRowChecked: (PlutoGridOnRowCheckedEvent event) {
+                        logDebug('✅ Fila seleccionada: ${event.isChecked}');
+                      },
+                      configuration: const PlutoGridConfiguration(
+                        // ✅ CONFIGURACIÓN DE NAVEGACIÓN EXCEL-STYLE
+                        enableMoveDownAfterSelecting:
+                            true, // Mover abajo después de seleccionar
+                        enableMoveHorizontalInEditing:
+                            true, // Permitir movimiento horizontal durante edición
+                        enterKeyAction: PlutoGridEnterKeyAction.editingAndMoveDown, // Enter confirma y baja
+                        tabKeyAction: PlutoGridTabKeyAction
+                            .moveToNextOnEdge, // Tab continúa a siguiente fila en bordes
+
+                        columnSize: PlutoGridColumnSizeConfig(
+                          autoSizeMode: PlutoAutoSizeMode.scale,
+                        ),
+                        style: PlutoGridStyleConfig(
+                          gridBorderColor: Color(0xFFE0E0E0),
+                          rowHeight: 56,
+                          columnTextStyle: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: MDSJColors.textPrimary,
+                          ),
+                          cellTextStyle: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                            color: MDSJColors.textPrimary,
+                          ),
+                        ),
                       ),
-                      cellTextStyle: TextStyle(
-                        fontSize: 13, 
-                        fontWeight: FontWeight.w500,
-                        color: MDSJColors.textPrimary,
-                      ),
-                    ),
-                  ),
+                    );
+                  },
                 ),
               ),
             ),
@@ -620,8 +774,10 @@ class _ArticulosTableState extends State<ArticulosTable> {
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties..add(DiagnosticsProperty<PlutoGridStateManager?>('stateManager', stateManager))
-    ..add(IterableProperty<PlutoColumn>('columns', columns))
-    ..add(IterableProperty<PlutoRow>('rows', rows));
+    properties
+      ..add(DiagnosticsProperty<PlutoGridStateManager?>(
+          'stateManager', stateManager))
+      ..add(IterableProperty<PlutoColumn>('columns', columns))
+      ..add(IterableProperty<PlutoRow>('rows', rows));
   }
-} 
+}

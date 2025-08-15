@@ -17,6 +17,19 @@ import 'package:inventario_qr/utils/web_download_stub.dart'
 import 'package:path_provider/path_provider.dart';
 import 'package:xml/xml.dart' as xml;
 
+/// Resultado de importación con información de cálculos automáticos
+class ImportacionResultado {
+  final List<Articulo> articulos;
+  final List<String> articulosConCalculosAutomaticos;
+  final List<String> detallesCalculos;
+
+  ImportacionResultado({
+    required this.articulos,
+    required this.articulosConCalculosAutomaticos,
+    required this.detallesCalculos,
+  });
+}
+
 /// Repositorio para manejar la importación y exportación de archivos Excel
 class ExcelRepository {
   static const Map<String, int> _templateColumnIndex = {
@@ -338,16 +351,21 @@ class ExcelRepository {
     ];
   }
 
-  static Future<List<Articulo>> importarArticulosConColumnas(Set<String> columnasSeleccionadas, String filePath, [Uint8List? fileBytes]) async {
+  static Future<ImportacionResultado> importarArticulosConColumnas(Set<String> columnasSeleccionadas, String filePath, [Uint8List? fileBytes, double leadTimeDias = 36.5]) async {
     try {
       logDebug('🚀 Iniciando importación REAL desde archivo Excel usando librería excel...');
       logDebug('📄 Archivo: $filePath');
       logDebug('📋 Columnas seleccionadas: $columnasSeleccionadas');
+      logDebug('⏱️ Lead Time configurado: $leadTimeDias días');
       
       // Si no hay path ni bytes, retornar vacío
       if ((filePath.isEmpty) && fileBytes == null) {
         logDebug('📁 No se proporcionó archivo');
-        return [];
+        return ImportacionResultado(
+          articulos: [],
+          articulosConCalculosAutomaticos: [],
+          detallesCalculos: [],
+        );
       }
       
       Uint8List bytes;
@@ -366,7 +384,11 @@ class ExcelRepository {
         logDebug('📄 Archivo leído: $filePath (${bytes.length} bytes)');
       } else {
         logDebug('🌐 Plataforma Web sin bytes');
-        return [];
+        return ImportacionResultado(
+          articulos: [],
+          articulosConCalculosAutomaticos: [],
+          detallesCalculos: [],
+        );
       }
       
       // Validar formato
@@ -409,6 +431,10 @@ class ExcelRepository {
         logDebug('🗺️ Mapeo por encabezados aplicado (fallback a plantilla cuando falta): $columnMap');
         // Procesar filas
         final articulos = <Articulo>[];
+        // Listas para rastrear cálculos automáticos
+        final articulosConCalculosAutomaticos = <String>[];
+        final detallesCalculos = <String>[];
+        
         for (int rowIndex = 1; rowIndex < sheet.rows.length; rowIndex++) {
           final row = sheet.rows[rowIndex];
           try {
@@ -443,10 +469,14 @@ class ExcelRepository {
             
             // Calcular punto de reorden automáticamente si es fórmula, inválido o no se proporciona
             if (rEsFormula || puntoReorden <= 0) {
-              // Usar μL = D * L/365 (demanda durante lead time) como punto de reorden base
-              final muL = MathUtils.calcularDemandaLeadTime(demanda, 36.5);
+              final muL = MathUtils.calcularDemandaLeadTime(demanda, leadTimeDias);
               puntoReorden = muL;
-              logDebug('ℹ️ R calculado automáticamente (μL): $puntoReorden');
+              
+              // ✅ Registrar cálculo automático
+              articulosConCalculosAutomaticos.add(nombre);
+              detallesCalculos.add('📊 $nombre: Punto de Reorden (R) = ${muL.toStringAsFixed(2)} (calculado automáticamente como μL = D×L/365)');
+              
+              logDebug('ℹ️ R calculado automáticamente (μL): $puntoReorden usando leadTime=$leadTimeDias días');
             }
             
             // Tamaño de lote (EOQ si fórmula o inválido)
@@ -454,8 +484,16 @@ class ExcelRepository {
             final int qIdx = columnMap['Tamaño de Lote (unidades)'] ?? -1;
             final bool qEsFormula = (qIdx >= 0 && qIdx < row.length && row[qIdx] != null) &&
                 row[qIdx]!.value.runtimeType.toString().contains('FormulaCellValue');
+                
             if (qEsFormula || tamanoLote <= 0) {
               final qCalc = MathUtils.calcularEOQ(demanda, costoPedido, costoMantenimiento);
+              
+              // ✅ Registrar cálculo automático
+              if (!articulosConCalculosAutomaticos.contains(nombre)) {
+                articulosConCalculosAutomaticos.add(nombre);
+              }
+              detallesCalculos.add('📐 $nombre: Tamaño de Lote (Q) = ${qCalc.toStringAsFixed(2)} (calculado automáticamente por EOQ)');
+              
               logDebug('📐 Q calculado por EOQ (fórmula/0 detectado): $qCalc');
               tamanoLote = qCalc;
             }
@@ -479,7 +517,13 @@ class ExcelRepository {
           }
         }
         logDebug('🎉 Importación completada. Total de artículos: ${articulos.length}');
-        return articulos;
+        logDebug('🔧 Artículos con cálculos automáticos: ${articulosConCalculosAutomaticos.length}');
+        
+        return ImportacionResultado(
+          articulos: articulos,
+          articulosConCalculosAutomaticos: articulosConCalculosAutomaticos,
+          detallesCalculos: detallesCalculos,
+        );
       } catch (e) {
         logDebug('❌ Error al decodificar con excel: $e');
         if (kIsWeb) {
@@ -520,8 +564,8 @@ class ExcelRepository {
               
               // Calcular punto de reorden automáticamente si es fórmula, inválido o no se proporciona
               if (rStr.contains('=') || rStr.contains('SQRT') || rStr.contains('(') || puntoReorden <= 0) {
-                puntoReorden = MathUtils.calcularDemandaLeadTime(demanda, 36.5);
-                logDebug('ℹ️ R calculado automáticamente en fallback ZIP/XML (μL): $puntoReorden');
+                puntoReorden = MathUtils.calcularDemandaLeadTime(demanda, leadTimeDias);
+                logDebug('ℹ️ R calculado automáticamente en fallback ZIP/XML (μL): $puntoReorden usando leadTime=$leadTimeDias días');
               }
               
               // Q: si parece fórmula, usar EOQ
@@ -546,7 +590,11 @@ class ExcelRepository {
               ));
             }
             logDebug('✅ Importación con fallback ZIP/XML. Filas: ${articulos.length}');
-            return articulos;
+            return ImportacionResultado(
+              articulos: articulos,
+              articulosConCalculosAutomaticos: [],
+              detallesCalculos: [],
+            );
           } catch (e2) {
             logDebug('❌ Fallback ZIP/XML falló: $e2');
           }
@@ -775,6 +823,35 @@ class ExcelRepository {
       logDebug('🔄 Creando plantilla básica como fallback...');
       
       // Fallback: si falla la carga del asset, reportar error
+      rethrow;
+    }
+  }
+
+  /// ✅ DESCARGAR ARCHIVO ZIP DESDE ASSETS (MULTIPLATAFORMA)
+  static Future<String> descargarArchivoZip(String nombreArchivo) async {
+    try {
+      logDebug('📦 ExcelRepository: Descargando archivo ZIP: $nombreArchivo...');
+      
+      // ✅ CARGAR ARCHIVO ZIP DESDE ASSETS
+      final byteData = await rootBundle.load('assets/templates/$nombreArchivo');
+      final uint8bytes = byteData.buffer.asUint8List();
+      logDebug('✅ ExcelRepository: Archivo ZIP cargado desde assets: ${uint8bytes.length} bytes');
+      
+      if (kIsWeb) {
+        // ✅ WEB: Descargar directamente desde assets
+        await downloadBytesWeb(
+          uint8bytes,
+          nombreArchivo,
+          mimeType: 'application/zip',
+        );
+        logDebug('✅ ExcelRepository: Archivo ZIP descargado en web: $nombreArchivo');
+        return 'Descargado: $nombreArchivo';
+      } else {
+        // ✅ NATIVO: Guardar en directorio temporal
+        return await _guardarArchivo(uint8bytes, nombreArchivo);
+      }
+    } catch (e) {
+      logDebug('❌ ExcelRepository: Error al descargar archivo ZIP: $e');
       rethrow;
     }
   }

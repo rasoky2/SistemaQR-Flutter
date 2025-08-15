@@ -20,6 +20,13 @@ class HomeScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Sistema de Inventario MDSJ'),
         actions: [
+          // ✅ SOLO MOSTRAR BOTÓN DE DESCARGA EN WEB
+          if (kIsWeb)
+            IconButton(
+              onPressed: () => _descargarAppWindows(context),
+              icon: const Icon(UniconsLine.windows),
+              tooltip: 'Descargar App Windows',
+            ),
           IconButton(
             onPressed: () => NavigationHelper.pushSlideUp(
               context,
@@ -29,15 +36,16 @@ class HomeScreen extends StatelessWidget {
             tooltip: 'Ayuda',
           ),
           IconButton(
-              onPressed: () => mostrarDialogoRestricciones(context),
+            onPressed: () => mostrarDialogoRestricciones(context),
             icon: const Icon(Icons.settings),
             tooltip: 'Configurar restricciones',
-            ),
-          ],
+          ),
+        ],
       ),
       body: Consumer<InventarioProvider>(
         builder: (context, provider, child) {
-          logDebug('🏠 HomeScreen: Consumer reconstruyendo - Artículos: ${provider.articulos.length}');
+          logDebug(
+              '🏠 HomeScreen: Consumer reconstruyendo - Artículos: ${provider.articulos.length}');
           return SingleChildScrollView(
             padding: const EdgeInsets.all(24.0),
             child: Column(
@@ -60,56 +68,57 @@ class HomeScreen extends StatelessWidget {
   Widget _buildSystemSummary(InventarioProvider provider) {
     return Builder(
       builder: (context) => Card(
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                  Icon(UniconsLine.info_circle, color: Theme.of(context).primaryColor),
-                const SizedBox(width: 12),
-                const Text(
-                  'Resumen del Sistema',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black,
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(UniconsLine.info_circle,
+                      color: Theme.of(context).primaryColor),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Resumen del Sistema',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
                   ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: _buildSummaryItem(
-                    'Artículos',
-                    '${provider.articulos.length}',
-                    UniconsLine.box,
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildSummaryItem(
+                      'Artículos',
+                      '${provider.articulos.length}',
+                      UniconsLine.box,
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: _buildSummaryItem(
-                    'Costo Total',
-                    provider.resultado != null 
-                        ? 'S/ ${provider.resultado!.costoTotalSistema.toStringAsFixed(2)}'
-                        : 'N/A',
-                    UniconsLine.money_bill,
+                  Expanded(
+                    child: _buildSummaryItem(
+                      'Costo Total',
+                      provider.resultado != null
+                          ? 'S/ ${provider.resultado!.costoTotalSistema.toStringAsFixed(2)}'
+                          : 'N/A',
+                      UniconsLine.money_bill,
+                    ),
                   ),
-                ),
-                Expanded(
-                  child: _buildSummaryItem(
-                    'Espacio Usado',
-                    provider.resultado != null 
-                        ? '${provider.resultado!.espacioTotalUsado.toStringAsFixed(1)} m²'
-                        : 'N/A',
-                    UniconsLine.store,
+                  Expanded(
+                    child: _buildSummaryItem(
+                      'Espacio Usado',
+                      provider.resultado != null
+                          ? '${provider.resultado!.espacioTotalUsado.toStringAsFixed(1)} m²'
+                          : 'N/A',
+                      UniconsLine.store,
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ],
+                ],
+              ),
+            ],
           ),
         ),
       ),
@@ -119,33 +128,38 @@ class HomeScreen extends StatelessWidget {
   Widget _buildSummaryItem(String title, String value, IconData icon) {
     return Builder(
       builder: (context) => Column(
-      children: [
+        children: [
           Icon(icon, size: 32, color: Theme.of(context).primaryColor),
-        const SizedBox(height: 8),
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 14,
-            color: Colors.grey,
+          const SizedBox(height: 8),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Colors.grey,
+            ),
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
           ),
-        ),
-      ],
+        ],
       ),
     );
   }
 
-  Widget _buildNavigationCards(BuildContext context, InventarioProvider provider) {
+  Widget _buildNavigationCards(
+      BuildContext context, InventarioProvider provider) {
     final width = MediaQuery.of(context).size.width;
-    final crossAxisCount = width > 1200 ? 3 : width > 800 ? 2 : 1;
+    final crossAxisCount = width > 1200
+        ? 3
+        : width > 800
+            ? 2
+            : 1;
     return GridView.count(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -160,7 +174,8 @@ class HomeScreen extends StatelessWidget {
           'Agregar artículos manualmente',
           UniconsLine.plus,
           Colors.teal,
-          () => NavigationHelper.pushSlideLeft(context, const IngresarDatosScreen()),
+          () => NavigationHelper.pushSlideLeft(
+              context, const IngresarDatosScreen()),
         ),
         _buildNavigationCard(
           context,
@@ -168,7 +183,8 @@ class HomeScreen extends StatelessWidget {
           'Mostrar cálculos detallados',
           UniconsLine.calculator,
           Colors.orange,
-          () => NavigationHelper.pushSlideLeft(context, const ResultadosScreen()),
+          () =>
+              NavigationHelper.pushSlideLeft(context, const ResultadosScreen()),
           enabled: provider.resultado != null,
         ),
         _buildNavigationCard(
@@ -180,11 +196,10 @@ class HomeScreen extends StatelessWidget {
           () => provider.limpiarDatos(),
           enabled: provider.articulos.isNotEmpty,
         ),
+
       ],
     );
   }
-
-
 
   Widget _buildNavigationCard(
     BuildContext context,
@@ -196,21 +211,30 @@ class HomeScreen extends StatelessWidget {
     bool enabled = true,
   }) {
     final screenWidth = MediaQuery.of(context).size.width;
-    
+
     // Tamaños aumentados para mejor legibilidad en contenedores grandes
-    final titleFontSize = screenWidth > 1200 ? 18.0 : 
-                         screenWidth > 800 ? 16.0 : 14.0;
-    final subtitleFontSize = screenWidth > 1200 ? 12.0 : 
-                           screenWidth > 800 ? 11.0 : 10.0;
-    final iconSize = screenWidth > 1200 ? 36.0 : 
-                    screenWidth > 800 ? 32.0 : 28.0;
-    
+    final titleFontSize = screenWidth > 1200
+        ? 18.0
+        : screenWidth > 800
+            ? 16.0
+            : 14.0;
+    final subtitleFontSize = screenWidth > 1200
+        ? 12.0
+        : screenWidth > 800
+            ? 11.0
+            : 10.0;
+    final iconSize = screenWidth > 1200
+        ? 36.0
+        : screenWidth > 800
+            ? 32.0
+            : 28.0;
+
     return _AnimatedNavigationCard(
       title: title,
       subtitle: subtitle,
       icon: icon,
       color: color,
-        onPressed: enabled ? onPressed : null,
+      onPressed: enabled ? onPressed : null,
       enabled: enabled,
       titleFontSize: titleFontSize,
       subtitleFontSize: subtitleFontSize,
@@ -218,11 +242,16 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildArticulosTable(InventarioProvider provider, BuildContext context) {
+  Widget _buildArticulosTable(
+      InventarioProvider provider, BuildContext context) {
     logDebug('🏠 HomeScreen: Construyendo tabla de artículos');
-    logDebug('🏠 HomeScreen: Total de artículos en provider: ${provider.articulos.length}');
-    logDebug('🏠 HomeScreen: Nombres de artículos: ${provider.articulos.map((a) => a.nombre).toList()}');
-    
+    logDebug(
+        '🏠 HomeScreen: Total de artículos en provider: ${provider.articulos.length}');
+    logDebug(
+        '🏠 HomeScreen: Total de artículos en provider: ${provider.articulos.length}');
+    logDebug(
+        '🏠 HomeScreen: Nombres de artículos: ${provider.articulos.map((a) => a.nombre).toList()}');
+
     return ArticulosTable(
       articulos: provider.articulos,
       title: 'Artículos en Inventario',
@@ -230,10 +259,104 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-
+  /// ✅ DESCARGAR APP WINDOWS DESDE ASSETS
+  Future<void> _descargarAppWindows(BuildContext context) async {
+    try {
+      logDebug('📦 HomeScreen: Iniciando descarga de app Windows...');
+      
+      // Descargar el archivo ZIP usando el provider
+      final provider = context.read<InventarioProvider>();
+      final resultado = await provider.descargarArchivoZip('WindowsApp.zip');
+      
+      if (resultado != null) {
+        logDebug('✅ HomeScreen: App Windows descargada exitosamente: $resultado');
+        
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.white),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text('Descarga de app Windows iniciada: WindowsApp.zip'),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 4),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      logDebug('❌ HomeScreen: Error al descargar app Windows: $e');
+      
+      if (context.mounted) {
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Row(
+                children: [
+                  Icon(Icons.error, color: Colors.red),
+                  SizedBox(width: 8),
+                  Text('Error de Descarga'),
+                ],
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'No se pudo descargar la app para Windows:',
+                    style: TextStyle(fontSize: 16),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    '$e',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.red,
+                      fontFamily: 'monospace',
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.info, color: Colors.blue, size: 20),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Asegúrate de que el archivo WindowsApp.zip esté en assets/templates/',
+                            style: TextStyle(fontSize: 14, color: Colors.blue),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Aceptar'),
+                ),
+              ],
+            );
+          },
+        );
+      }
+    }
+  }
 }
-
-
 
 /// Widget de tarjeta de navegación con animación de presión
 class _AnimatedNavigationCard extends StatefulWidget {
@@ -260,20 +383,22 @@ class _AnimatedNavigationCard extends StatefulWidget {
   });
 
   @override
-  State<_AnimatedNavigationCard> createState() => _AnimatedNavigationCardState();
+  State<_AnimatedNavigationCard> createState() =>
+      _AnimatedNavigationCardState();
 
   @override
   void debugFillProperties(DiagnosticPropertiesBuilder properties) {
     super.debugFillProperties(properties);
-    properties..add(DoubleProperty('iconSize', iconSize))
-    ..add(DoubleProperty('titleFontSize', titleFontSize))
-    ..add(StringProperty('subtitle', subtitle))
-    ..add(DiagnosticsProperty<IconData>('icon', icon))
-    ..add(ColorProperty('color', color))
-    ..add(ObjectFlagProperty<VoidCallback?>.has('onPressed', onPressed))
-    ..add(DiagnosticsProperty<bool>('enabled', enabled))
-    ..add(DoubleProperty('subtitleFontSize', subtitleFontSize))
-    ..add(StringProperty('title', title));
+    properties
+      ..add(DoubleProperty('iconSize', iconSize))
+      ..add(DoubleProperty('titleFontSize', titleFontSize))
+      ..add(StringProperty('subtitle', subtitle))
+      ..add(DiagnosticsProperty<IconData>('icon', icon))
+      ..add(ColorProperty('color', color))
+      ..add(ObjectFlagProperty<VoidCallback?>.has('onPressed', onPressed))
+      ..add(DiagnosticsProperty<bool>('enabled', enabled))
+      ..add(DoubleProperty('subtitleFontSize', subtitleFontSize))
+      ..add(StringProperty('title', title));
   }
 }
 
@@ -291,7 +416,7 @@ class _AnimatedNavigationCardState extends State<_AnimatedNavigationCard>
       duration: const Duration(milliseconds: 150),
       vsync: this,
     );
-    
+
     _scaleAnimation = Tween<double>(
       begin: 1.0,
       end: 0.95,
@@ -299,7 +424,7 @@ class _AnimatedNavigationCardState extends State<_AnimatedNavigationCard>
       parent: _animationController,
       curve: Curves.easeInOut,
     ));
-    
+
     _elevationAnimation = Tween<double>(
       begin: 2.0,
       end: 1.0,
@@ -357,10 +482,11 @@ class _AnimatedNavigationCardState extends State<_AnimatedNavigationCard>
               onTapCancel: _onTapCancel,
               onTap: widget.enabled ? widget.onPressed : null,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
-        decoration: BoxDecoration(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 16.0, vertical: 14.0),
+                decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
-                  color: _isPressed && widget.enabled 
+                  color: _isPressed && widget.enabled
                       ? widget.color.withValues(alpha: 0.1)
                       : Colors.transparent,
                 ),
@@ -381,12 +507,12 @@ class _AnimatedNavigationCardState extends State<_AnimatedNavigationCard>
                         fontWeight: FontWeight.bold,
                         color: widget.enabled ? Colors.black : Colors.grey,
                       ),
-                  textAlign: TextAlign.center,
+                      textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 6),
                     Text(
                       widget.subtitle,
-                  style: TextStyle(
+                      style: TextStyle(
                         fontSize: widget.subtitleFontSize,
                         color: widget.enabled ? Colors.grey : Colors.grey,
                       ),
@@ -397,10 +523,10 @@ class _AnimatedNavigationCardState extends State<_AnimatedNavigationCard>
                   ],
                 ),
               ),
-      ),
+            ),
           ),
         );
       },
     );
   }
-} 
+}
