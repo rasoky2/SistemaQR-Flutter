@@ -284,7 +284,6 @@ class HomeScreen extends StatelessWidget {
                 ],
               ),
               backgroundColor: Colors.green,
-              duration: Duration(seconds: 4),
             ),
           );
         }

@@ -1,0 +1,56 @@
+# 🪟 Configuración MSIX para crear instalador de Windows
+# Archivo de configuración para el paquete MSIX
+
+msix_config:
+  # 📱 Información de la aplicación
+  display_name: Sistema de Inventario MDSJ
+  publisher_display_name: Municipalidad de San Jerónimo
+  identity_name: com.mdsj.inventario
+  msix_version: 1.0.2.0
+  logo_path: assets/icons/appicon.png
+  
+  # 🎯 Configuración del paquete
+  capabilities: internetClient
+  file_associations:
+    - name: Excel Files
+      extensions: [xlsx, xls]
+      logo_path: assets/icons/appicon.png
+  
+  # 🖼️ Iconos de la aplicación
+  icons_background_color: "#104152"
+  tile_background_color: "#104152"
+  
+  # 📁 Archivos a incluir
+  include_files:
+    - assets/templates/
+    - assets/icons/
+  
+  # 🚫 Archivos a excluir
+  exclude_files:
+    - "**/*.dart"
+    - "**/*.yaml"
+    - "**/*.md"
+    - "**/*.git*"
+  
+  # 🔧 Configuración de instalación
+  install_location: LocalAppData
+  allow_elevation: false
+  
+  # 📋 Descripción
+  description: Sistema de inventario multi-artículo bajo modelo QR con restricciones para la Municipalidad de San Jerónimo
+  
+  # 🏷️ Categorías
+  categories:
+    - business
+    - productivity
+    - utilities
+  
+  # 🌐 Idiomas soportados
+  languages:
+    - es-MX
+  
+  # 📱 Configuración de inicio
+  start_menu:
+    name: Sistema de Inventario MDSJ
+    description: Gestiona inventarios con modelo QR
+    icon_path: assets/icons/appicon.png

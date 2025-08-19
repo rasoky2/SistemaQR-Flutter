@@ -38,6 +38,9 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  # 🎨 Generador automático de iconos para web y Windows
+  flutter_launcher_icons: ^0.13.1
+  msix: ^3.16.5
 
 flutter:
   uses-material-design: true
@@ -46,3 +49,23 @@ flutter:
   assets:
     - assets/templates/
     - assets/templates/plantilla_inventario.xlsx
+
+# 🎨 Configuración automática de iconos para web y Windows
+flutter_launcher_icons:
+  # 🖼️ Icono principal para todas las plataformas
+  image_path: "assets/icons/appicon.png"
+  
+  # 🌐 WEB - Con colores de tu tema MDSJ
+  web:
+    generate: true
+    image_path: "assets/icons/appicon.png"
+    background_color: "#104152"  # MDSJ primary
+    theme_color: "#114C5F"       # MDSJ secondary
+    maskable: true               # Icono adaptativo para PWA
+  
+  # 🪟 WINDOWS - Tu plataforma principal
+  windows:
+    generate: true
+    image_path: "assets/icons/appicon.png"
+    icon_size: 48
+    generate_ico: true           # Generar .ico para Windows

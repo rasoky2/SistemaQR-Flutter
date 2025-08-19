@@ -738,7 +738,6 @@ class _ArticulosTableState extends State<ArticulosTable> {
                             true, // Mover abajo después de seleccionar
                         enableMoveHorizontalInEditing:
                             true, // Permitir movimiento horizontal durante edición
-                        enterKeyAction: PlutoGridEnterKeyAction.editingAndMoveDown, // Enter confirma y baja
                         tabKeyAction: PlutoGridTabKeyAction
                             .moveToNextOnEdge, // Tab continúa a siguiente fila en bordes
 

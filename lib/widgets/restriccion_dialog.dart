@@ -40,78 +40,100 @@ class _RestriccionDialogState extends State<RestriccionDialog> {
   Widget build(BuildContext context) {
     final provider = context.read<InventarioProvider>();
     
-    return AlertDialog(
-      title: Row(
-        children: [
-          const Icon(UniconsLine.setting, color: MDSJColors.primary),
-          const SizedBox(width: 8),
-          Text(
-            'Configurar Restricciones',
-            style: GoogleFonts.inter(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 400),
+        child: Card(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header del diálogo
+                Row(
+                  children: [
+                    const Icon(UniconsLine.setting, color: MDSJColors.primary),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Configurar Restricciones',
+                        style: GoogleFonts.inter(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                // Contenido del diálogo
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildConfigField(
+                      'Lead Time (días)',
+                      _leadTimeController,
+                      (value) => provider.actualizarConfiguracion(leadTimeDias: double.tryParse(value) ?? 36.5),
+                      icon: UniconsLine.clock,
+                      tooltip: 'Tiempo promedio de entrega de pedidos',
+                    ),
+                    const SizedBox(height: 20),
+                    _buildConfigField(
+                      'Espacio Máximo (m²)',
+                      _espacioMaximoController,
+                      (value) => provider.actualizarConfiguracion(espacioMaximo: double.tryParse(value) ?? 150.0),
+                      icon: UniconsLine.store,
+                      tooltip: 'Capacidad máxima de almacenamiento',
+                    ),
+                    const SizedBox(height: 20),
+                    _buildConfigField(
+                      'Presupuesto Máximo (S/)',
+                      _presupuestoMaximoController,
+                      (value) => provider.actualizarConfiguracion(presupuestoMaximo: double.tryParse(value) ?? 10000.0),
+                      icon: UniconsLine.money_bill,
+                      tooltip: 'Límite de presupuesto para el inventario',
+                    ),
+                    const SizedBox(height: 20),
+                    _buildConfigField(
+                      'Número Máximo de Pedidos',
+                      _numeroMaximoPedidosController,
+                      (value) => provider.actualizarConfiguracion(numeroMaximoPedidos: double.tryParse(value) ?? 100.0),
+                      icon: UniconsLine.box,
+                      tooltip: 'Cantidad máxima de pedidos permitidos',
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+                // Botones de acción
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text(
+                        'Cancelar',
+                        style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                        _mostrarConfirmacion(context);
+                      },
+                      child: Text(
+                        'Guardar',
+                        style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
-        ],
-      ),
-      content: SizedBox(
-        width: 450,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildConfigField(
-              'Lead Time (días)',
-              _leadTimeController,
-              (value) => provider.actualizarConfiguracion(leadTimeDias: double.tryParse(value) ?? 36.5),
-                              icon: UniconsLine.clock,
-              tooltip: 'Tiempo promedio de entrega de pedidos',
-            ),
-            const SizedBox(height: 20),
-            _buildConfigField(
-              'Espacio Máximo (m²)',
-              _espacioMaximoController,
-              (value) => provider.actualizarConfiguracion(espacioMaximo: double.tryParse(value) ?? 150.0),
-                              icon: UniconsLine.store,
-              tooltip: 'Capacidad máxima de almacenamiento',
-            ),
-            const SizedBox(height: 20),
-            _buildConfigField(
-              'Presupuesto Máximo (S/)',
-              _presupuestoMaximoController,
-              (value) => provider.actualizarConfiguracion(presupuestoMaximo: double.tryParse(value) ?? 10000.0),
-                              icon: UniconsLine.money_bill,
-              tooltip: 'Límite de presupuesto para el inventario',
-            ),
-            const SizedBox(height: 20),
-            _buildConfigField(
-              'Número Máximo de Pedidos',
-              _numeroMaximoPedidosController,
-              (value) => provider.actualizarConfiguracion(numeroMaximoPedidos: double.tryParse(value) ?? 100.0),
-                              icon: UniconsLine.box,
-              tooltip: 'Cantidad máxima de pedidos permitidos',
-            ),
-          ],
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(
-            'Cancelar',
-            style: GoogleFonts.inter(fontWeight: FontWeight.w500),
-          ),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            Navigator.pop(context);
-            _mostrarConfirmacion(context);
-          },
-          child: Text(
-            'Guardar',
-            style: GoogleFonts.inter(fontWeight: FontWeight.w500),
-          ),
-        ),
-      ],
     );
   }
 
