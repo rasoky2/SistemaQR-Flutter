@@ -3,11 +3,11 @@ const MANIFEST = 'flutter-app-manifest';
 const TEMP = 'flutter-temp-cache';
 const CACHE_NAME = 'flutter-app-cache';
 
-const RESOURCES = {"assets/AssetManifest.bin": "bbd442e730d5eb3ab25fb814a2ce0138",
-"assets/AssetManifest.bin.json": "62322767153728faadc4353d4def0ce1",
-"assets/AssetManifest.json": "6e31e180b8fcbd68d826607cb8acf94b",
+const RESOURCES = {"assets/AssetManifest.bin": "9b27a34cb20180a2d7a514d8acd13cf1",
+"assets/AssetManifest.bin.json": "2e8081842ff17527b1f7c0d3102b30b6",
+"assets/AssetManifest.json": "f3cbd05384987ed7c1505ea715bae593",
 "assets/assets/templates/plantilla_inventario.xlsx": "dade9eeda1241eb1d42660c16314f639",
-"assets/assets/templates/portable.zip": "2efa0258dc733910f608fd09f5dbc0bf",
+"assets/assets/templates/Sistema_Inventario_MDSJ_Portable.zip": "cc0998a8e1ae8e017ee5a4e7966859bf",
 "assets/FontManifest.json": "51cd4f616db7a105e6686f522d8811da",
 "assets/fonts/MaterialIcons-Regular.otf": "9bfc18193773a6bf66a91d2701cd1d32",
 "assets/NOTICES": "55b4ee81ac86a49b09c848fdafd9b13b",
@@ -49,14 +49,14 @@ const RESOURCES = {"assets/AssetManifest.bin": "bbd442e730d5eb3ab25fb814a2ce0138
 "canvaskit/skwasm_heavy.wasm": "8034ad26ba2485dab2fd49bdd786837b",
 "favicon.png": "79313e973be7cb60fc01bcc23f0bf205",
 "flutter.js": "888483df48293866f9f41d3d9274a779",
-"flutter_bootstrap.js": "a6c636b2c637d7e6555887873001d872",
+"flutter_bootstrap.js": "877f4bb0b3de223741731bd27939fb53",
 "icons/Icon-192.png": "4f72d9aab37a690d2b62a7a49d888f87",
 "icons/Icon-512.png": "6215ea72a0cc59d652ffb4daba5a3fae",
 "icons/Icon-maskable-192.png": "4f72d9aab37a690d2b62a7a49d888f87",
 "icons/Icon-maskable-512.png": "6215ea72a0cc59d652ffb4daba5a3fae",
 "index.html": "210e081dea95fb3d834cf3f1866a3bfa",
 "/": "210e081dea95fb3d834cf3f1866a3bfa",
-"main.dart.js": "fa11f69393ac1f1c92971eba2b1da990",
+"main.dart.js": "b4e7d2ab7642f83861133f0dadc31e0c",
 "manifest.json": "a799947b9616893d416c3a4ef3102649",
 "version.json": "bbc933df998e76d0ae667825ef4452f1"};
 // The application shell files that are downloaded before a service worker can

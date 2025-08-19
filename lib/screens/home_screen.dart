@@ -259,17 +259,17 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  /// ✅ DESCARGAR APP WINDOWS DESDE ASSETS
+  /// ✅ DESCARGAR PAQUETE PORTABLE DESDE ASSETS
   Future<void> _descargarAppWindows(BuildContext context) async {
     try {
-      logDebug('📦 HomeScreen: Iniciando descarga de app Windows...');
+      logDebug('📦 HomeScreen: Iniciando descarga de paquete portable...');
       
-      // Descargar el archivo ZIP usando el provider
+      // Descargar el paquete portable usando el provider
       final provider = context.read<InventarioProvider>();
-      final resultado = await provider.descargarArchivoZip('WindowsApp.zip');
+      final resultado = await provider.descargarArchivoZip('Sistema_Inventario_MDSJ_Portable.zip');
       
       if (resultado != null) {
-        logDebug('✅ HomeScreen: App Windows descargada exitosamente: $resultado');
+        logDebug('✅ HomeScreen: Paquete portable descargado exitosamente: $resultado');
         
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -279,7 +279,7 @@ class HomeScreen extends StatelessWidget {
                   Icon(Icons.check_circle, color: Colors.white),
                   SizedBox(width: 12),
                   Expanded(
-                    child: Text('Descarga de app Windows iniciada: WindowsApp.zip'),
+                    child: Text('Descarga de paquete portable iniciada'),
                   ),
                 ],
               ),
@@ -289,7 +289,7 @@ class HomeScreen extends StatelessWidget {
         }
       }
     } catch (e) {
-      logDebug('❌ HomeScreen: Error al descargar app Windows: $e');
+      logDebug('❌ HomeScreen: Error al descargar paquete portable: $e');
       
       if (context.mounted) {
         showDialog(
@@ -308,7 +308,7 @@ class HomeScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Text(
-                    'No se pudo descargar la app para Windows:',
+                    'No se pudo descargar el paquete portable:',
                     style: TextStyle(fontSize: 16),
                   ),
                   const SizedBox(height: 8),
@@ -334,7 +334,7 @@ class HomeScreen extends StatelessWidget {
                         SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Asegúrate de que el archivo WindowsApp.zip esté en assets/templates/',
+                            'Asegúrate de que el archivo Sistema_Inventario_MDSJ_Portable.zip esté en assets/templates/',
                             style: TextStyle(fontSize: 14, color: Colors.blue),
                           ),
                         ),
