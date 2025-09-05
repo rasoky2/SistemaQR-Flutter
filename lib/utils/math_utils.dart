@@ -25,7 +25,10 @@ class MathUtils {
     final absX = x.abs() / sqrt(2);
     final t = 1.0 / (1.0 + p * absX);
     // y ≈ 1 - (((((a5*t + a4)*t + a3)*t + a2)*t + a1)*t) * exp(-absX^2)
-    final y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * exp(-absX * absX);
+    final y = 1.0 -
+        (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) *
+            t *
+            exp(-absX * absX);
     return 0.5 * (1.0 + sign * y);
   }
 
@@ -39,32 +42,37 @@ class MathUtils {
 
   /// Calcula el z-score para un punto de reorden dado
   /// z = (R - μL) / σL
-  static double calcularZScore(double puntoReorden, double demandaLeadTime, double desviacionLeadTime) {
+  static double calcularZScore(
+      double puntoReorden, double demandaLeadTime, double desviacionLeadTime) {
     return (puntoReorden - demandaLeadTime) / desviacionLeadTime;
   }
 
   /// Calcula la demanda en el lead time
   /// μL = D * (L / 365)
-  static double calcularDemandaLeadTime(double demandaAnual, double leadTimeDias) {
+  static double calcularDemandaLeadTime(
+      double demandaAnual, double leadTimeDias) {
     return demandaAnual * (leadTimeDias / 365.0);
   }
 
   /// Calcula la desviación estándar en el lead time
   /// σL = σD * sqrt(L)
-  static double calcularDesviacionLeadTime(double desviacionDiaria, double leadTimeDias) {
+  static double calcularDesviacionLeadTime(
+      double desviacionDiaria, double leadTimeDias) {
     return desviacionDiaria * sqrt(leadTimeDias);
   }
 
   /// Calcula los backorders esperados
   /// E[BO] = σL * L(z)
-  static double calcularBackordersEsperados(double desviacionLeadTime, double zScore) {
+  static double calcularBackordersEsperados(
+      double desviacionLeadTime, double zScore) {
     final lz = normalLossFunction(zScore);
     return desviacionLeadTime * lz;
   }
 
   /// Calcula el stock de seguridad
   /// SS = max(0, R - μL)
-  static double calcularStockSeguridad(double puntoReorden, double demandaLeadTime) {
+  static double calcularStockSeguridad(
+      double puntoReorden, double demandaLeadTime) {
     final ss = puntoReorden - demandaLeadTime;
     return ss > 0 ? ss : 0.0;
   }
@@ -91,12 +99,14 @@ class MathUtils {
   }
 
   /// Componente: Costo de pedidos anual Ck = (D/Q) * K
-  static double calcularCostoPedidosComponent(double demandaAnual, double tamanoLote, double costoPedido) {
+  static double calcularCostoPedidosComponent(
+      double demandaAnual, double tamanoLote, double costoPedido) {
     return (demandaAnual / tamanoLote) * costoPedido;
   }
 
   /// Componente: Costo de mantenimiento anual Ch = \bar{I} * h
-  static double calcularCostoMantenimientoComponent(double inventarioPromedio, double costoMantenimiento) {
+  static double calcularCostoMantenimientoComponent(
+      double inventarioPromedio, double costoMantenimiento) {
     return inventarioPromedio * costoMantenimiento;
   }
 
@@ -131,9 +141,12 @@ class MathUtils {
   }) {
     // Por requerimiento de negocio, el costo total debe seguir:
     // C = (D/Q)*K + ((Q/2) - E[BO]) * h + E[BO] * p
-    final cK = calcularCostoPedidosComponent(demandaAnual, tamanoLote, costoPedido);
-    final cH = calcularCostoMantenimientoComponent(inventarioPromedio, costoMantenimiento);
-    final cP = calcularCostoServicioComponentEBOPuro(backordersEsperados, costoFaltante);
+    final cK =
+        calcularCostoPedidosComponent(demandaAnual, tamanoLote, costoPedido);
+    final cH = calcularCostoMantenimientoComponent(
+        inventarioPromedio, costoMantenimiento);
+    final cP = calcularCostoServicioComponentEBOPuro(
+        backordersEsperados, costoFaltante);
     return cK + cH + cP;
   }
 
@@ -150,16 +163,18 @@ class MathUtils {
     // (D/Q)*K
     final costoPedidos = (demandaAnual / tamanoLote) * costoPedido;
     // ((Q - E[BO])/2)*h
-    final costoMantenimientoInv = ((tamanoLote - backordersEsperados) / 2) * costoMantenimiento;
+    final costoMantenimientoInv =
+        ((tamanoLote - backordersEsperados) / 2) * costoMantenimiento;
     // E[BO]*p
     final costoServicio = backordersEsperados * costoFaltante;
-    
+
     return costoPedidos + costoMantenimientoInv + costoServicio;
   }
 
   /// Calcula el tamaño de lote EOQ clásico
   /// Q* = sqrt( 2 * D * K / h )
-  static double calcularEOQ(double demandaAnual, double costoPedido, double costoMantenimiento) {
+  static double calcularEOQ(
+      double demandaAnual, double costoPedido, double costoMantenimiento) {
     if (demandaAnual <= 0 || costoPedido <= 0 || costoMantenimiento <= 0) {
       return 1.0;
     }
@@ -173,7 +188,8 @@ class MathUtils {
 
   /// Calcula el espacio usado por un artículo
   /// Espacio = R * s
-  static double calcularEspacioUsado(double puntoReorden, double espacioUnidad) {
+  static double calcularEspacioUsado(
+      double puntoReorden, double espacioUnidad) {
     return puntoReorden * espacioUnidad;
   }
 
@@ -184,7 +200,8 @@ class MathUtils {
   }
 
   /// Presupuesto para un artículo: c * R
-  static double calcularPresupuestoArticulo(double costoUnitario, double puntoReorden) {
+  static double calcularPresupuestoArticulo(
+      double costoUnitario, double puntoReorden) {
     return costoUnitario * puntoReorden;
   }
 
@@ -215,9 +232,103 @@ class MathUtils {
     return format.format(valor);
   }
 
+  /// Formatea un valor como número sin símbolo de moneda (para Excel)
+  static String formatearNumero(double valor) {
+    final NumberFormat format = NumberFormat.decimalPattern('es_PE');
+    return format.format(double.parse(valor.toStringAsFixed(2)));
+  }
+
   /// Formatea un número con unidades
   static String formatearUnidades(double valor, String unidad) {
     final NumberFormat format = NumberFormat.decimalPattern('es_PE');
     return '${format.format(double.parse(valor.toStringAsFixed(2)))} $unidad';
   }
-} 
+
+  /// Redondea un valor según su tipo y magnitud
+  static double redondearInteligente(double valor,
+      {String tipo = 'general', int? decimales}) {
+    switch (tipo) {
+      case 'dias':
+        // Lead time: redondear a 1 decimal
+        return double.parse(valor.toStringAsFixed(1));
+
+      case 'espacio':
+        // Espacio en m²: redondear a 1 decimal
+        return double.parse(valor.toStringAsFixed(1));
+
+      case 'moneda':
+        // Valores monetarios: redondear a 2 decimales
+        return double.parse(valor.toStringAsFixed(2));
+
+      case 'unidades':
+        // Punto de reorden, tamaño de lote: redondear a números enteros
+        return valor.roundToDouble();
+
+      case 'unidades_decimales':
+        // Punto de reorden, tamaño de lote con decimales personalizados
+        final decimalesFinal = decimales ?? 0;
+        return double.parse(valor.toStringAsFixed(decimalesFinal));
+
+      case 'pedidos':
+        // Número de pedidos: redondear a números enteros
+        return valor.roundToDouble();
+
+      case 'porcentaje':
+        // Porcentajes: redondear a 1 decimal
+        return double.parse(valor.toStringAsFixed(1));
+
+      default:
+        // General: redondear a 2 decimales
+        return double.parse(valor.toStringAsFixed(2));
+    }
+  }
+
+  /// Formatea un valor redondeado según su tipo
+  static String formatearValorRedondeado(double valor,
+      {String tipo = 'general'}) {
+    final valorRedondeado = redondearInteligente(valor, tipo: tipo);
+
+    switch (tipo) {
+      case 'dias':
+        return '${valorRedondeado.toStringAsFixed(1)} días';
+
+      case 'espacio':
+        return '${valorRedondeado.toStringAsFixed(1)} m²';
+
+      case 'moneda':
+        return formatearMoneda(valorRedondeado);
+
+      case 'unidades':
+        return '${valorRedondeado.toStringAsFixed(0)} unidades';
+
+      case 'pedidos':
+        return '${valorRedondeado.toStringAsFixed(0)} pedidos';
+
+      case 'porcentaje':
+        return '${valorRedondeado.toStringAsFixed(1)}%';
+
+      default:
+        return valorRedondeado.toStringAsFixed(2);
+    }
+  }
+
+  /// Valida y redondea un valor de entrada del usuario
+  static double validarYRedondearEntrada(String input,
+      {String tipo = 'general', double? valorPorDefecto}) {
+    if (input.trim().isEmpty) {
+      return valorPorDefecto ?? 0.0;
+    }
+
+    // Parsear el valor
+    final valor =
+        double.tryParse(input.replaceAll(',', '.')) ?? valorPorDefecto ?? 0.0;
+
+    // Validar que sea positivo (excepto para porcentajes que pueden ser negativos)
+    if (tipo != 'porcentaje' && valor < 0) {
+      return 0.0;
+    }
+
+    // Redondear según el tipo
+    return redondearInteligente(valor, tipo: tipo);
+  }
+}

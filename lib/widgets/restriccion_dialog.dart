@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:inventario_qr/providers/inventario.provider.dart';
+import 'package:inventario_qr/utils/math_utils.dart';
 import 'package:inventario_qr/utils/theme_colors.dart';
 import 'package:provider/provider.dart';
 import 'package:unicons/unicons.dart';
@@ -11,20 +12,49 @@ class RestriccionDialog extends StatefulWidget {
   @override
   State<RestriccionDialog> createState() => _RestriccionDialogState();
 }
+
 class _RestriccionDialogState extends State<RestriccionDialog> {
   late TextEditingController _leadTimeController;
   late TextEditingController _espacioMaximoController;
   late TextEditingController _presupuestoMaximoController;
   late TextEditingController _numeroMaximoPedidosController;
 
+  // ✅ Controladores para configuraciones de redondeo
+  late String _tipoRedondeoPuntoReorden;
+  late String _tipoRedondeoTamanoLote;
+  late int _decimalesPuntoReorden;
+  late int _decimalesTamanoLote;
+  late bool _redondeosVinculados;
+
   @override
   void initState() {
     super.initState();
     final provider = context.read<InventarioProvider>();
-    _leadTimeController = TextEditingController(text: provider.leadTimeDias.toString());
-    _espacioMaximoController = TextEditingController(text: provider.espacioMaximo.toString());
-    _presupuestoMaximoController = TextEditingController(text: provider.presupuestoMaximo.toString());
-    _numeroMaximoPedidosController = TextEditingController(text: provider.numeroMaximoPedidos.toString());
+
+    // Usar valores redondeados para mejor presentación
+    _leadTimeController = TextEditingController(
+        text:
+            MathUtils.redondearInteligente(provider.leadTimeDias, tipo: 'dias')
+                .toStringAsFixed(1));
+    _espacioMaximoController = TextEditingController(
+        text: MathUtils.redondearInteligente(provider.espacioMaximo,
+                tipo: 'espacio')
+            .toStringAsFixed(1));
+    _presupuestoMaximoController = TextEditingController(
+        text: MathUtils.redondearInteligente(provider.presupuestoMaximo,
+                tipo: 'moneda')
+            .toStringAsFixed(2));
+    _numeroMaximoPedidosController = TextEditingController(
+        text: MathUtils.redondearInteligente(provider.numeroMaximoPedidos,
+                tipo: 'pedidos')
+            .toStringAsFixed(0));
+
+    // ✅ Inicializar configuraciones de redondeo
+    _tipoRedondeoPuntoReorden = provider.tipoRedondeoPuntoReorden;
+    _tipoRedondeoTamanoLote = provider.tipoRedondeoTamanoLote;
+    _decimalesPuntoReorden = provider.decimalesPuntoReorden;
+    _decimalesTamanoLote = provider.decimalesTamanoLote;
+    _redondeosVinculados = provider.redondeosVinculados;
   }
 
   @override
@@ -39,11 +69,11 @@ class _RestriccionDialogState extends State<RestriccionDialog> {
   @override
   Widget build(BuildContext context) {
     final provider = context.read<InventarioProvider>();
-    
+
     return Dialog(
       backgroundColor: Colors.transparent,
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 400),
+        constraints: const BoxConstraints(maxWidth: 700),
         child: Card(
           child: Padding(
             padding: const EdgeInsets.all(24.0),
@@ -67,40 +97,85 @@ class _RestriccionDialogState extends State<RestriccionDialog> {
                   ],
                 ),
                 const SizedBox(height: 24),
-                // Contenido del diálogo
-                Column(
-                  mainAxisSize: MainAxisSize.min,
+                // ✅ Contenido del diálogo en 2 columnas
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _buildConfigField(
-                      'Lead Time (días)',
-                      _leadTimeController,
-                      (value) => provider.actualizarConfiguracion(leadTimeDias: double.tryParse(value) ?? 36.5),
-                      icon: UniconsLine.clock,
-                      tooltip: 'Tiempo promedio de entrega de pedidos',
+                    // ✅ COLUMNA IZQUIERDA: Configuraciones principales
+                    Expanded(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          _buildConfigField(
+                            'Lead Time (días)',
+                            _leadTimeController,
+                            (value) {
+                              final valorRedondeado =
+                                  MathUtils.validarYRedondearEntrada(value,
+                                      tipo: 'dias', valorPorDefecto: 36.5);
+                              provider.actualizarConfiguracion(
+                                  leadTimeDias: valorRedondeado);
+                            },
+                            icon: UniconsLine.clock,
+                            tooltip: 'Tiempo promedio de entrega de pedidos',
+                          ),
+                          const SizedBox(height: 20),
+                          _buildConfigField(
+                            'Espacio Máximo (m²)',
+                            _espacioMaximoController,
+                            (value) {
+                              final valorRedondeado =
+                                  MathUtils.validarYRedondearEntrada(value,
+                                      tipo: 'espacio', valorPorDefecto: 150.0);
+                              provider.actualizarConfiguracion(
+                                  espacioMaximo: valorRedondeado);
+                            },
+                            icon: UniconsLine.store,
+                            tooltip: 'Capacidad máxima de almacenamiento',
+                          ),
+                          const SizedBox(height: 20),
+                          _buildConfigField(
+                            'Presupuesto Máximo (S/)',
+                            _presupuestoMaximoController,
+                            (value) {
+                              final valorRedondeado =
+                                  MathUtils.validarYRedondearEntrada(value,
+                                      tipo: 'moneda', valorPorDefecto: 10000.0);
+                              provider.actualizarConfiguracion(
+                                  presupuestoMaximo: valorRedondeado);
+                            },
+                            icon: UniconsLine.money_bill,
+                            tooltip: 'Límite de presupuesto para el inventario',
+                          ),
+                          const SizedBox(height: 20),
+                          _buildConfigField(
+                            'Número Máximo de Pedidos',
+                            _numeroMaximoPedidosController,
+                            (value) {
+                              final valorRedondeado =
+                                  MathUtils.validarYRedondearEntrada(value,
+                                      tipo: 'pedidos', valorPorDefecto: 100.0);
+                              provider.actualizarConfiguracion(
+                                  numeroMaximoPedidos: valorRedondeado);
+                            },
+                            icon: UniconsLine.box,
+                            tooltip: 'Cantidad máxima de pedidos permitidos',
+                          ),
+                        ],
+                      ),
                     ),
-                    const SizedBox(height: 20),
-                    _buildConfigField(
-                      'Espacio Máximo (m²)',
-                      _espacioMaximoController,
-                      (value) => provider.actualizarConfiguracion(espacioMaximo: double.tryParse(value) ?? 150.0),
-                      icon: UniconsLine.store,
-                      tooltip: 'Capacidad máxima de almacenamiento',
+
+                    // ✅ SEPARADOR VERTICAL
+                    Container(
+                      width: 1,
+                      height: 220,
+                      margin: const EdgeInsets.symmetric(horizontal: 20),
+                      color: Colors.grey.withValues(alpha: 0.2),
                     ),
-                    const SizedBox(height: 20),
-                    _buildConfigField(
-                      'Presupuesto Máximo (S/)',
-                      _presupuestoMaximoController,
-                      (value) => provider.actualizarConfiguracion(presupuestoMaximo: double.tryParse(value) ?? 10000.0),
-                      icon: UniconsLine.money_bill,
-                      tooltip: 'Límite de presupuesto para el inventario',
-                    ),
-                    const SizedBox(height: 20),
-                    _buildConfigField(
-                      'Número Máximo de Pedidos',
-                      _numeroMaximoPedidosController,
-                      (value) => provider.actualizarConfiguracion(numeroMaximoPedidos: double.tryParse(value) ?? 100.0),
-                      icon: UniconsLine.box,
-                      tooltip: 'Cantidad máxima de pedidos permitidos',
+
+                    // ✅ COLUMNA DERECHA: Configuraciones de redondeo
+                    Expanded(
+                      child: _buildRedondeoSection(),
                     ),
                   ],
                 ),
@@ -119,6 +194,15 @@ class _RestriccionDialogState extends State<RestriccionDialog> {
                     const SizedBox(width: 12),
                     ElevatedButton(
                       onPressed: () {
+                        // ✅ Guardar configuraciones de redondeo
+                        provider.actualizarConfiguracion(
+                          tipoRedondeoPuntoReorden: _tipoRedondeoPuntoReorden,
+                          tipoRedondeoTamanoLote: _tipoRedondeoTamanoLote,
+                          decimalesPuntoReorden: _decimalesPuntoReorden,
+                          decimalesTamanoLote: _decimalesTamanoLote,
+                          redondeosVinculados: _redondeosVinculados,
+                        );
+
                         Navigator.pop(context);
                         _mostrarConfirmacion(context);
                       },
@@ -145,14 +229,15 @@ class _RestriccionDialogState extends State<RestriccionDialog> {
     String? tooltip,
   }) {
     final focusNode = FocusNode();
-    
+
     // Seleccionar todo el texto al obtener el foco
     focusNode.addListener(() {
       if (focusNode.hasFocus) {
-        controller.selection = TextSelection(baseOffset: 0, extentOffset: controller.text.length);
+        controller.selection =
+            TextSelection(baseOffset: 0, extentOffset: controller.text.length);
       }
     });
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -174,7 +259,8 @@ class _RestriccionDialogState extends State<RestriccionDialog> {
             ),
             if (tooltip != null) ...[
               const SizedBox(width: 4),
-                              const Icon(UniconsLine.info_circle, size: 14, color: MDSJColors.textSecondary),
+              const Icon(UniconsLine.info_circle,
+                  size: 14, color: MDSJColors.textSecondary),
             ],
           ],
         ),
@@ -214,13 +300,284 @@ class _RestriccionDialogState extends State<RestriccionDialog> {
     );
   }
 
+  /// Construye la sección de configuraciones de redondeo
+  Widget _buildRedondeoSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Header de la sección
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: MDSJColors.primary.withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(UniconsLine.calculator,
+                  size: 18, color: MDSJColors.primary),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Configuración de Redondeo',
+                style: GoogleFonts.inter(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: MDSJColors.textPrimary,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+
+        // ✅ Botón de vinculación
+        _buildVinculacionButton(),
+
+        const SizedBox(height: 20),
+
+        // Configuración de Punto de Reorden
+        _buildRedondeoField(
+          'Punto de Reorden',
+          _tipoRedondeoPuntoReorden,
+          _decimalesPuntoReorden,
+          (tipo, decimales) {
+            setState(() {
+              _tipoRedondeoPuntoReorden = tipo;
+              _decimalesPuntoReorden = decimales;
+
+              // ✅ Si están vinculados, actualizar también el tamaño de lote
+              if (_redondeosVinculados) {
+                _tipoRedondeoTamanoLote = tipo;
+                _decimalesTamanoLote = decimales;
+              }
+            });
+          },
+        ),
+
+        const SizedBox(height: 20),
+
+        // Configuración de Tamaño de Lote
+        _buildRedondeoField(
+          'Tamaño de Lote',
+          _tipoRedondeoTamanoLote,
+          _decimalesTamanoLote,
+          (tipo, decimales) {
+            setState(() {
+              _tipoRedondeoTamanoLote = tipo;
+              _decimalesTamanoLote = decimales;
+
+              // ✅ Si están vinculados, actualizar también el punto de reorden
+              if (_redondeosVinculados) {
+                _tipoRedondeoPuntoReorden = tipo;
+                _decimalesPuntoReorden = decimales;
+              }
+            });
+          },
+        ),
+      ],
+    );
+  }
+
+  /// Construye un campo de configuración de redondeo
+  Widget _buildRedondeoField(
+    String label,
+    String tipoActual,
+    int decimalesActual,
+    Function(String tipo, int decimales) onChanged,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: MDSJColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 8),
+
+        // Selector de tipo de redondeo
+        Row(
+          children: [
+            Expanded(
+              child: _buildRedondeoOption(
+                'Números Enteros',
+                'unidades',
+                tipoActual,
+                () => onChanged('unidades', 0),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _buildRedondeoOption(
+                'Con Decimales',
+                'decimales',
+                tipoActual,
+                () => onChanged('decimales', decimalesActual),
+              ),
+            ),
+          ],
+        ),
+
+        // Selector de decimales (solo si está en modo decimales)
+        if (tipoActual == 'decimales') ...[
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              Text(
+                'Decimales: ',
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  color: MDSJColors.textSecondary,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: List.generate(5, (index) {
+                    final decimales = index;
+                    return Flexible(
+                      child: _buildDecimalOption(
+                        decimales.toString(),
+                        decimales,
+                        decimalesActual,
+                        () => onChanged('decimales', decimales),
+                      ),
+                    );
+                  }),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
+  /// Construye una opción de redondeo
+  Widget _buildRedondeoOption(
+      String label, String value, String selected, VoidCallback onTap) {
+    final isSelected = selected == value;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? MDSJColors.primary
+              : Colors.grey.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isSelected
+                ? MDSJColors.primary
+                : Colors.grey.withValues(alpha: 0.3),
+          ),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 13,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+            color: isSelected ? Colors.white : MDSJColors.textPrimary,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ),
+    );
+  }
+
+  /// Construye una opción de decimales
+  Widget _buildDecimalOption(
+      String label, int value, int selected, VoidCallback onTap) {
+    final isSelected = selected == value;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        constraints: const BoxConstraints(minWidth: 28, maxWidth: 36),
+        height: 28,
+        decoration: BoxDecoration(
+          color: isSelected
+              ? MDSJColors.primary
+              : Colors.grey.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(4),
+          border: Border.all(
+            color: isSelected
+                ? MDSJColors.primary
+                : Colors.grey.withValues(alpha: 0.3),
+          ),
+        ),
+        child: Center(
+          child: Text(
+            label,
+            style: GoogleFonts.inter(
+              fontSize: 11,
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              color: isSelected ? Colors.white : MDSJColors.textPrimary,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Construye el botón de vinculación
+  Widget _buildVinculacionButton() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: _redondeosVinculados
+            ? MDSJColors.primary.withValues(alpha: 0.1)
+            : Colors.grey.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: _redondeosVinculados
+              ? MDSJColors.primary
+              : Colors.grey.withValues(alpha: 0.3),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            _redondeosVinculados ? UniconsLine.link : UniconsLine.link_broken,
+            size: 16,
+            color: _redondeosVinculados ? MDSJColors.primary : Colors.grey,
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: () {
+              setState(() {
+                _redondeosVinculados = !_redondeosVinculados;
+              });
+            },
+            child: Text(
+              _redondeosVinculados
+                  ? 'Redondeos Vinculados'
+                  : 'Redondeos Independientes',
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: _redondeosVinculados ? MDSJColors.primary : Colors.grey,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _mostrarConfirmacion(BuildContext context) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: Row(
           children: [
-                            const Icon(UniconsLine.check_circle, color: MDSJColors.success),
+            const Icon(UniconsLine.check_circle, color: MDSJColors.success),
             const SizedBox(width: 8),
             Text(
               'Configuración Guardada',

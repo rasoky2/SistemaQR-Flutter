@@ -713,69 +713,141 @@ class ExcelRepository {
     }
   }
   /// Exporta resultados a un archivo Excel usando librería 'excel'
-  static Future<String> exportarResultados(ResultadoSistema resultado) async {
+  static Future<String> exportarResultados(ResultadoSistema resultado, {List<Articulo>? articulos}) async {
     try {
       logDebug('📤 Iniciando exportación de resultados con librería excel...');
       
-      // Crear nuevo Excel
+      // Crear nuevo Excel (usa hoja predeterminada)
       final excel = Excel.createExcel();
-      final sheetName = 'Resultados';
       
-      // Crear hoja de resultados
-      final sheet = excel[sheetName];
+      // Usar la hoja predeterminada (Sheet1)
+      final sheet = excel.tables.keys.first;
+      final worksheet = excel[sheet];
 
-      // Encabezados para resultados por artículo
+      // ✅ Encabezados que coinciden exactamente con la interfaz
       final headers = [
-        'Nombre',
-        'Tamaño Lote (Q)',
-        'Punto Reorden (R)',
-        'Z-Score',
-        'Backorders Esperados',
-        'Costo Total',
-        'Espacio Usado (m²)',
-        'Costo Pedidos',
-        'Costo Mantenimiento',
-        'Costo Servicio',
+        'Artículo',           // Coincide con DataTable
+        'Q',                  // Coincide con DataTable
+        'R',                  // Coincide con DataTable
+        'Z-Score',            // Coincide con DataTable
+        'Backorders',         // Coincide con DataTable
+        'Costo Total',        // Coincide con DataTable
+        'Espacio (m²)',       // Coincide con DataTable
       ];
 
-      // Escribir encabezados usando librería 'excel'
+      // ✅ Escribir encabezados con colores del tema
       for (int i = 0; i < headers.length; i++) {
-        sheet
-            .cell(CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0))
-            .value = TextCellValue(headers[i]);
+        final cell = worksheet
+            .cell(CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0));
+        cell.value = TextCellValue(headers[i]);
+        // ✅ Color del tema MDSJ para encabezados
+        cell.cellStyle = CellStyle(
+          backgroundColorHex: ExcelColor.blue, // Usar azul similar al primary del tema
+          fontColorHex: ExcelColor.white,
+          bold: true,
+        );
       }
 
-      // Escribir datos de artículos
+      // ✅ Escribir datos que coinciden exactamente con la interfaz
       for (int i = 0; i < resultado.resultados.length; i++) {
         final res = resultado.resultados[i];
         final row = i + 1; // Empezar desde la fila 1 (índice basado en 0)
 
-        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: row)).value = TextCellValue(res.nombre);
-        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: row)).value = DoubleCellValue(res.tamanoLote);
-        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: row)).value = DoubleCellValue(res.puntoReorden);
-        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: row)).value = DoubleCellValue(res.zScore);
-        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 4, rowIndex: row)).value = DoubleCellValue(res.backordersEsperados);
-        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 5, rowIndex: row)).value = DoubleCellValue(res.costoTotal);
-        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 6, rowIndex: row)).value = DoubleCellValue(res.espacioUsado);
-        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 7, rowIndex: row)).value = DoubleCellValue(res.costoPedidos);
-        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 8, rowIndex: row)).value = DoubleCellValue(res.costoMantenimiento);
-        sheet.cell(CellIndex.indexByColumnRow(columnIndex: 9, rowIndex: row)).value = DoubleCellValue(res.costoServicio);
+        // ✅ Formato exacto como en la interfaz (sin colores alternados)
+        worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: row)).value = TextCellValue(res.nombre);
+        worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: row)).value = TextCellValue(res.tamanoLote.toStringAsFixed(0)); // Q: números enteros
+        worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: row)).value = TextCellValue(res.puntoReorden.toStringAsFixed(0)); // R: números enteros
+        worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: row)).value = TextCellValue(res.zScore.toStringAsFixed(2)); // Z-Score: 2 decimales
+        worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 4, rowIndex: row)).value = TextCellValue(res.backordersEsperados.toStringAsFixed(2)); // Backorders: 2 decimales
+        worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 5, rowIndex: row)).value = TextCellValue(MathUtils.formatearNumero(res.costoTotal)); // Costo Total: formato número
+        worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 6, rowIndex: row)).value = TextCellValue(MathUtils.formatearNumero(res.espacioUsado)); // Espacio: formato número
       }
 
-      // Agregar resumen del sistema
-      final summaryRow = resultado.resultados.length + 3;
+      // ✅ Agregar resumen del sistema en la parte derecha (columna H)
+      final summaryStartCol = 8; // Columna H (índice 8)
+      final summaryStartRow = 0; // Empezar desde la fila 0 (mismo nivel que los encabezados)
 
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: summaryRow + 1)).value = TextCellValue('Costo Total Sistema:');
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: summaryRow + 1)).value = DoubleCellValue(resultado.costoTotalSistema);
+      // ✅ Encabezado del resumen con color del tema
+      final summaryHeaderCell = worksheet.cell(CellIndex.indexByColumnRow(columnIndex: summaryStartCol, rowIndex: summaryStartRow));
+      summaryHeaderCell.value = TextCellValue('Resumen del Sistema');
+      summaryHeaderCell.cellStyle = CellStyle(
+        backgroundColorHex: ExcelColor.blue, // Usar el mismo color que los encabezados
+        fontColorHex: ExcelColor.white,
+        bold: true,
+      );
 
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: summaryRow + 2)).value = TextCellValue('Espacio Total Usado:');
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: summaryRow + 2)).value = DoubleCellValue(resultado.espacioTotalUsado);
+      // ✅ Datos del resumen (sin colores de fondo)
+      final summaryData = [
+        ['Costo Total Sistema:', MathUtils.formatearNumero(resultado.costoTotalSistema)],
+        ['Espacio Total Usado:', MathUtils.formatearNumero(resultado.espacioTotalUsado)],
+        ['Presupuesto Total:', MathUtils.formatearNumero(resultado.presupuestoTotal)],
+        ['Número Total Pedidos:', resultado.numeroTotalPedidos.toString()],
+      ];
 
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: summaryRow + 3)).value = TextCellValue('Presupuesto Total:');
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: summaryRow + 3)).value = DoubleCellValue(resultado.presupuestoTotal);
+      for (int i = 0; i < summaryData.length; i++) {
+        final row = summaryStartRow + i + 1;
+        
+        // ✅ Etiqueta (columna H) - solo negrita
+        final labelCell = worksheet.cell(CellIndex.indexByColumnRow(columnIndex: summaryStartCol, rowIndex: row));
+        labelCell.value = TextCellValue(summaryData[i][0]);
+        labelCell.cellStyle = CellStyle(
+          bold: true,
+        );
+        
+        // ✅ Valor (columna I) - sin formato especial
+        final valueCell = worksheet.cell(CellIndex.indexByColumnRow(columnIndex: summaryStartCol + 1, rowIndex: row));
+        valueCell.value = TextCellValue(summaryData[i][1]);
+      }
 
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: summaryRow + 4)).value = TextCellValue('Número Total Pedidos:');
-      sheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: summaryRow + 4)).value = IntCellValue(resultado.numeroTotalPedidos);
+      // ✅ Agregar artículos del sistema en la misma hoja (después de los resultados)
+      if (articulos != null && articulos.isNotEmpty) {
+        final articulosStartRow = resultado.resultados.length + 4; // Espacio adicional después de los resultados
+        
+        // ✅ Encabezados para artículos del sistema
+        final articulosHeaders = [
+          'Nombre',
+          'Demanda Anual',
+          'Costo Pedido (s/)',
+          'Costo Mantenimiento (s/)',
+          'Costo Faltante (s/)',
+          'Costo Unitario (s/)',
+          'Espacio Unidad (m²)',
+          'Desviación Diaria',
+          'Punto Reorden',
+          'Tamaño Lote',
+        ];
+
+        // ✅ Escribir encabezados de artículos con colores del tema
+        for (int i = 0; i < articulosHeaders.length; i++) {
+          final cell = worksheet
+              .cell(CellIndex.indexByColumnRow(columnIndex: i, rowIndex: articulosStartRow));
+          cell.value = TextCellValue(articulosHeaders[i]);
+          // ✅ Color del tema MDSJ para encabezados de artículos
+          cell.cellStyle = CellStyle(
+            backgroundColorHex: ExcelColor.blue, // Usar el mismo color que los otros encabezados
+            fontColorHex: ExcelColor.white,
+            bold: true,
+          );
+        }
+
+        // ✅ Escribir datos de artículos (sin colores alternados)
+        for (int i = 0; i < articulos.length; i++) {
+          final articulo = articulos[i];
+          final row = articulosStartRow + i + 1; // Empezar desde la fila siguiente a los encabezados
+
+          // ✅ Formato exacto como en la interfaz
+          worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: row)).value = TextCellValue(articulo.nombre);
+          worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: row)).value = TextCellValue(articulo.demandaAnual.toStringAsFixed(2));
+          worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: row)).value = TextCellValue(MathUtils.formatearNumero(articulo.costoPedido));
+          worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: row)).value = TextCellValue(MathUtils.formatearNumero(articulo.costoMantenimiento));
+          worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 4, rowIndex: row)).value = TextCellValue(MathUtils.formatearNumero(articulo.costoFaltante));
+          worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 5, rowIndex: row)).value = TextCellValue(MathUtils.formatearNumero(articulo.costoUnitario));
+          worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 6, rowIndex: row)).value = TextCellValue(MathUtils.formatearNumero(articulo.espacioUnidad));
+          worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 7, rowIndex: row)).value = TextCellValue(articulo.desviacionDiaria.toStringAsFixed(2));
+          worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 8, rowIndex: row)).value = TextCellValue(articulo.puntoReorden.toStringAsFixed(1));
+          worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 9, rowIndex: row)).value = TextCellValue(articulo.tamanoLote.toStringAsFixed(2));
+        }
+      }
 
       // Guardar archivo usando método compatible con web
       final fileName = 'inventario_qr_${DateTime.now().millisecondsSinceEpoch}.xlsx';

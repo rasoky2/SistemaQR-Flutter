@@ -22,6 +22,13 @@ class InventarioProvider extends ChangeNotifier {
   double _presupuestoMaximo = 10000.0;
   double _numeroMaximoPedidos = 100.0;
 
+  // ✅ Configuraciones de redondeo
+  String _tipoRedondeoPuntoReorden = 'decimales'; // 'unidades', 'decimales'
+  String _tipoRedondeoTamanoLote = 'decimales'; // 'unidades', 'decimales'
+  int _decimalesPuntoReorden = 2; // 0 = enteros, 1-4 = decimales
+  int _decimalesTamanoLote = 2; // 0 = enteros, 1-4 = decimales
+  bool _redondeosVinculados = true; // true = vinculados, false = independientes
+
   // Usar los nombres exactos de la plantilla oficial
   final Set<String> _columnasImportar = const {
     'Nombre del Artículo',
@@ -43,26 +50,29 @@ class InventarioProvider extends ChangeNotifier {
   // ✅ Nuevas propiedades para rastrear cálculos automáticos
   List<String> _articulosConCalculosAutomaticos = [];
   List<String> _detallesCalculos = [];
-  
+
   // ✅ TRACKING DE CELDAS CALCULADAS AUTOMÁTICAMENTE (persistente entre navegaciones)
   // Map<nombreArticulo, Set<field>> para rastrear qué celdas fueron calculadas automáticamente
   final Map<String, Set<String>> _celdasCalculadasAutomaticas = {};
 
   // Getters
   List<Articulo> get articulos => _articulos;
-  List<String> get articulosConCalculosAutomaticos => _articulosConCalculosAutomaticos;
+  List<String> get articulosConCalculosAutomaticos =>
+      _articulosConCalculosAutomaticos;
   List<String> get detallesCalculos => _detallesCalculos;
-  bool get tieneCalculosAutomaticos => _articulosConCalculosAutomaticos.isNotEmpty;
-  
+  bool get tieneCalculosAutomaticos =>
+      _articulosConCalculosAutomaticos.isNotEmpty;
+
   // ✅ GETTERS PARA TRACKING DE CELDAS
-  Map<String, Set<String>> get celdasCalculadasAutomaticas => _celdasCalculadasAutomaticas;
-  
+  Map<String, Set<String>> get celdasCalculadasAutomaticas =>
+      _celdasCalculadasAutomaticas;
+
   // ✅ VERIFICAR SI UNA CELDA FUE CALCULADA AUTOMÁTICAMENTE
   bool esCeldaCalculadaAutomaticamente(String nombreArticulo, String field) {
-    return _celdasCalculadasAutomaticas.containsKey(nombreArticulo) && 
-           _celdasCalculadasAutomaticas[nombreArticulo]!.contains(field);
+    return _celdasCalculadasAutomaticas.containsKey(nombreArticulo) &&
+        _celdasCalculadasAutomaticas[nombreArticulo]!.contains(field);
   }
-  
+
   // ✅ REMOVER TRACKING DE CELDA CALCULADA AUTOMÁTICAMENTE
   void removerTrackingCeldaCalculada(String nombreArticulo, String field) {
     if (_celdasCalculadasAutomaticas.containsKey(nombreArticulo)) {
@@ -73,19 +83,24 @@ class InventarioProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
   ResultadoSistema? get resultado => _resultado;
   bool get isLoading => _isLoading;
   String? get error => _error;
   Map<String, bool> get restricciones => _restricciones;
   Map<String, dynamic> get estadisticas => _estadisticas;
-  
+
   double get leadTimeDias => _leadTimeDias;
   double get espacioMaximo => _espacioMaximo;
   double get presupuestoMaximo => _presupuestoMaximo;
   double get numeroMaximoPedidos => _numeroMaximoPedidos;
-  
 
-  
+  // ✅ Getters para configuraciones de redondeo
+  String get tipoRedondeoPuntoReorden => _tipoRedondeoPuntoReorden;
+  String get tipoRedondeoTamanoLote => _tipoRedondeoTamanoLote;
+  int get decimalesPuntoReorden => _decimalesPuntoReorden;
+  int get decimalesTamanoLote => _decimalesTamanoLote;
+  bool get redondeosVinculados => _redondeosVinculados;
 
   /// Importa artículos desde Excel
   Future<void> importarArticulos() async {
@@ -95,34 +110,41 @@ class InventarioProvider extends ChangeNotifier {
       if (_archivoSeleccionado == null && _archivoBytesWeb == null) {
         throw Exception('No se ha seleccionado ningún archivo');
       }
-      
+
       logDebug('📋 Provider: Columnas seleccionadas: $_columnasImportar');
       logDebug('📄 Provider: Archivo: $_archivoSeleccionado');
-      
+
       // ✅ Importar con detección de cálculos automáticos
-      final resultadoImportacion = await ExcelRepository.importarArticulosConColumnas(
+      final resultadoImportacion =
+          await ExcelRepository.importarArticulosConColumnas(
         _columnasImportar,
         _archivoSeleccionado ?? '',
         _archivoBytesWeb,
         _leadTimeDias, // ✅ Pasar el lead time configurado
       );
-      
+
       // ✅ Actualizar artículos y cálculos automáticos
       _articulos = resultadoImportacion.articulos;
-      _articulosConCalculosAutomaticos = resultadoImportacion.articulosConCalculosAutomaticos;
+      _articulosConCalculosAutomaticos =
+          resultadoImportacion.articulosConCalculosAutomaticos;
       _detallesCalculos = resultadoImportacion.detallesCalculos;
-      
+
       // ✅ INICIALIZAR TRACKING DE CELDAS CALCULADAS AUTOMÁTICAMENTE
       _celdasCalculadasAutomaticas.clear();
       for (final nombreArticulo in _articulosConCalculosAutomaticos) {
         // Marcar las celdas de Punto Reorden y Tamaño Lote como calculadas automáticamente
-        _celdasCalculadasAutomaticas[nombreArticulo] = {'puntoReorden', 'tamanoLote'};
+        _celdasCalculadasAutomaticas[nombreArticulo] = {
+          'puntoReorden',
+          'tamanoLote'
+        };
       }
-      
+
       logDebug('✅ Provider: Artículos importados: ${_articulos.length}');
-      logDebug('📋 Provider: Lista de artículos después de importar: ${_articulos.map((a) => a.nombre).toList()}');
-      logDebug('🔧 Provider: Artículos con cálculos automáticos: ${_articulosConCalculosAutomaticos.length}');
-      
+      logDebug(
+          '📋 Provider: Lista de artículos después de importar: ${_articulos.map((a) => a.nombre).toList()}');
+      logDebug(
+          '🔧 Provider: Artículos con cálculos automáticos: ${_articulosConCalculosAutomaticos.length}');
+
       // Verificar si hay artículos con campos faltantes
       final articulosConProblemas = <String>[];
       for (final articulo in _articulos) {
@@ -154,23 +176,27 @@ class InventarioProvider extends ChangeNotifier {
         if (articulo.tamanoLote <= 0) {
           problemas.add('Tamaño de lote');
         }
-        
+
         if (problemas.isNotEmpty) {
-          articulosConProblemas.add('${articulo.nombre}: ${problemas.join(', ')}');
+          articulosConProblemas
+              .add('${articulo.nombre}: ${problemas.join(', ')}');
         }
       }
-      
+
       if (articulosConProblemas.isNotEmpty) {
-        _error = 'Algunos artículos tienen campos faltantes o inválidos. Por favor, revise y complete los datos.';
-         logDebug('⚠️ Provider: Artículos con problemas: $articulosConProblemas');
+        _error =
+            'Algunos artículos tienen campos faltantes o inválidos. Por favor, revise y complete los datos.';
+        logDebug(
+            '⚠️ Provider: Artículos con problemas: $articulosConProblemas');
       } else {
         _error = null;
       }
-      
+
       await calcularResultados();
       logDebug('🎉 Provider: Importación completada exitosamente');
-      logDebug('📊 Provider: Total de artículos en provider: ${_articulos.length}');
-      
+      logDebug(
+          '📊 Provider: Total de artículos en provider: ${_articulos.length}');
+
       // ✅ Forzar actualización completa de la UI para mostrar Z-score inmediatamente
       _error = null; // Limpiar errores previos
       notifyListeners(); // Notificar cambios inmediatamente
@@ -197,7 +223,8 @@ class InventarioProvider extends ChangeNotifier {
         _archivoSeleccionado = picked.path; // en web puede ser null
         _archivoBytesWeb = picked.bytes; // en nativo puede ser null
         _error = null;
-        logDebug('✅ Provider: Archivo seleccionado: ${_archivoSeleccionado ?? '(bytes en web)'}');
+        logDebug(
+            '✅ Provider: Archivo seleccionado: ${_archivoSeleccionado ?? '(bytes en web)'}');
       } else {
         throw Exception('No se seleccionó ningún archivo');
       }
@@ -244,7 +271,8 @@ class InventarioProvider extends ChangeNotifier {
   Future<String?> descargarArchivoZip(String nombreArchivo) async {
     try {
       logDebug('📦 Provider: Descargando archivo ZIP: $nombreArchivo...');
-      final resultado = await ExcelRepository.descargarArchivoZip(nombreArchivo);
+      final resultado =
+          await ExcelRepository.descargarArchivoZip(nombreArchivo);
       _error = null;
       logDebug('✅ Provider: Archivo ZIP descargado: $resultado');
       return resultado;
@@ -260,7 +288,7 @@ class InventarioProvider extends ChangeNotifier {
   Future<void> calcularResultados() async {
     logDebug('🧮 Provider: Iniciando cálculo de resultados...');
     logDebug('🧮 Provider: Total de artículos: ${_articulos.length}');
-    
+
     if (_articulos.isEmpty) {
       logDebug('❌ Provider: No hay artículos para calcular');
       _error = 'No hay artículos para calcular';
@@ -269,7 +297,8 @@ class InventarioProvider extends ChangeNotifier {
     }
 
     try {
-      logDebug('🧮 Provider: Llamando a InventarioRepository.evaluarModeloQR...');
+      logDebug(
+          '🧮 Provider: Llamando a InventarioRepository.evaluarModeloQR...');
       _resultado = InventarioRepository.evaluarModeloQR(
         _articulos,
         leadTimeDias: _leadTimeDias,
@@ -299,12 +328,10 @@ class InventarioProvider extends ChangeNotifier {
       _error = 'Error al calcular resultados: $e';
     }
     logDebug('🧮 Provider: Finalizando cálculo de resultados');
-    
+
     // ✅ Notificar cambios inmediatamente
     notifyListeners();
   }
-
-
 
   /// Actualiza un artículo existente
   void actualizarArticulo(int index, Articulo articulo) {
@@ -315,41 +342,51 @@ class InventarioProvider extends ChangeNotifier {
         cambios.add('nombre: "${anterior.nombre}" -> "${articulo.nombre}"');
       }
       if (anterior.demandaAnual != articulo.demandaAnual) {
-        cambios.add('demandaAnual: ${anterior.demandaAnual} -> ${articulo.demandaAnual}');
+        cambios.add(
+            'demandaAnual: ${anterior.demandaAnual} -> ${articulo.demandaAnual}');
       }
       if (anterior.costoPedido != articulo.costoPedido) {
-        cambios.add('costoPedido: ${anterior.costoPedido} -> ${articulo.costoPedido}');
+        cambios.add(
+            'costoPedido: ${anterior.costoPedido} -> ${articulo.costoPedido}');
       }
       if (anterior.costoMantenimiento != articulo.costoMantenimiento) {
-        cambios.add('costoMantenimiento: ${anterior.costoMantenimiento} -> ${articulo.costoMantenimiento}');
+        cambios.add(
+            'costoMantenimiento: ${anterior.costoMantenimiento} -> ${articulo.costoMantenimiento}');
       }
       if (anterior.costoFaltante != articulo.costoFaltante) {
-        cambios.add('costoFaltante: ${anterior.costoFaltante} -> ${articulo.costoFaltante}');
+        cambios.add(
+            'costoFaltante: ${anterior.costoFaltante} -> ${articulo.costoFaltante}');
       }
       if (anterior.costoUnitario != articulo.costoUnitario) {
-        cambios.add('costoUnitario: ${anterior.costoUnitario} -> ${articulo.costoUnitario}');
+        cambios.add(
+            'costoUnitario: ${anterior.costoUnitario} -> ${articulo.costoUnitario}');
       }
       if (anterior.espacioUnidad != articulo.espacioUnidad) {
-        cambios.add('espacioUnidad: ${anterior.espacioUnidad} -> ${articulo.espacioUnidad}');
+        cambios.add(
+            'espacioUnidad: ${anterior.espacioUnidad} -> ${articulo.espacioUnidad}');
       }
       if (anterior.desviacionDiaria != articulo.desviacionDiaria) {
-        cambios.add('desviacionDiaria: ${anterior.desviacionDiaria} -> ${articulo.desviacionDiaria}');
+        cambios.add(
+            'desviacionDiaria: ${anterior.desviacionDiaria} -> ${articulo.desviacionDiaria}');
       }
       if (anterior.puntoReorden != articulo.puntoReorden) {
-        cambios.add('puntoReorden: ${anterior.puntoReorden} -> ${articulo.puntoReorden}');
+        cambios.add(
+            'puntoReorden: ${anterior.puntoReorden} -> ${articulo.puntoReorden}');
       }
       if (anterior.tamanoLote != articulo.tamanoLote) {
-        cambios.add('tamanoLote: ${anterior.tamanoLote} -> ${articulo.tamanoLote}');
+        cambios.add(
+            'tamanoLote: ${anterior.tamanoLote} -> ${articulo.tamanoLote}');
       }
 
-      logDebug('📝 Provider.actualizarArticulo -> index=$index cambios=${cambios.isEmpty ? 'sin cambios' : cambios.join(', ')}');
+      logDebug(
+          '📝 Provider.actualizarArticulo -> index=$index cambios=${cambios.isEmpty ? 'sin cambios' : cambios.join(', ')}');
 
       _articulos[index] = articulo;
-      
+
       // ✅ REMOVER TRACKING DE CELDA CALCULADA AUTOMÁTICAMENTE SI SE EDITÓ
       final nombreArticulo = articulo.nombre;
       final camposEditados = <String>[];
-      
+
       // Detectar qué campos cambiaron
       if (anterior.puntoReorden != articulo.puntoReorden) {
         camposEditados.add('puntoReorden');
@@ -357,12 +394,12 @@ class InventarioProvider extends ChangeNotifier {
       if (anterior.tamanoLote != articulo.tamanoLote) {
         camposEditados.add('tamanoLote');
       }
-      
+
       // Remover tracking de campos editados
       for (final field in camposEditados) {
         removerTrackingCeldaCalculada(nombreArticulo, field);
       }
-      
+
       // ✅ Recalcular resultados inmediatamente
       logDebug('🧮 Provider.actualizarArticulo: recalculando resultados...');
       calcularResultados();
@@ -375,6 +412,12 @@ class InventarioProvider extends ChangeNotifier {
     double? espacioMaximo,
     double? presupuestoMaximo,
     double? numeroMaximoPedidos,
+    // ✅ Configuraciones de redondeo
+    String? tipoRedondeoPuntoReorden,
+    String? tipoRedondeoTamanoLote,
+    int? decimalesPuntoReorden,
+    int? decimalesTamanoLote,
+    bool? redondeosVinculados,
   }) {
     bool needsRecalculation = false;
 
@@ -393,9 +436,36 @@ class InventarioProvider extends ChangeNotifier {
       needsRecalculation = true;
     }
 
-    if (numeroMaximoPedidos != null && numeroMaximoPedidos != _numeroMaximoPedidos) {
+    if (numeroMaximoPedidos != null &&
+        numeroMaximoPedidos != _numeroMaximoPedidos) {
       _numeroMaximoPedidos = numeroMaximoPedidos;
       needsRecalculation = true;
+    }
+
+    // ✅ Actualizar configuraciones de redondeo
+    if (tipoRedondeoPuntoReorden != null &&
+        tipoRedondeoPuntoReorden != _tipoRedondeoPuntoReorden) {
+      _tipoRedondeoPuntoReorden = tipoRedondeoPuntoReorden;
+    }
+
+    if (tipoRedondeoTamanoLote != null &&
+        tipoRedondeoTamanoLote != _tipoRedondeoTamanoLote) {
+      _tipoRedondeoTamanoLote = tipoRedondeoTamanoLote;
+    }
+
+    if (decimalesPuntoReorden != null &&
+        decimalesPuntoReorden != _decimalesPuntoReorden) {
+      _decimalesPuntoReorden = decimalesPuntoReorden;
+    }
+
+    if (decimalesTamanoLote != null &&
+        decimalesTamanoLote != _decimalesTamanoLote) {
+      _decimalesTamanoLote = decimalesTamanoLote;
+    }
+
+    if (redondeosVinculados != null &&
+        redondeosVinculados != _redondeosVinculados) {
+      _redondeosVinculados = redondeosVinculados;
     }
 
     if (needsRecalculation && _articulos.isNotEmpty) {
@@ -415,18 +485,17 @@ class InventarioProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  
-
   /// Agrega un artículo a la lista
   void agregarArticulo(Articulo articulo) {
     logDebug('📝 Provider: Agregando artículo: ${articulo.nombre}');
     logDebug('📝 Provider: Total de artículos antes: ${_articulos.length}');
-    
+
     _articulos.add(articulo);
-    
+
     logDebug('📝 Provider: Total de artículos después: ${_articulos.length}');
-    logDebug('📝 Provider: Lista de artículos: ${_articulos.map((a) => a.nombre).toList()}');
-    
+    logDebug(
+        '📝 Provider: Lista de artículos: ${_articulos.map((a) => a.nombre).toList()}');
+
     // ✅ Calcular resultados y notificar cambios
     calcularResultados();
     notifyListeners();
@@ -447,23 +516,29 @@ class InventarioProvider extends ChangeNotifier {
     }
 
     final estados = <String>[];
-    
+
     if (_restricciones['espacio'] == true) {
-      estados.add('✅ Espacio: ${MathUtils.formatearUnidades(_resultado?.espacioTotalUsado ?? 0, 'm²')} ≤ ${MathUtils.formatearUnidades(_espacioMaximo, 'm²')}');
+      estados.add(
+          '✅ Espacio: ${MathUtils.formatearUnidades(_resultado?.espacioTotalUsado ?? 0, 'm²')} ≤ ${MathUtils.formatearUnidades(_espacioMaximo, 'm²')}');
     } else {
-      estados.add('❌ Espacio: ${MathUtils.formatearUnidades(_resultado?.espacioTotalUsado ?? 0, 'm²')} > ${MathUtils.formatearUnidades(_espacioMaximo, 'm²')}');
+      estados.add(
+          '❌ Espacio: ${MathUtils.formatearUnidades(_resultado?.espacioTotalUsado ?? 0, 'm²')} > ${MathUtils.formatearUnidades(_espacioMaximo, 'm²')}');
     }
 
     if (_restricciones['presupuesto'] == true) {
-      estados.add('✅ Presupuesto: ${MathUtils.formatearMoneda(_resultado?.presupuestoTotal ?? 0)} ≤ ${MathUtils.formatearMoneda(_presupuestoMaximo)}');
+      estados.add(
+          '✅ Presupuesto: ${MathUtils.formatearMoneda(_resultado?.presupuestoTotal ?? 0)} ≤ ${MathUtils.formatearMoneda(_presupuestoMaximo)}');
     } else {
-      estados.add('❌ Presupuesto: ${MathUtils.formatearMoneda(_resultado?.presupuestoTotal ?? 0)} > ${MathUtils.formatearMoneda(_presupuestoMaximo)}');
+      estados.add(
+          '❌ Presupuesto: ${MathUtils.formatearMoneda(_resultado?.presupuestoTotal ?? 0)} > ${MathUtils.formatearMoneda(_presupuestoMaximo)}');
     }
 
     if (_restricciones['pedidos'] == true) {
-      estados.add('✅ Pedidos: ${_resultado?.numeroTotalPedidos ?? 0} ≤ $_numeroMaximoPedidos');
+      estados.add(
+          '✅ Pedidos: ${_resultado?.numeroTotalPedidos ?? 0} ≤ $_numeroMaximoPedidos');
     } else {
-      estados.add('❌ Pedidos: ${_resultado?.numeroTotalPedidos ?? 0} > $_numeroMaximoPedidos');
+      estados.add(
+          '❌ Pedidos: ${_resultado?.numeroTotalPedidos ?? 0} > $_numeroMaximoPedidos');
     }
 
     return estados.join('\n');
@@ -479,7 +554,8 @@ class InventarioProvider extends ChangeNotifier {
     if (_resultado?.resultados.isEmpty ?? true) {
       return null;
     }
-    return _resultado!.resultados.reduce((a, b) => a.costoTotal > b.costoTotal ? a : b);
+    return _resultado!.resultados
+        .reduce((a, b) => a.costoTotal > b.costoTotal ? a : b);
   }
 
   /// Obtiene el artículo con menor costo
@@ -487,7 +563,8 @@ class InventarioProvider extends ChangeNotifier {
     if (_resultado?.resultados.isEmpty ?? true) {
       return null;
     }
-    return _resultado!.resultados.reduce((a, b) => a.costoTotal < b.costoTotal ? a : b);
+    return _resultado!.resultados
+        .reduce((a, b) => a.costoTotal < b.costoTotal ? a : b);
   }
 
   /// Obtiene el artículo que usa más espacio
@@ -495,7 +572,8 @@ class InventarioProvider extends ChangeNotifier {
     if (_resultado?.resultados.isEmpty ?? true) {
       return null;
     }
-    return _resultado!.resultados.reduce((a, b) => a.espacioUsado > b.espacioUsado ? a : b);
+    return _resultado!.resultados
+        .reduce((a, b) => a.espacioUsado > b.espacioUsado ? a : b);
   }
 
   /// Obtiene el artículo que usa menos espacio
@@ -503,7 +581,8 @@ class InventarioProvider extends ChangeNotifier {
     if (_resultado?.resultados.isEmpty ?? true) {
       return null;
     }
-    return _resultado!.resultados.reduce((a, b) => a.espacioUsado < b.espacioUsado ? a : b);
+    return _resultado!.resultados
+        .reduce((a, b) => a.espacioUsado < b.espacioUsado ? a : b);
   }
 
   /// Establece el estado de carga
@@ -519,14 +598,17 @@ class InventarioProvider extends ChangeNotifier {
     }
 
     debugPrint('📤 Provider: Iniciando exportación de resultados a Excel...');
-    
+
     try {
-      final filePath = await ExcelRepository.exportarResultados(_resultado!);
-      debugPrint('✅ Provider: Resultados exportados exitosamente en: $filePath');
+      // ✅ Pasar también los artículos para que coincida con la interfaz
+      final filePath = await ExcelRepository.exportarResultados(_resultado!,
+          articulos: _articulos);
+      debugPrint(
+          '✅ Provider: Resultados exportados exitosamente en: $filePath');
       return filePath;
     } catch (e) {
       debugPrint('❌ Provider: Error al exportar resultados: $e');
       rethrow;
     }
   }
-} 
+}

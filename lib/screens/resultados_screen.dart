@@ -7,7 +7,6 @@ import 'package:inventario_qr/utils/logger.dart';
 import 'package:inventario_qr/utils/math_utils.dart';
 import 'package:inventario_qr/utils/theme_colors.dart';
 import 'package:inventario_qr/widgets/articulos_table.dart';
-// charts moved into ResultadosCharts widget
 import 'package:inventario_qr/widgets/resultados_charts.dart';
 import 'package:open_file/open_file.dart';
 import 'package:provider/provider.dart';
@@ -619,7 +618,7 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
                   DataColumn(label: Text('Z-Score')),
                   DataColumn(label: Text('Backorders')),
                   DataColumn(label: Text('Costo Total')),
-                  DataColumn(label: Text('Espacio')),
+                  DataColumn(label: Text('Espacio (m²)')),
                 ],
                 rows: provider.resultado!.resultados.map((resultado) {
                   return DataRow(
@@ -632,8 +631,8 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
                           resultado.backordersEsperados.toStringAsFixed(2))),
                       DataCell(Text(
                           MathUtils.formatearMoneda(resultado.costoTotal))),
-                      DataCell(Text(MathUtils.formatearUnidades(
-                          resultado.espacioUsado, 'm²'))),
+                      DataCell(Text(
+                          MathUtils.formatearNumero(resultado.espacioUsado))),
                     ],
                   );
                 }).toList(),

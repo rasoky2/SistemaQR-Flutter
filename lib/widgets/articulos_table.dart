@@ -4,6 +4,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:inventario_qr/models/articulo.model.dart';
 import 'package:inventario_qr/providers/inventario.provider.dart';
 import 'package:inventario_qr/utils/logger.dart';
+import 'package:inventario_qr/utils/math_utils.dart';
 import 'package:inventario_qr/utils/theme_colors.dart';
 import 'package:pluto_grid/pluto_grid.dart';
 import 'package:provider/provider.dart';
@@ -99,27 +100,27 @@ class _ArticulosTableState extends State<ArticulosTable> {
         hide: true,
         readOnly: true,
       ),
-                              PlutoColumn(
-                          title: 'Nombre',
-                          field: 'nombre',
-                          type: PlutoColumnType.text(),
-                          width: 150,
-                          enableRowChecked: widget.showDeleteButton,
-                          // ✅ EDICIÓN AUTOMÁTICA AL CAMBIAR DE CELDA (SIN ENTER)
-                          enableAutoEditing: true,
-                        ),
-                              PlutoColumn(
-                          title: 'Demanda Anual',
-                          field: 'demandaAnual',
-                          type: PlutoColumnType.number(
-                            format: '#,##0.00',
-                            applyFormatOnInit: false, // ✅ EVITAR SELECCIÓN AUTOMÁTICA DE TEXTO
-                          ),
-                          width: 120,
-                          enableDropToResize: false,
-                          // ✅ EDICIÓN AUTOMÁTICA AL CAMBIAR DE CELDA (SIN ENTER)
-                          enableAutoEditing: true,
-                        ),
+      PlutoColumn(
+        title: 'Nombre',
+        field: 'nombre',
+        type: PlutoColumnType.text(),
+        width: 150,
+        enableRowChecked: widget.showDeleteButton,
+        // ✅ EDICIÓN AUTOMÁTICA AL CAMBIAR DE CELDA (SIN ENTER)
+        enableAutoEditing: true,
+      ),
+      PlutoColumn(
+        title: 'Demanda Anual',
+        field: 'demandaAnual',
+        type: PlutoColumnType.number(
+          format: '#,##0.00',
+          applyFormatOnInit: false, // ✅ EVITAR SELECCIÓN AUTOMÁTICA DE TEXTO
+        ),
+        width: 120,
+        enableDropToResize: false,
+        // ✅ EDICIÓN AUTOMÁTICA AL CAMBIAR DE CELDA (SIN ENTER)
+        enableAutoEditing: true,
+      ),
       PlutoColumn(
         title: 'Costo Pedido (S/)',
         field: 'costoPedido',
@@ -200,7 +201,7 @@ class _ArticulosTableState extends State<ArticulosTable> {
         title: 'Punto Reorden',
         field: 'puntoReorden',
         type: PlutoColumnType.number(
-          format: '#,##0.00',
+          format: '#,##0', // ✅ Números enteros para punto de reorden
           applyFormatOnInit: false, // ✅ EVITAR SELECCIÓN AUTOMÁTICA DE TEXTO
         ),
         width: 130,
@@ -242,7 +243,7 @@ class _ArticulosTableState extends State<ArticulosTable> {
         title: 'Tamaño Lote',
         field: 'tamanoLote',
         type: PlutoColumnType.number(
-          format: '#,##0.00',
+          format: '#,##0', // ✅ Números enteros para tamaño de lote
           applyFormatOnInit: false, // ✅ EVITAR SELECCIÓN AUTOMÁTICA DE TEXTO
         ),
         width: 130,
@@ -283,6 +284,31 @@ class _ArticulosTableState extends State<ArticulosTable> {
     ];
   }
 
+  /// Redondea un valor según la configuración del provider
+  double _redondearSegunConfiguracion(double valor, String tipo) {
+    final provider = context.read<InventarioProvider>();
+
+    if (tipo == 'puntoReorden') {
+      if (provider.tipoRedondeoPuntoReorden == 'unidades') {
+        return MathUtils.redondearInteligente(valor, tipo: 'unidades');
+      } else {
+        return MathUtils.redondearInteligente(valor,
+            tipo: 'unidades_decimales',
+            decimales: provider.decimalesPuntoReorden);
+      }
+    } else if (tipo == 'tamanoLote') {
+      if (provider.tipoRedondeoTamanoLote == 'unidades') {
+        return MathUtils.redondearInteligente(valor, tipo: 'unidades');
+      } else {
+        return MathUtils.redondearInteligente(valor,
+            tipo: 'unidades_decimales',
+            decimales: provider.decimalesTamanoLote);
+      }
+    }
+
+    return valor;
+  }
+
   // Convertir Articulo a PlutoRow
   PlutoRow _articuloToPlutoRow(int index, Articulo articulo) {
     return PlutoRow(
@@ -296,11 +322,17 @@ class _ArticulosTableState extends State<ArticulosTable> {
         'costoUnitario': PlutoCell(value: articulo.costoUnitario),
         'espacioUnidad': PlutoCell(value: articulo.espacioUnidad),
         'desviacionDiaria': PlutoCell(value: articulo.desviacionDiaria),
-        'puntoReorden': PlutoCell(value: articulo.puntoReorden),
-        'tamanoLote': PlutoCell(value: articulo.tamanoLote),
+        // ✅ USAR VALORES REDONDEADOS SEGÚN CONFIGURACIÓN DEL PROVIDER
+        'puntoReorden': PlutoCell(
+            value: _redondearSegunConfiguracion(
+                articulo.puntoReorden, 'puntoReorden')),
+        'tamanoLote': PlutoCell(
+            value: _redondearSegunConfiguracion(
+                articulo.tamanoLote, 'tamanoLote')),
       },
     );
   }
+
   // Manejar cambios en las celdas de PlutoGrid
   void _onCellChanged(PlutoGridOnChangedEvent event) {
     // Usar el índice real desde la columna oculta
@@ -385,10 +417,16 @@ class _ArticulosTableState extends State<ArticulosTable> {
             actualizado = original.copyWith(desviacionDiaria: parsed);
             break;
           case 'puntoReorden':
-            actualizado = original.copyWith(puntoReorden: parsed);
+            // ✅ REDONDEAR SEGÚN CONFIGURACIÓN DEL PROVIDER
+            final valorRedondeado =
+                _redondearSegunConfiguracion(parsed, 'puntoReorden');
+            actualizado = original.copyWith(puntoReorden: valorRedondeado);
             break;
           case 'tamanoLote':
-            actualizado = original.copyWith(tamanoLote: parsed);
+            // ✅ REDONDEAR SEGÚN CONFIGURACIÓN DEL PROVIDER
+            final valorRedondeado =
+                _redondearSegunConfiguracion(parsed, 'tamanoLote');
+            actualizado = original.copyWith(tamanoLote: valorRedondeado);
             break;
           default:
             return;
