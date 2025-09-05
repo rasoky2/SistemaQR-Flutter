@@ -1,4 +1,6 @@
 // Importaciones para manejo multiplataforma de Excel
+// ignore_for_file: cascade_invocations
+
 import 'dart:io' show File if (dart.library.html) '';
 // ignore: unnecessary_import
 import 'dart:typed_data';
