@@ -714,10 +714,37 @@ class ExcelRepository {
         return _parseDoubleFromString(stringValue, defaultValue);
     }
   }
+  /// ✅ Aplica redondeo según configuración del provider
+  static double _aplicarRedondeoConfigurado(
+    double valor,
+    String tipo, {
+    String? tipoRedondeo,
+    int? decimales,
+  }) {
+    if (tipoRedondeo == 'unidades') {
+      return MathUtils.redondearInteligente(valor, tipo: 'unidades');
+    } else {
+      return MathUtils.redondearInteligente(
+        valor,
+        tipo: 'unidades_decimales',
+        decimales: decimales ?? 0,
+      );
+    }
+  }
+
   /// Exporta resultados a un archivo Excel usando librería 'excel'
-  static Future<String> exportarResultados(ResultadoSistema resultado, {List<Articulo>? articulos}) async {
+  static Future<String> exportarResultados(
+    ResultadoSistema resultado, {
+    List<Articulo>? articulos,
+    // ✅ Configuraciones de redondeo del provider
+    String? tipoRedondeoPuntoReorden,
+    String? tipoRedondeoTamanoLote,
+    int? decimalesPuntoReorden,
+    int? decimalesTamanoLote,
+  }) async {
     try {
       logDebug('📤 Iniciando exportación de resultados con librería excel...');
+      logDebug('🔧 Configuraciones de redondeo: PuntoReorden=$tipoRedondeoPuntoReorden($decimalesPuntoReorden), TamanoLote=$tipoRedondeoTamanoLote($decimalesTamanoLote)');
       
       // Crear nuevo Excel (usa hoja predeterminada)
       final excel = Excel.createExcel();
@@ -755,10 +782,24 @@ class ExcelRepository {
         final res = resultado.resultados[i];
         final row = i + 1; // Empezar desde la fila 1 (índice basado en 0)
 
+        // ✅ Aplicar redondeo configurado del provider
+        final tamanoLoteRedondeado = _aplicarRedondeoConfigurado(
+          res.tamanoLote,
+          'tamanoLote',
+          tipoRedondeo: tipoRedondeoTamanoLote,
+          decimales: decimalesTamanoLote,
+        );
+        final puntoReordenRedondeado = _aplicarRedondeoConfigurado(
+          res.puntoReorden,
+          'puntoReorden',
+          tipoRedondeo: tipoRedondeoPuntoReorden,
+          decimales: decimalesPuntoReorden,
+        );
+
         // ✅ Formato exacto como en la interfaz (sin colores alternados)
         worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: row)).value = TextCellValue(res.nombre);
-        worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: row)).value = TextCellValue(res.tamanoLote.toStringAsFixed(0)); // Q: números enteros
-        worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: row)).value = TextCellValue(res.puntoReorden.toStringAsFixed(0)); // R: números enteros
+        worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: row)).value = TextCellValue(tamanoLoteRedondeado.toStringAsFixed(decimalesTamanoLote ?? 0)); // Q: según configuración
+        worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: row)).value = TextCellValue(puntoReordenRedondeado.toStringAsFixed(decimalesPuntoReorden ?? 0)); // R: según configuración
         worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: row)).value = TextCellValue(res.zScore.toStringAsFixed(2)); // Z-Score: 2 decimales
         worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 4, rowIndex: row)).value = TextCellValue(res.backordersEsperados.toStringAsFixed(2)); // Backorders: 2 decimales
         worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 5, rowIndex: row)).value = TextCellValue(MathUtils.formatearNumero(res.costoTotal)); // Costo Total: formato número
@@ -837,6 +878,20 @@ class ExcelRepository {
           final articulo = articulos[i];
           final row = articulosStartRow + i + 1; // Empezar desde la fila siguiente a los encabezados
 
+          // ✅ Aplicar redondeo configurado del provider para artículos
+          final tamanoLoteRedondeado = _aplicarRedondeoConfigurado(
+            articulo.tamanoLote,
+            'tamanoLote',
+            tipoRedondeo: tipoRedondeoTamanoLote,
+            decimales: decimalesTamanoLote,
+          );
+          final puntoReordenRedondeado = _aplicarRedondeoConfigurado(
+            articulo.puntoReorden,
+            'puntoReorden',
+            tipoRedondeo: tipoRedondeoPuntoReorden,
+            decimales: decimalesPuntoReorden,
+          );
+
           // ✅ Formato exacto como en la interfaz
           worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: row)).value = TextCellValue(articulo.nombre);
           worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: row)).value = TextCellValue(articulo.demandaAnual.toStringAsFixed(2));
@@ -846,8 +901,8 @@ class ExcelRepository {
           worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 5, rowIndex: row)).value = TextCellValue(MathUtils.formatearNumero(articulo.costoUnitario));
           worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 6, rowIndex: row)).value = TextCellValue(MathUtils.formatearNumero(articulo.espacioUnidad));
           worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 7, rowIndex: row)).value = TextCellValue(articulo.desviacionDiaria.toStringAsFixed(2));
-          worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 8, rowIndex: row)).value = TextCellValue(articulo.puntoReorden.toStringAsFixed(1));
-          worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 9, rowIndex: row)).value = TextCellValue(articulo.tamanoLote.toStringAsFixed(2));
+          worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 8, rowIndex: row)).value = TextCellValue(puntoReordenRedondeado.toStringAsFixed(decimalesPuntoReorden ?? 0)); // R: según configuración
+          worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 9, rowIndex: row)).value = TextCellValue(tamanoLoteRedondeado.toStringAsFixed(decimalesTamanoLote ?? 0)); // Q: según configuración
         }
       }
 

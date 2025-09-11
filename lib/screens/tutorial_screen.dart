@@ -143,9 +143,9 @@ class TutorialScreen extends StatelessWidget {
             ),
             const SizedBox(width: 6),
             Text(
-              'v1.0.4',
+              'v1.0.6',
               style: GoogleFonts.poppins(
-                fontSize: 14,
+                fontSize: 15,
                 color: MDSJColors.textSecondary,
               ),
             ),

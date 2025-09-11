@@ -244,7 +244,15 @@ class InventarioProvider extends ChangeNotifier {
     }
 
     try {
-      final filePath = await ExcelRepository.exportarResultados(_resultado!);
+      final filePath = await ExcelRepository.exportarResultados(
+        _resultado!,
+        articulos: _articulos,
+        // ✅ Configuraciones de redondeo del provider
+        tipoRedondeoPuntoReorden: _tipoRedondeoPuntoReorden,
+        tipoRedondeoTamanoLote: _tipoRedondeoTamanoLote,
+        decimalesPuntoReorden: _decimalesPuntoReorden,
+        decimalesTamanoLote: _decimalesTamanoLote,
+      );
       _error = null;
       return filePath;
     } catch (e) {
@@ -600,9 +608,16 @@ class InventarioProvider extends ChangeNotifier {
     debugPrint('📤 Provider: Iniciando exportación de resultados a Excel...');
 
     try {
-      // ✅ Pasar también los artículos para que coincida con la interfaz
-      final filePath = await ExcelRepository.exportarResultados(_resultado!,
-          articulos: _articulos);
+      // ✅ Pasar también los artículos y configuraciones de redondeo para que coincida con la interfaz
+      final filePath = await ExcelRepository.exportarResultados(
+        _resultado!,
+        articulos: _articulos,
+        // ✅ Configuraciones de redondeo del provider
+        tipoRedondeoPuntoReorden: _tipoRedondeoPuntoReorden,
+        tipoRedondeoTamanoLote: _tipoRedondeoTamanoLote,
+        decimalesPuntoReorden: _decimalesPuntoReorden,
+        decimalesTamanoLote: _decimalesTamanoLote,
+      );
       debugPrint(
           '✅ Provider: Resultados exportados exitosamente en: $filePath');
       return filePath;

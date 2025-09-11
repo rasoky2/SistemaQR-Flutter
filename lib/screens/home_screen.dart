@@ -156,10 +156,12 @@ class HomeScreen extends StatelessWidget {
       BuildContext context, InventarioProvider provider) {
     final width = MediaQuery.of(context).size.width;
     final crossAxisCount = width > 1200
-        ? 3
-        : width > 800
-            ? 2
-            : 1;
+        ? 4
+        : width > 900
+            ? 3
+            : width > 600
+                ? 2
+                : 1;
     return GridView.count(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -176,6 +178,14 @@ class HomeScreen extends StatelessWidget {
           Colors.teal,
           () => NavigationHelper.pushSlideLeft(
               context, const IngresarDatosScreen()),
+        ),
+        _buildNavigationCard(
+          context,
+          'Importar Excel',
+          'Cargar datos desde archivo Excel',
+          UniconsLine.file_import,
+          Colors.blue,
+          () => _importarDesdeExcel(context, provider),
         ),
         _buildNavigationCard(
           context,
@@ -196,7 +206,6 @@ class HomeScreen extends StatelessWidget {
           () => provider.limpiarDatos(),
           enabled: provider.articulos.isNotEmpty,
         ),
-
       ],
     );
   }
@@ -259,18 +268,36 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
+  /// ✅ IMPORTAR DATOS DESDE EXCEL
+  Future<void> _importarDesdeExcel(
+      BuildContext context, InventarioProvider provider) async {
+    try {
+      logDebug('📊 HomeScreen: Iniciando importación desde Excel...');
+
+      // Seleccionar archivo y importar artículos
+      await provider.seleccionarArchivo();
+      await provider.importarArticulos();
+
+      logDebug('✅ HomeScreen: Importación completada exitosamente');
+    } catch (e) {
+      logDebug('❌ HomeScreen: Error durante importación: $e');
+    }
+  }
+
   /// ✅ DESCARGAR PAQUETE PORTABLE DESDE ASSETS
   Future<void> _descargarAppWindows(BuildContext context) async {
     try {
       logDebug('📦 HomeScreen: Iniciando descarga de paquete portable...');
-      
+
       // Descargar el paquete portable usando el provider
       final provider = context.read<InventarioProvider>();
-      final resultado = await provider.descargarArchivoZip('Sistema_Inventario_MDSJ_Portable.zip');
-      
+      final resultado = await provider
+          .descargarArchivoZip('Sistema_Inventario_MDSJ_Portable.zip');
+
       if (resultado != null) {
-        logDebug('✅ HomeScreen: Paquete portable descargado exitosamente: $resultado');
-        
+        logDebug(
+            '✅ HomeScreen: Paquete portable descargado exitosamente: $resultado');
+
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -290,7 +317,7 @@ class HomeScreen extends StatelessWidget {
       }
     } catch (e) {
       logDebug('❌ HomeScreen: Error al descargar paquete portable: $e');
-      
+
       if (context.mounted) {
         showDialog(
           context: context,
@@ -326,7 +353,8 @@ class HomeScreen extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: Colors.blue.withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
+                      border:
+                          Border.all(color: Colors.blue.withValues(alpha: 0.3)),
                     ),
                     child: const Row(
                       children: [

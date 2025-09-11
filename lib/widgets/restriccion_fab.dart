@@ -81,11 +81,13 @@ class _RestriccionFabState extends State<RestriccionFab> {
           String detalle;
           switch (maxKey) {
             case 'Espacio':
-              detalle = 'Usado: ${resultado.espacioTotalUsado.toStringAsFixed(2)} / '
+              detalle =
+                  'Usado: ${resultado.espacioTotalUsado.toStringAsFixed(2)} / '
                   '${provider.espacioMaximo.toStringAsFixed(2)} m²';
               break;
             case 'Presupuesto':
-              detalle = 'Usado: S/ ${resultado.presupuestoTotal.toStringAsFixed(2)} / '
+              detalle =
+                  'Usado: S/ ${resultado.presupuestoTotal.toStringAsFixed(2)} / '
                   'S/ ${provider.presupuestoMaximo.toStringAsFixed(2)}';
               break;
             default:
@@ -114,13 +116,14 @@ class _RestriccionFabState extends State<RestriccionFab> {
                     value: barValue,
                     strokeWidth: 5,
                     color: color,
-                    backgroundColor: const Color(0xFFE6EEF2),
+                    backgroundColor: Colors.white,
                   ),
                 ),
                 AnimatedSwitcher(
                   duration: const Duration(milliseconds: 150),
                   child: ratio >= 1.0
-                      ? Icon(centerIcon, key: const ValueKey('icon'), color: color, size: 20)
+                      ? Icon(centerIcon,
+                          key: const ValueKey('icon'), color: color, size: 20)
                       : Text(
                           '${(barValue * 100).round()}%',
                           key: const ValueKey('text'),
@@ -147,7 +150,8 @@ class _RestriccionFabState extends State<RestriccionFab> {
                 child: _isHovering && (exceededLabel != null)
                     ? Container(
                         key: const ValueKey('label'),
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 6),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(16),
@@ -158,7 +162,8 @@ class _RestriccionFabState extends State<RestriccionFab> {
                               offset: const Offset(0, 2),
                             ),
                           ],
-                          border: Border.all(color: color.withValues(alpha: 0.4)),
+                          border:
+                              Border.all(color: color.withValues(alpha: 0.4)),
                         ),
                         child: Row(
                           children: [
@@ -177,7 +182,8 @@ class _RestriccionFabState extends State<RestriccionFab> {
                       )
                     : const SizedBox.shrink(),
               ),
-              if (_isHovering && (exceededLabel != null)) const SizedBox(width: 8),
+              if (_isHovering && (exceededLabel != null))
+                const SizedBox(width: 8),
               fab,
             ],
           ),
@@ -186,5 +192,3 @@ class _RestriccionFabState extends State<RestriccionFab> {
     );
   }
 }
-
-
