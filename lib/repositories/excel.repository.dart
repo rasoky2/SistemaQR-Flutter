@@ -239,14 +239,14 @@ class ExcelRepository {
     }
     return result;
   }
-  /// ✅ IMPLEMENTACIÓN MEJORADA: Lee columnas con fallback inteligente para web
+  /// IMPLEMENTACIÓN MEJORADA: Lee columnas con fallback inteligente para web
   static Future<List<String>> leerColumnasExcel(String? filePath, [Uint8List? fileBytes]) async {
     try {
-      logDebug('🔍 Iniciando lectura MEJORADA de columnas Excel...');
+      logDebug('Iniciando lectura MEJORADA de columnas Excel...');
       
       // Si no hay path ni bytes, usar columnas estándar
       if ((filePath == null || filePath.isEmpty) && fileBytes == null) {
-        logDebug('📁 No se proporcionó archivo, usando columnas estándar');
+        logDebug('No se proporcionó archivo, usando columnas estándar');
         return _obtenerColumnasEstandar();
       }
       
@@ -254,7 +254,7 @@ class ExcelRepository {
       
       if (fileBytes != null) {
         bytes = fileBytes;
-        logDebug('📄 Usando bytes proporcionados: ${bytes.length} bytes');
+        logDebug('Usando bytes proporcionados: ${bytes.length} bytes');
       } else if (!kIsWeb && filePath != null) {
         // Leer archivo del sistema (móvil/desktop)
         final file = File(filePath);
@@ -262,9 +262,9 @@ class ExcelRepository {
           throw Exception('Archivo no encontrado: $filePath');
         }
         bytes = await file.readAsBytes();
-        logDebug('📄 Archivo leído: $filePath (${bytes.length} bytes)');
+        logDebug('Archivo leído: $filePath (${bytes.length} bytes)');
       } else {
-        logDebug('🌐 Plataforma Web sin bytes - usando columnas estándar');
+        logDebug('Plataforma Web sin bytes - usando columnas estándar');
         return _obtenerColumnasEstandar();
       }
       
@@ -278,7 +278,7 @@ class ExcelRepository {
       // Fallback a librería 'excel' estándar
       try {
         final excel = Excel.decodeBytes(List<int>.from(bytes));
-        logDebug('📊 Excel decodificado con librería excel');
+        logDebug('Excel decodificado con librería excel');
         
         if (excel.tables.isEmpty) {
           return _obtenerColumnasEstandar();
@@ -301,38 +301,38 @@ class ExcelRepository {
             if (cellValue.isNotEmpty) {
               columnas.add(cellValue);
             }
-            logDebug('🧭 Header[excel] idx=$i => "$cellValue" (${cell.value.runtimeType})');
+            logDebug('Header[excel] idx=$i => "$cellValue" (${cell.value.runtimeType})');
           }
         }
         
         if (columnas.isNotEmpty) {
-          logDebug('✅ Columnas leídas con librería excel: ${columnas.length}');
+          logDebug('Columnas leídas con librería excel: ${columnas.length}');
           return columnas;
         }
       } catch (e) {
-        logDebug('❌ Error con librería excel: $e');
+        logDebug('Error con librería excel: $e');
         if (kIsWeb) {
           // Fallback Web: parsear XLSX (ZIP) y extraer primera hoja encabezados
           try {
             final columnas = await _leerEncabezadosXlsxFallback(bytes);
             for (int i = 0; i < columnas.length; i++) {
-              logDebug('🧭 Header[zip] idx=$i => "${columnas[i]}"');
+              logDebug('Header[zip] idx=$i => "${columnas[i]}"');
             }
             if (columnas.isNotEmpty) {
-              logDebug('✅ Columnas leídas con fallback ZIP/XML: ${columnas.length}');
+              logDebug('Columnas leídas con fallback ZIP/XML: ${columnas.length}');
               return columnas;
             }
           } catch (e2) {
-            logDebug('❌ Fallback ZIP/XML falló: $e2');
+            logDebug('Fallback ZIP/XML falló: $e2');
           }
         }
       }
       
-      logDebug('🔄 Usando columnas estándar como último recurso');
+      logDebug('Usando columnas estándar como último recurso');
       return _obtenerColumnasEstandar();
       
     } catch (e) {
-      logDebug('❌ Error general al leer columnas: $e');
+      logDebug('Error general al leer columnas: $e');
       return _obtenerColumnasEstandar();
     }
   }
@@ -355,14 +355,14 @@ class ExcelRepository {
 
   static Future<ImportacionResultado> importarArticulosConColumnas(Set<String> columnasSeleccionadas, String filePath, [Uint8List? fileBytes, double leadTimeDias = 36.5]) async {
     try {
-      logDebug('🚀 Iniciando importación REAL desde archivo Excel usando librería excel...');
-      logDebug('📄 Archivo: $filePath');
-      logDebug('📋 Columnas seleccionadas: $columnasSeleccionadas');
+      logDebug('Iniciando importación REAL desde archivo Excel usando librería excel...');
+      logDebug('Archivo: $filePath');
+      logDebug('Columnas seleccionadas: $columnasSeleccionadas');
       logDebug('⏱️ Lead Time configurado: $leadTimeDias días');
       
       // Si no hay path ni bytes, retornar vacío
       if ((filePath.isEmpty) && fileBytes == null) {
-        logDebug('📁 No se proporcionó archivo');
+        logDebug('No se proporcionó archivo');
         return ImportacionResultado(
           articulos: [],
           articulosConCalculosAutomaticos: [],
@@ -375,7 +375,7 @@ class ExcelRepository {
       if (fileBytes != null) {
         // Usar bytes proporcionados (desde web o file_picker)
         bytes = fileBytes;
-        logDebug('📄 Usando bytes proporcionados: ${bytes.length} bytes');
+        logDebug('Usando bytes proporcionados: ${bytes.length} bytes');
       } else if (!kIsWeb) {
         // Leer archivo del sistema (móvil/desktop)
         final file = File(filePath);
@@ -383,9 +383,9 @@ class ExcelRepository {
           throw Exception('Archivo no encontrado: $filePath');
         }
         bytes = await file.readAsBytes();
-        logDebug('📄 Archivo leído: $filePath (${bytes.length} bytes)');
+        logDebug('Archivo leído: $filePath (${bytes.length} bytes)');
       } else {
-        logDebug('🌐 Plataforma Web sin bytes');
+        logDebug('Plataforma Web sin bytes');
         return ImportacionResultado(
           articulos: [],
           articulosConCalculosAutomaticos: [],
@@ -402,7 +402,7 @@ class ExcelRepository {
       // Decodificar Excel usando librería 'excel'
       try {
         final excel = Excel.decodeBytes(List<int>.from(bytes));
-        logDebug('📊 Excel decodificado exitosamente');
+        logDebug('Excel decodificado exitosamente');
         // ... resto continúa
         
         // Obtener la primera hoja
@@ -430,7 +430,7 @@ class ExcelRepository {
         for (final key in _templateColumnIndex.keys) {
           columnMap[key] = headerToIndex[key] ?? _templateColumnIndex[key]!;
         }
-        logDebug('🗺️ Mapeo por encabezados aplicado (fallback a plantilla cuando falta): $columnMap');
+        logDebug('️ Mapeo por encabezados aplicado (fallback a plantilla cuando falta): $columnMap');
         // Procesar filas
         final articulos = <Articulo>[];
         // Listas para rastrear cálculos automáticos
@@ -443,11 +443,11 @@ class ExcelRepository {
             final nombreIndex = columnMap['Nombre del Artículo'] ?? 0;
             final nombre = _getCellStringValueFromRow(row, nombreIndex);
             if (nombre.isEmpty) {
-              logDebug('⚠️ Fila ${rowIndex + 1}: Nombre vacío, saltando...');
+              logDebug('️ Fila ${rowIndex + 1}: Nombre vacío, saltando...');
               continue;
             }
             if (rowIndex <= 5) {
-              logDebug('🔎 Fila ${rowIndex + 1} raw:');
+              logDebug('Fila ${rowIndex + 1} raw:');
               columnMap.forEach((key, idx) {
                 final raw = (idx >= 0 && idx < row.length && row[idx] != null) ? row[idx]!.value : null;
                 final asStr = _getCellStringValueFromRow(row, idx);
@@ -474,9 +474,9 @@ class ExcelRepository {
               final muL = MathUtils.calcularDemandaLeadTime(demanda, leadTimeDias);
               puntoReorden = muL;
               
-              // ✅ Registrar cálculo automático
+              // Registrar cálculo automático
               articulosConCalculosAutomaticos.add(nombre);
-              detallesCalculos.add('📊 $nombre: Punto de Reorden (R) = ${muL.toStringAsFixed(2)} (calculado automáticamente como μL = D×L/365)');
+              detallesCalculos.add('$nombre: Punto de Reorden (R) = ${muL.toStringAsFixed(2)} (calculado automáticamente como μL = D×L/365)');
               
               logDebug('ℹ️ R calculado automáticamente (μL): $puntoReorden usando leadTime=$leadTimeDias días');
             }
@@ -490,13 +490,13 @@ class ExcelRepository {
             if (qEsFormula || tamanoLote <= 0) {
               final qCalc = MathUtils.calcularEOQ(demanda, costoPedido, costoMantenimiento);
               
-              // ✅ Registrar cálculo automático
+              // Registrar cálculo automático
               if (!articulosConCalculosAutomaticos.contains(nombre)) {
                 articulosConCalculosAutomaticos.add(nombre);
               }
-              detallesCalculos.add('📐 $nombre: Tamaño de Lote (Q) = ${qCalc.toStringAsFixed(2)} (calculado automáticamente por EOQ)');
+              detallesCalculos.add('$nombre: Tamaño de Lote (Q) = ${qCalc.toStringAsFixed(2)} (calculado automáticamente por EOQ)');
               
-              logDebug('📐 Q calculado por EOQ (fórmula/0 detectado): $qCalc');
+              logDebug('Q calculado por EOQ (fórmula/0 detectado): $qCalc');
               tamanoLote = qCalc;
             }
 
@@ -513,13 +513,13 @@ class ExcelRepository {
               tamanoLote: tamanoLote,
             );
             articulos.add(articulo);
-            logDebug('✅ Fila ${rowIndex + 1}: Artículo creado - ${articulo.nombre}');
+            logDebug('Fila ${rowIndex + 1}: Artículo creado - ${articulo.nombre}');
           } catch (e) {
-            logDebug('❌ Error en fila ${rowIndex + 1}: $e');
+            logDebug('Error en fila ${rowIndex + 1}: $e');
           }
         }
-        logDebug('🎉 Importación completada. Total de artículos: ${articulos.length}');
-        logDebug('🔧 Artículos con cálculos automáticos: ${articulosConCalculosAutomaticos.length}');
+        logDebug('Importación completada. Total de artículos: ${articulos.length}');
+        logDebug('Artículos con cálculos automáticos: ${articulosConCalculosAutomaticos.length}');
         
         return ImportacionResultado(
           articulos: articulos,
@@ -527,14 +527,14 @@ class ExcelRepository {
           detallesCalculos: detallesCalculos,
         );
       } catch (e) {
-        logDebug('❌ Error al decodificar con excel: $e');
+        logDebug('Error al decodificar con excel: $e');
         if (kIsWeb) {
           // Fallback Web: parsear ZIP/XML
           try {
             final datos = await _leerHojaCompletaXlsxFallback(bytes);
             // Usar mapeo fijo por plantilla para fallback
             final columnMap = Map<String, int>.from(_templateColumnIndex);
-            logDebug('🗺️ Mapeo fijo por plantilla aplicado (zip): $columnMap');
+            logDebug('️ Mapeo fijo por plantilla aplicado (zip): $columnMap');
             final articulos = <Articulo>[];
             for (int rowIndex = 1; rowIndex < datos.length; rowIndex++) {
               final row = datos[rowIndex];
@@ -545,7 +545,7 @@ class ExcelRepository {
                 continue;
               }
               if (rowIndex <= 5) {
-                logDebug('🔎 Fila[zip] ${rowIndex + 1} raw:');
+                logDebug('Fila[zip] ${rowIndex + 1} raw:');
                 columnMap.forEach((key, idx) {
                   final s = getStr(idx);
                   final n = _parseDoubleFromString(s, double.nan);
@@ -575,7 +575,7 @@ class ExcelRepository {
               double tamanoLote = getNum(columnMap['Tamaño de Lote (unidades)'] ?? -1, 1);
               if (qStr.contains('=') || qStr.toUpperCase().contains('SQRT') || tamanoLote <= 0) {
                 tamanoLote = MathUtils.calcularEOQ(demanda, costoPedido, costoMantenimiento);
-                logDebug('📐 Q calculado automáticamente en fallback ZIP/XML (EOQ): $tamanoLote');
+                logDebug('Q calculado automáticamente en fallback ZIP/XML (EOQ): $tamanoLote');
               }
 
               articulos.add(Articulo(
@@ -591,20 +591,20 @@ class ExcelRepository {
                 tamanoLote: tamanoLote,
               ));
             }
-            logDebug('✅ Importación con fallback ZIP/XML. Filas: ${articulos.length}');
+            logDebug('Importación con fallback ZIP/XML. Filas: ${articulos.length}');
             return ImportacionResultado(
               articulos: articulos,
               articulosConCalculosAutomaticos: [],
               detallesCalculos: [],
             );
           } catch (e2) {
-            logDebug('❌ Fallback ZIP/XML falló: $e2');
+            logDebug('Fallback ZIP/XML falló: $e2');
           }
         }
         throw Exception('Error al importar desde Excel: $e');
       }
     } catch (e) {
-      logDebug('❌ Error al importar desde Excel: $e');
+      logDebug('Error al importar desde Excel: $e');
       throw Exception('Error al importar desde Excel: $e');
     }
   }
@@ -714,7 +714,7 @@ class ExcelRepository {
         return _parseDoubleFromString(stringValue, defaultValue);
     }
   }
-  /// ✅ Aplica redondeo según configuración del provider
+  /// Aplica redondeo según configuración del provider
   static double _aplicarRedondeoConfigurado(
     double valor,
     String tipo, {
@@ -736,15 +736,15 @@ class ExcelRepository {
   static Future<String> exportarResultados(
     ResultadoSistema resultado, {
     List<Articulo>? articulos,
-    // ✅ Configuraciones de redondeo del provider
+    // Configuraciones de redondeo del provider
     String? tipoRedondeoPuntoReorden,
     String? tipoRedondeoTamanoLote,
     int? decimalesPuntoReorden,
     int? decimalesTamanoLote,
   }) async {
     try {
-      logDebug('📤 Iniciando exportación de resultados con librería excel...');
-      logDebug('🔧 Configuraciones de redondeo: PuntoReorden=$tipoRedondeoPuntoReorden($decimalesPuntoReorden), TamanoLote=$tipoRedondeoTamanoLote($decimalesTamanoLote)');
+      logDebug('Iniciando exportación de resultados con librería excel...');
+      logDebug('Configuraciones de redondeo: PuntoReorden=$tipoRedondeoPuntoReorden($decimalesPuntoReorden), TamanoLote=$tipoRedondeoTamanoLote($decimalesTamanoLote)');
       
       // Crear nuevo Excel (usa hoja predeterminada)
       final excel = Excel.createExcel();
@@ -753,7 +753,7 @@ class ExcelRepository {
       final sheet = excel.tables.keys.first;
       final worksheet = excel[sheet];
 
-      // ✅ Encabezados que coinciden exactamente con la interfaz
+      // Encabezados que coinciden exactamente con la interfaz
       final headers = [
         'Artículo',           // Coincide con DataTable
         'Q',                  // Coincide con DataTable
@@ -764,12 +764,12 @@ class ExcelRepository {
         'Espacio (m²)',       // Coincide con DataTable
       ];
 
-      // ✅ Escribir encabezados con colores del tema
+      // Escribir encabezados con colores del tema
       for (int i = 0; i < headers.length; i++) {
         final cell = worksheet
             .cell(CellIndex.indexByColumnRow(columnIndex: i, rowIndex: 0));
         cell.value = TextCellValue(headers[i]);
-        // ✅ Color del tema MDSJ para encabezados
+        // Color del tema MDSJ para encabezados
         cell.cellStyle = CellStyle(
           backgroundColorHex: ExcelColor.blue, // Usar azul similar al primary del tema
           fontColorHex: ExcelColor.white,
@@ -777,12 +777,12 @@ class ExcelRepository {
         );
       }
 
-      // ✅ Escribir datos que coinciden exactamente con la interfaz
+      // Escribir datos que coinciden exactamente con la interfaz
       for (int i = 0; i < resultado.resultados.length; i++) {
         final res = resultado.resultados[i];
         final row = i + 1; // Empezar desde la fila 1 (índice basado en 0)
 
-        // ✅ Aplicar redondeo configurado del provider
+        // Aplicar redondeo configurado del provider
         final tamanoLoteRedondeado = _aplicarRedondeoConfigurado(
           res.tamanoLote,
           'tamanoLote',
@@ -796,21 +796,21 @@ class ExcelRepository {
           decimales: decimalesPuntoReorden,
         );
 
-        // ✅ Formato exacto como en la interfaz (sin colores alternados)
+        // Formato exacto como en la interfaz (sin colores alternados)
         worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: row)).value = TextCellValue(res.nombre);
         worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: row)).value = TextCellValue(tamanoLoteRedondeado.toStringAsFixed(decimalesTamanoLote ?? 0)); // Q: según configuración
         worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: row)).value = TextCellValue(puntoReordenRedondeado.toStringAsFixed(decimalesPuntoReorden ?? 0)); // R: según configuración
         worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: row)).value = TextCellValue(res.zScore.toStringAsFixed(2)); // Z-Score: 2 decimales
         worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 4, rowIndex: row)).value = TextCellValue(res.backordersEsperados.toStringAsFixed(2)); // Backorders: 2 decimales
-        worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 5, rowIndex: row)).value = TextCellValue(MathUtils.formatearNumero(res.costoTotal)); // Costo Total: formato número
-        worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 6, rowIndex: row)).value = TextCellValue(MathUtils.formatearNumero(res.espacioUsado)); // Espacio: formato número
+        worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 5, rowIndex: row)).value = TextCellValue(MathUtils.formatearNumeroParaExcel(res.costoTotal)); // Costo Total: formato número
+        worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 6, rowIndex: row)).value = TextCellValue(MathUtils.formatearNumeroParaExcel(res.espacioUsado)); // Espacio: formato número
       }
 
-      // ✅ Agregar resumen del sistema en la parte derecha (columna H)
+      // Agregar resumen del sistema en la parte derecha (columna H)
       final summaryStartCol = 8; // Columna H (índice 8)
       final summaryStartRow = 0; // Empezar desde la fila 0 (mismo nivel que los encabezados)
 
-      // ✅ Encabezado del resumen con color del tema
+      // Encabezado del resumen con color del tema
       final summaryHeaderCell = worksheet.cell(CellIndex.indexByColumnRow(columnIndex: summaryStartCol, rowIndex: summaryStartRow));
       summaryHeaderCell.value = TextCellValue('Resumen del Sistema');
       summaryHeaderCell.cellStyle = CellStyle(
@@ -819,34 +819,34 @@ class ExcelRepository {
         bold: true,
       );
 
-      // ✅ Datos del resumen (sin colores de fondo)
+      // Datos del resumen (sin colores de fondo)
       final summaryData = [
-        ['Costo Total Sistema:', MathUtils.formatearNumero(resultado.costoTotalSistema)],
-        ['Espacio Total Usado:', MathUtils.formatearNumero(resultado.espacioTotalUsado)],
-        ['Presupuesto Total:', MathUtils.formatearNumero(resultado.presupuestoTotal)],
+        ['Costo Total Sistema:', MathUtils.formatearNumeroParaExcel(resultado.costoTotalSistema)],
+        ['Espacio Total Usado:', MathUtils.formatearNumeroParaExcel(resultado.espacioTotalUsado)],
+        ['Presupuesto Total:', MathUtils.formatearNumeroParaExcel(resultado.presupuestoTotal)],
         ['Número Total Pedidos:', resultado.numeroTotalPedidos.toString()],
       ];
 
       for (int i = 0; i < summaryData.length; i++) {
         final row = summaryStartRow + i + 1;
         
-        // ✅ Etiqueta (columna H) - solo negrita
+        // Etiqueta (columna H) - solo negrita
         final labelCell = worksheet.cell(CellIndex.indexByColumnRow(columnIndex: summaryStartCol, rowIndex: row));
         labelCell.value = TextCellValue(summaryData[i][0]);
         labelCell.cellStyle = CellStyle(
           bold: true,
         );
         
-        // ✅ Valor (columna I) - sin formato especial
+        // Valor (columna I) - sin formato especial
         final valueCell = worksheet.cell(CellIndex.indexByColumnRow(columnIndex: summaryStartCol + 1, rowIndex: row));
         valueCell.value = TextCellValue(summaryData[i][1]);
       }
 
-      // ✅ Agregar artículos del sistema en la misma hoja (después de los resultados)
+      // Agregar artículos del sistema en la misma hoja (después de los resultados)
       if (articulos != null && articulos.isNotEmpty) {
         final articulosStartRow = resultado.resultados.length + 4; // Espacio adicional después de los resultados
         
-        // ✅ Encabezados para artículos del sistema
+        // Encabezados para artículos del sistema
         final articulosHeaders = [
           'Nombre',
           'Demanda Anual',
@@ -860,12 +860,12 @@ class ExcelRepository {
           'Tamaño Lote',
         ];
 
-        // ✅ Escribir encabezados de artículos con colores del tema
+        // Escribir encabezados de artículos con colores del tema
         for (int i = 0; i < articulosHeaders.length; i++) {
           final cell = worksheet
               .cell(CellIndex.indexByColumnRow(columnIndex: i, rowIndex: articulosStartRow));
           cell.value = TextCellValue(articulosHeaders[i]);
-          // ✅ Color del tema MDSJ para encabezados de artículos
+          // Color del tema MDSJ para encabezados de artículos
           cell.cellStyle = CellStyle(
             backgroundColorHex: ExcelColor.blue, // Usar el mismo color que los otros encabezados
             fontColorHex: ExcelColor.white,
@@ -873,12 +873,12 @@ class ExcelRepository {
           );
         }
 
-        // ✅ Escribir datos de artículos (sin colores alternados)
+        // Escribir datos de artículos (sin colores alternados)
         for (int i = 0; i < articulos.length; i++) {
           final articulo = articulos[i];
           final row = articulosStartRow + i + 1; // Empezar desde la fila siguiente a los encabezados
 
-          // ✅ Aplicar redondeo configurado del provider para artículos
+          // Aplicar redondeo configurado del provider para artículos
           final tamanoLoteRedondeado = _aplicarRedondeoConfigurado(
             articulo.tamanoLote,
             'tamanoLote',
@@ -892,14 +892,14 @@ class ExcelRepository {
             decimales: decimalesPuntoReorden,
           );
 
-          // ✅ Formato exacto como en la interfaz
+          // Formato exacto como en la interfaz
           worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 0, rowIndex: row)).value = TextCellValue(articulo.nombre);
           worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 1, rowIndex: row)).value = TextCellValue(articulo.demandaAnual.toStringAsFixed(2));
-          worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: row)).value = TextCellValue(MathUtils.formatearNumero(articulo.costoPedido));
-          worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: row)).value = TextCellValue(MathUtils.formatearNumero(articulo.costoMantenimiento));
-          worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 4, rowIndex: row)).value = TextCellValue(MathUtils.formatearNumero(articulo.costoFaltante));
-          worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 5, rowIndex: row)).value = TextCellValue(MathUtils.formatearNumero(articulo.costoUnitario));
-          worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 6, rowIndex: row)).value = TextCellValue(MathUtils.formatearNumero(articulo.espacioUnidad));
+          worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 2, rowIndex: row)).value = TextCellValue(MathUtils.formatearNumeroParaExcel(articulo.costoPedido));
+          worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 3, rowIndex: row)).value = TextCellValue(MathUtils.formatearNumeroParaExcel(articulo.costoMantenimiento));
+          worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 4, rowIndex: row)).value = TextCellValue(MathUtils.formatearNumeroParaExcel(articulo.costoFaltante));
+          worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 5, rowIndex: row)).value = TextCellValue(MathUtils.formatearNumeroParaExcel(articulo.costoUnitario));
+          worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 6, rowIndex: row)).value = TextCellValue(MathUtils.formatearNumeroParaExcel(articulo.espacioUnidad));
           worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 7, rowIndex: row)).value = TextCellValue(articulo.desviacionDiaria.toStringAsFixed(2));
           worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 8, rowIndex: row)).value = TextCellValue(puntoReordenRedondeado.toStringAsFixed(decimalesPuntoReorden ?? 0)); // R: según configuración
           worksheet.cell(CellIndex.indexByColumnRow(columnIndex: 9, rowIndex: row)).value = TextCellValue(tamanoLoteRedondeado.toStringAsFixed(decimalesTamanoLote ?? 0)); // Q: según configuración
@@ -911,14 +911,14 @@ class ExcelRepository {
       if (kIsWeb) {
         // En Web, la propia librería excel descarga el archivo
         excel.save(fileName: fileName);
-        logDebug('📥 Web: descarga iniciada por excel.save(fileName: ...)');
+        logDebug('Web: descarga iniciada por excel.save(fileName: ...)');
         return fileName;
       } else {
         final bytes = excel.save();
         if (bytes == null || bytes.isEmpty) {
           throw Exception('Error: Los bytes del archivo Excel están vacíos');
         }
-        logDebug('📊 Excel generado: ${bytes.length} bytes');
+        logDebug('Excel generado: ${bytes.length} bytes');
         final filePath = await _guardarArchivo(bytes, fileName);
         return filePath;
       }
@@ -930,11 +930,11 @@ class ExcelRepository {
   /// Proporciona la plantilla Excel pregenerada desde assets
   static Future<String> generarPlantilla() async {
     try {
-      logDebug('📋 Proporcionando plantilla Excel pregenerada...');
+      logDebug('Proporcionando plantilla Excel pregenerada...');
       // Cargar SIEMPRE la plantilla desde assets
       final byteData = await rootBundle.load('assets/templates/plantilla_inventario.xlsx');
       final uint8bytes = byteData.buffer.asUint8List();
-      logDebug('✅ Plantilla cargada desde assets: ${uint8bytes.length} bytes');
+      logDebug('Plantilla cargada desde assets: ${uint8bytes.length} bytes');
 
       if (kIsWeb) {
         await downloadBytesWeb(
@@ -948,39 +948,47 @@ class ExcelRepository {
       }
       
     } catch (e) {
-      logDebug('❌ Error al cargar plantilla pregenerada: $e');
-      logDebug('🔄 Creando plantilla básica como fallback...');
+      logDebug('Error al cargar plantilla pregenerada: $e');
+      logDebug('Creando plantilla básica como fallback...');
       
       // Fallback: si falla la carga del asset, reportar error
       rethrow;
     }
   }
 
-  /// ✅ DESCARGAR ARCHIVO ZIP DESDE ASSETS (MULTIPLATAFORMA)
+  /// DESCARGAR ARCHIVO COMPRIMIDO DESDE ASSETS (MULTIPLATAFORMA)
   static Future<String> descargarArchivoZip(String nombreArchivo) async {
     try {
-      logDebug('📦 ExcelRepository: Descargando archivo ZIP: $nombreArchivo...');
+      logDebug('ExcelRepository: Descargando archivo comprimido: $nombreArchivo...');
       
-      // ✅ CARGAR ARCHIVO ZIP DESDE ASSETS
+      // CARGAR ARCHIVO DESDE ASSETS
       final byteData = await rootBundle.load('assets/templates/$nombreArchivo');
       final uint8bytes = byteData.buffer.asUint8List();
-      logDebug('✅ ExcelRepository: Archivo ZIP cargado desde assets: ${uint8bytes.length} bytes');
+      logDebug('ExcelRepository: Archivo comprimido cargado desde assets: ${uint8bytes.length} bytes');
       
       if (kIsWeb) {
-        // ✅ WEB: Descargar directamente desde assets
+        // Mapear tipo MIME según la extensión para soporte multi-formato
+        String mimeType = 'application/octet-stream';
+        if (nombreArchivo.endsWith('.zip')) {
+          mimeType = 'application/zip';
+        } else if (nombreArchivo.endsWith('.rar')) {
+          mimeType = 'application/vnd.rar';
+        }
+
+        // WEB: Descargar directamente desde assets
         await downloadBytesWeb(
           uint8bytes,
           nombreArchivo,
-          mimeType: 'application/zip',
+          mimeType: mimeType,
         );
-        logDebug('✅ ExcelRepository: Archivo ZIP descargado en web: $nombreArchivo');
+        logDebug('ExcelRepository: Archivo comprimido descargado en web: $nombreArchivo');
         return 'Descargado: $nombreArchivo';
       } else {
-        // ✅ NATIVO: Guardar en directorio temporal
+        // NATIVO: Guardar en directorio temporal
         return await _guardarArchivo(uint8bytes, nombreArchivo);
       }
     } catch (e) {
-      logDebug('❌ ExcelRepository: Error al descargar archivo ZIP: $e');
+      logDebug('ExcelRepository: Error al descargar archivo ZIP: $e');
       rethrow;
     }
   }
@@ -993,7 +1001,7 @@ class ExcelRepository {
     final file = File(path);
     await file.writeAsBytes(bytes);
     
-    logDebug('💾 Archivo guardado en: $path');
+    logDebug('Archivo guardado en: $path');
     return path;
   }
 } 

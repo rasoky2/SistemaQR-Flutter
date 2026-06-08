@@ -26,9 +26,9 @@ Future<void> downloadBytesWeb(Uint8List bytes, String fileName, {String mimeType
     // Limpiar URL del blob
     html.Url.revokeObjectUrl(url);
     
-    logDebug('✅ Descarga web iniciada: $fileName');
+    logDebug('Descarga web iniciada: $fileName');
   } catch (e) {
-    logDebug('❌ Error en descarga web: $e');
+    logDebug('Error en descarga web: $e');
     rethrow;
   }
 }
@@ -55,7 +55,7 @@ Future<void> downloadExcelWeb(Uint8List bytes, String fileName) async {
 Future<void> downloadPortablePackageWeb(Uint8List bytes, String fileName) async {
   try {
     // Mostrar notificación de descarga
-    logDebug('📦 Iniciando descarga de paquete portable: $fileName');
+    logDebug('Iniciando descarga de paquete portable: $fileName');
     
     // Descargar con tipo MIME correcto para ZIP
     await downloadBytesWeb(
@@ -64,9 +64,9 @@ Future<void> downloadPortablePackageWeb(Uint8List bytes, String fileName) async 
       mimeType: 'application/zip'
     );
     
-    logDebug('✅ Paquete portable descargado exitosamente');
+    logDebug('Paquete portable descargado exitosamente');
   } catch (e) {
-    logDebug('❌ Error al descargar paquete portable: $e');
+    logDebug('Error al descargar paquete portable: $e');
     rethrow;
   }
 }

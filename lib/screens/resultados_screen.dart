@@ -62,14 +62,14 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
       ),
       body: Consumer<InventarioProvider>(
         builder: (context, provider, child) {
-          logDebug('📊 ResultadosScreen: Consumer reconstruyendo');
+          logDebug('ResultadosScreen: Consumer reconstruyendo');
           logDebug(
-              '📊 ResultadosScreen: Resultado disponible: ${provider.resultado != null}');
+              'ResultadosScreen: Resultado disponible: ${provider.resultado != null}');
           logDebug(
-              '📊 ResultadosScreen: Artículos disponibles: ${provider.articulos.length}');
+              'ResultadosScreen: Artículos disponibles: ${provider.articulos.length}');
 
           if (provider.resultado == null) {
-            logDebug('📊 ResultadosScreen: No hay resultados disponibles');
+            logDebug('ResultadosScreen: No hay resultados disponibles');
             return const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -96,7 +96,7 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
             );
           }
 
-          logDebug('📊 ResultadosScreen: Mostrando resultados');
+          logDebug('ResultadosScreen: Mostrando resultados');
           return SingleChildScrollView(
             padding: const EdgeInsets.all(24.0),
             child: Column(
@@ -624,8 +624,16 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
                   return DataRow(
                     cells: [
                       DataCell(Text(resultado.nombre)),
-                      DataCell(Text(resultado.tamanoLote.toStringAsFixed(0))),
-                      DataCell(Text(resultado.puntoReorden.toStringAsFixed(0))),
+                      DataCell(Text(MathUtils.formatearConDecimales(
+                          resultado.tamanoLote,
+                          provider.tipoRedondeoTamanoLote == 'unidades'
+                              ? 0
+                              : provider.decimalesTamanoLote))),
+                      DataCell(Text(MathUtils.formatearConDecimales(
+                          resultado.puntoReorden,
+                          provider.tipoRedondeoPuntoReorden == 'unidades'
+                              ? 0
+                              : provider.decimalesPuntoReorden))),
                       DataCell(Text(resultado.zScore.toStringAsFixed(2))),
                       DataCell(Text(
                           resultado.backordersEsperados.toStringAsFixed(2))),
@@ -772,19 +780,19 @@ class _ResultadosScreenState extends State<ResultadosScreen> {
     }
 
     try {
-      logDebug('📤 Iniciando exportación de resultados a Excel...');
+      logDebug('Iniciando exportación de resultados a Excel...');
 
       // Usar el método del ExcelRepository que maneja automáticamente web/móvil
       final filePath = await provider.exportarResultadosExcel();
 
-      logDebug('✅ Resultados exportados exitosamente en: $filePath');
+      logDebug('Resultados exportados exitosamente en: $filePath');
 
       // Mostrar mensaje de éxito
       if (context.mounted) {
         _mostrarDialogoExito(context, filePath);
       }
     } catch (e) {
-      logDebug('❌ Error al exportar resultados: $e');
+      logDebug('Error al exportar resultados: $e');
 
       if (context.mounted) {
         _mostrarDialogoError(context, 'Error al exportar resultados: $e');

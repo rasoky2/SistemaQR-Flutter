@@ -19,46 +19,122 @@ class _RestriccionDialogState extends State<RestriccionDialog> {
   late TextEditingController _presupuestoMaximoController;
   late TextEditingController _numeroMaximoPedidosController;
 
-  // ✅ Controladores para configuraciones de redondeo
+  // Controladores para configuraciones de redondeo
   late String _tipoRedondeoPuntoReorden;
   late String _tipoRedondeoTamanoLote;
   late int _decimalesPuntoReorden;
   late int _decimalesTamanoLote;
   late bool _redondeosVinculados;
+  late String _formatoSeparadores;
+
+  // Valores originales del provider para control de cambios
+  late double _originalLeadTime;
+  late double _originalEspacioMaximo;
+  late double _originalPresupuestoMaximo;
+  late double _originalNumeroMaximoPedidos;
+  late String _originalTipoRedondeoPuntoReorden;
+  late String _originalTipoRedondeoTamanoLote;
+  late int _originalDecimalesPuntoReorden;
+  late int _originalDecimalesTamanoLote;
+  late bool _originalRedondeosVinculados;
+  late String _originalFormatoSeparadores;
+
+  // Referencia persistente al provider para el dispose
+  late InventarioProvider _provider;
 
   @override
   void initState() {
     super.initState();
     final provider = context.read<InventarioProvider>();
+    _provider = provider;
 
-    // Usar valores redondeados para mejor presentación
+    // Guardar valores originales
+    _originalLeadTime = MathUtils.redondearInteligente(provider.leadTimeDias, tipo: 'dias');
+    _originalEspacioMaximo = MathUtils.redondearInteligente(provider.espacioMaximo, tipo: 'espacio');
+    _originalPresupuestoMaximo = MathUtils.redondearInteligente(provider.presupuestoMaximo, tipo: 'moneda');
+    _originalNumeroMaximoPedidos = MathUtils.redondearInteligente(provider.numeroMaximoPedidos, tipo: 'pedidos');
+    _originalTipoRedondeoPuntoReorden = provider.tipoRedondeoPuntoReorden;
+    _originalTipoRedondeoTamanoLote = provider.tipoRedondeoTamanoLote;
+    _originalDecimalesPuntoReorden = provider.decimalesPuntoReorden;
+    _originalDecimalesTamanoLote = provider.decimalesTamanoLote;
+    _originalRedondeosVinculados = provider.redondeosVinculados;
+    _originalFormatoSeparadores = provider.formatoSeparadores;
+
+    // Usar valores redondeados para mejor presentación y aplicar formato regional
     _leadTimeController = TextEditingController(
-        text:
-            MathUtils.redondearInteligente(provider.leadTimeDias, tipo: 'dias')
-                .toStringAsFixed(1));
+        text: MathUtils.formatearConDecimales(_originalLeadTime, 1));
     _espacioMaximoController = TextEditingController(
-        text: MathUtils.redondearInteligente(provider.espacioMaximo,
-                tipo: 'espacio')
-            .toStringAsFixed(1));
+        text: MathUtils.formatearConDecimales(_originalEspacioMaximo, 1));
     _presupuestoMaximoController = TextEditingController(
-        text: MathUtils.redondearInteligente(provider.presupuestoMaximo,
-                tipo: 'moneda')
-            .toStringAsFixed(2));
+        text: MathUtils.formatearConDecimales(_originalPresupuestoMaximo, 2));
     _numeroMaximoPedidosController = TextEditingController(
-        text: MathUtils.redondearInteligente(provider.numeroMaximoPedidos,
-                tipo: 'pedidos')
-            .toStringAsFixed(0));
+        text: MathUtils.formatearConDecimales(_originalNumeroMaximoPedidos, 0));
 
-    // ✅ Inicializar configuraciones de redondeo
-    _tipoRedondeoPuntoReorden = provider.tipoRedondeoPuntoReorden;
-    _tipoRedondeoTamanoLote = provider.tipoRedondeoTamanoLote;
-    _decimalesPuntoReorden = provider.decimalesPuntoReorden;
-    _decimalesTamanoLote = provider.decimalesTamanoLote;
-    _redondeosVinculados = provider.redondeosVinculados;
+    // Inicializar configuraciones de redondeo
+    _tipoRedondeoPuntoReorden = _originalTipoRedondeoPuntoReorden;
+    _tipoRedondeoTamanoLote = _originalTipoRedondeoTamanoLote;
+    _decimalesPuntoReorden = _originalDecimalesPuntoReorden;
+    _decimalesTamanoLote = _originalDecimalesTamanoLote;
+    _redondeosVinculados = _originalRedondeosVinculados;
+    _formatoSeparadores = _originalFormatoSeparadores;
+
+    // Registrar listeners para refrescar el estado del boton guardar
+    _leadTimeController.addListener(_onFieldChanged);
+    _espacioMaximoController.addListener(_onFieldChanged);
+    _presupuestoMaximoController.addListener(_onFieldChanged);
+    _numeroMaximoPedidosController.addListener(_onFieldChanged);
+  }
+
+  void _onFieldChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  bool _tieneCambios() {
+    final currentLeadTime = MathUtils.validarYRedondearEntrada(
+        _leadTimeController.text,
+        tipo: 'dias',
+        valorPorDefecto: _originalLeadTime);
+    final currentEspacio = MathUtils.validarYRedondearEntrada(
+        _espacioMaximoController.text,
+        tipo: 'espacio',
+        valorPorDefecto: _originalEspacioMaximo);
+    final currentPresupuesto = MathUtils.validarYRedondearEntrada(
+        _presupuestoMaximoController.text,
+        tipo: 'moneda',
+        valorPorDefecto: _originalPresupuestoMaximo);
+    final currentPedidos = MathUtils.validarYRedondearEntrada(
+        _numeroMaximoPedidosController.text,
+        tipo: 'pedidos',
+        valorPorDefecto: _originalNumeroMaximoPedidos);
+
+    final hasTextChanges = currentLeadTime != _originalLeadTime ||
+        currentEspacio != _originalEspacioMaximo ||
+        currentPresupuesto != _originalPresupuestoMaximo ||
+        currentPedidos != _originalNumeroMaximoPedidos;
+
+    final hasConfigChanges =
+        _tipoRedondeoPuntoReorden != _originalTipoRedondeoPuntoReorden ||
+            _tipoRedondeoTamanoLote != _originalTipoRedondeoTamanoLote ||
+            _decimalesPuntoReorden != _originalDecimalesPuntoReorden ||
+            _decimalesTamanoLote != _originalDecimalesTamanoLote ||
+            _redondeosVinculados != _originalRedondeosVinculados ||
+            _formatoSeparadores != _originalFormatoSeparadores;
+
+    return hasTextChanges || hasConfigChanges;
   }
 
   @override
   void dispose() {
+    // Asegurar que el formato de MathUtils quede sincronizado con el provider al cerrar el diálogo
+    MathUtils.formatoNumeroUI = _provider.formatoSeparadores;
+
+    _leadTimeController.removeListener(_onFieldChanged);
+    _espacioMaximoController.removeListener(_onFieldChanged);
+    _presupuestoMaximoController.removeListener(_onFieldChanged);
+    _numeroMaximoPedidosController.removeListener(_onFieldChanged);
+
     _leadTimeController.dispose();
     _espacioMaximoController.dispose();
     _presupuestoMaximoController.dispose();
@@ -97,11 +173,11 @@ class _RestriccionDialogState extends State<RestriccionDialog> {
                   ],
                 ),
                 const SizedBox(height: 24),
-                // ✅ Contenido del diálogo en 2 columnas
+                // Contenido del diálogo en 2 columnas
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // ✅ COLUMNA IZQUIERDA: Configuraciones principales
+                    // COLUMNA IZQUIERDA: Configuraciones principales
                     Expanded(
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -109,13 +185,7 @@ class _RestriccionDialogState extends State<RestriccionDialog> {
                           _buildConfigField(
                             'Lead Time (días)',
                             _leadTimeController,
-                            (value) {
-                              final valorRedondeado =
-                                  MathUtils.validarYRedondearEntrada(value,
-                                      tipo: 'dias', valorPorDefecto: 36.5);
-                              provider.actualizarConfiguracion(
-                                  leadTimeDias: valorRedondeado);
-                            },
+                            (value) => setState(() {}),
                             icon: UniconsLine.clock,
                             tooltip: 'Tiempo promedio de entrega de pedidos',
                           ),
@@ -123,13 +193,7 @@ class _RestriccionDialogState extends State<RestriccionDialog> {
                           _buildConfigField(
                             'Espacio Máximo (m²)',
                             _espacioMaximoController,
-                            (value) {
-                              final valorRedondeado =
-                                  MathUtils.validarYRedondearEntrada(value,
-                                      tipo: 'espacio', valorPorDefecto: 150.0);
-                              provider.actualizarConfiguracion(
-                                  espacioMaximo: valorRedondeado);
-                            },
+                            (value) => setState(() {}),
                             icon: UniconsLine.store,
                             tooltip: 'Capacidad máxima de almacenamiento',
                           ),
@@ -137,13 +201,7 @@ class _RestriccionDialogState extends State<RestriccionDialog> {
                           _buildConfigField(
                             'Presupuesto Máximo (S/)',
                             _presupuestoMaximoController,
-                            (value) {
-                              final valorRedondeado =
-                                  MathUtils.validarYRedondearEntrada(value,
-                                      tipo: 'moneda', valorPorDefecto: 10000.0);
-                              provider.actualizarConfiguracion(
-                                  presupuestoMaximo: valorRedondeado);
-                            },
+                            (value) => setState(() {}),
                             icon: UniconsLine.money_bill,
                             tooltip: 'Límite de presupuesto para el inventario',
                           ),
@@ -151,21 +209,16 @@ class _RestriccionDialogState extends State<RestriccionDialog> {
                           _buildConfigField(
                             'Número Máximo de Pedidos',
                             _numeroMaximoPedidosController,
-                            (value) {
-                              final valorRedondeado =
-                                  MathUtils.validarYRedondearEntrada(value,
-                                      tipo: 'pedidos', valorPorDefecto: 100.0);
-                              provider.actualizarConfiguracion(
-                                  numeroMaximoPedidos: valorRedondeado);
-                            },
+                            (value) => setState(() {}),
                             icon: UniconsLine.box,
                             tooltip: 'Cantidad máxima de pedidos permitidos',
+                            allowDecimal: false,
                           ),
                         ],
                       ),
                     ),
 
-                    // ✅ SEPARADOR VERTICAL
+                    // SEPARADOR VERTICAL
                     Container(
                       width: 1,
                       height: 220,
@@ -173,7 +226,7 @@ class _RestriccionDialogState extends State<RestriccionDialog> {
                       color: Colors.grey.withValues(alpha: 0.2),
                     ),
 
-                    // ✅ COLUMNA DERECHA: Configuraciones de redondeo
+                    // COLUMNA DERECHA: Configuraciones de redondeo
                     Expanded(
                       child: _buildRedondeoSection(),
                     ),
@@ -193,19 +246,70 @@ class _RestriccionDialogState extends State<RestriccionDialog> {
                     ),
                     const SizedBox(width: 12),
                     ElevatedButton(
-                      onPressed: () {
-                        // ✅ Guardar configuraciones de redondeo
-                        provider.actualizarConfiguracion(
-                          tipoRedondeoPuntoReorden: _tipoRedondeoPuntoReorden,
-                          tipoRedondeoTamanoLote: _tipoRedondeoTamanoLote,
-                          decimalesPuntoReorden: _decimalesPuntoReorden,
-                          decimalesTamanoLote: _decimalesTamanoLote,
-                          redondeosVinculados: _redondeosVinculados,
-                        );
+                      onPressed: _tieneCambios()
+                          ? () {
+                              // ✅ Validar y formatear inputs antes de guardar
+                              final leadTimeVal = MathUtils.validarYRedondearEntrada(
+                                  _leadTimeController.text,
+                                  tipo: 'dias',
+                                  valorPorDefecto: 36.5);
+                              final espacioMaxVal = MathUtils.validarYRedondearEntrada(
+                                  _espacioMaximoController.text,
+                                  tipo: 'espacio',
+                                  valorPorDefecto: 150.0);
+                              final presupuestoMaxVal = MathUtils.validarYRedondearEntrada(
+                                  _presupuestoMaximoController.text,
+                                  tipo: 'moneda',
+                                  valorPorDefecto: 10000.0);
+                              final numeroMaxPedidosVal = MathUtils.validarYRedondearEntrada(
+                                  _numeroMaximoPedidosController.text,
+                                  tipo: 'pedidos',
+                                  valorPorDefecto: 100.0);
 
-                        Navigator.pop(context);
-                        _mostrarConfirmacion(context);
-                      },
+                              // ✅ Guardar configuraciones y enviar al provider
+                              provider.actualizarConfiguracion(
+                                leadTimeDias: leadTimeVal,
+                                espacioMaximo: espacioMaxVal,
+                                presupuestoMaximo: presupuestoMaxVal,
+                                numeroMaximoPedidos: numeroMaxPedidosVal,
+                                tipoRedondeoPuntoReorden: _tipoRedondeoPuntoReorden,
+                                tipoRedondeoTamanoLote: _tipoRedondeoTamanoLote,
+                                decimalesPuntoReorden: _decimalesPuntoReorden,
+                                decimalesTamanoLote: _decimalesTamanoLote,
+                                redondeosVinculados: _redondeosVinculados,
+                                formatoSeparadores: _formatoSeparadores,
+                              );
+
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(UniconsLine.check_circle,
+                                          color: Colors.white, size: 16),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        'Configuración guardada',
+                                        style: GoogleFonts.inter(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  backgroundColor: MDSJColors.primary,
+                                  behavior: SnackBarBehavior.floating,
+                                  duration: const Duration(milliseconds: 1500),
+                                  width: 240,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                ),
+                              );
+                            }
+                          : null, // Desactivado si no hay cambios
                       child: Text(
                         'Guardar',
                         style: GoogleFonts.inter(fontWeight: FontWeight.w500),
@@ -227,6 +331,7 @@ class _RestriccionDialogState extends State<RestriccionDialog> {
     Function(String) onChanged, {
     IconData? icon,
     String? tooltip,
+    bool allowDecimal = true,
   }) {
     final focusNode = FocusNode();
 
@@ -259,8 +364,13 @@ class _RestriccionDialogState extends State<RestriccionDialog> {
             ),
             if (tooltip != null) ...[
               const SizedBox(width: 4),
-              const Icon(UniconsLine.info_circle,
-                  size: 14, color: MDSJColors.textSecondary),
+              Tooltip(
+                message: tooltip,
+                preferBelow: false,
+                triggerMode: TooltipTriggerMode.tap,
+                child: const Icon(UniconsLine.info_circle,
+                    size: 14, color: MDSJColors.textSecondary),
+              ),
             ],
           ],
         ),
@@ -270,6 +380,7 @@ class _RestriccionDialogState extends State<RestriccionDialog> {
           focusNode: focusNode,
           onChanged: onChanged,
           keyboardType: const TextInputType.numberWithOptions(decimal: true),
+          inputFormatters: MathUtils.getInputFormatters(allowDecimal: allowDecimal),
           decoration: InputDecoration(
             hintText: 'Ingrese un valor',
             border: OutlineInputBorder(
@@ -332,7 +443,7 @@ class _RestriccionDialogState extends State<RestriccionDialog> {
         ),
         const SizedBox(height: 20),
 
-        // ✅ Botón de vinculación
+        // Botón de vinculación
         _buildVinculacionButton(),
 
         const SizedBox(height: 20),
@@ -347,7 +458,7 @@ class _RestriccionDialogState extends State<RestriccionDialog> {
               _tipoRedondeoPuntoReorden = tipo;
               _decimalesPuntoReorden = decimales;
 
-              // ✅ Si están vinculados, actualizar también el tamaño de lote
+              // Si están vinculados, actualizar también el tamaño de lote
               if (_redondeosVinculados) {
                 _tipoRedondeoTamanoLote = tipo;
                 _decimalesTamanoLote = decimales;
@@ -368,7 +479,7 @@ class _RestriccionDialogState extends State<RestriccionDialog> {
               _tipoRedondeoTamanoLote = tipo;
               _decimalesTamanoLote = decimales;
 
-              // ✅ Si están vinculados, actualizar también el punto de reorden
+              // Si están vinculados, actualizar también el punto de reorden
               if (_redondeosVinculados) {
                 _tipoRedondeoPuntoReorden = tipo;
                 _decimalesPuntoReorden = decimales;
@@ -376,7 +487,106 @@ class _RestriccionDialogState extends State<RestriccionDialog> {
             });
           },
         ),
+        const SizedBox(height: 20),
+        _buildSeparadoresSelector(),
       ],
+    );
+  }
+
+  /// Construye el selector del formato de separador de miles
+  Widget _buildSeparadoresSelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Separador de Miles',
+          style: GoogleFonts.inter(
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            color: MDSJColors.textPrimary,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: _buildSeparadorOption(
+                '1.250,00',
+                'punto_coma',
+              ),
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: _buildSeparadorOption(
+                '1,250.00',
+                'coma_punto',
+              ),
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: _buildSeparadorOption(
+                '1\'250.00',
+                'comilla_punto',
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  void _actualizarFormatoControladores(String nuevoFormato) {
+    final provider = context.read<InventarioProvider>();
+    
+    // 1. Obtener los valores numéricos actuales de los inputs
+    final leadTimeVal = MathUtils.parseDouble(_leadTimeController.text) ?? provider.leadTimeDias;
+    final espacioMaxVal = MathUtils.parseDouble(_espacioMaximoController.text) ?? provider.espacioMaximo;
+    final presupuestoMaxVal = MathUtils.parseDouble(_presupuestoMaximoController.text) ?? provider.presupuestoMaximo;
+    final numeroMaxPedidosVal = MathUtils.parseDouble(_numeroMaximoPedidosController.text) ?? provider.numeroMaximoPedidos;
+
+    // 2. Cambiar la configuración global temporalmente
+    MathUtils.formatoNumeroUI = nuevoFormato;
+
+    // 3. Re-formatear y asignar a los controladores
+    _leadTimeController.text = MathUtils.formatearConDecimales(leadTimeVal, 1);
+    _espacioMaximoController.text = MathUtils.formatearConDecimales(espacioMaxVal, 1);
+    _presupuestoMaximoController.text = MathUtils.formatearConDecimales(presupuestoMaxVal, 2);
+    _numeroMaximoPedidosController.text = MathUtils.formatearConDecimales(numeroMaxPedidosVal, 0);
+  }
+
+  /// Construye una opción de separador de miles
+  Widget _buildSeparadorOption(String label, String value) {
+    final isSelected = _formatoSeparadores == value;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _formatoSeparadores = value;
+          _actualizarFormatoControladores(value);
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? MDSJColors.primary
+              : Colors.grey.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: isSelected
+                ? MDSJColors.primary
+                : Colors.grey.withValues(alpha: 0.3),
+          ),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 11,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+            color: isSelected ? Colors.white : MDSJColors.textPrimary,
+          ),
+          textAlign: TextAlign.center,
+        ),
+      ),
     );
   }
 
@@ -571,39 +781,6 @@ class _RestriccionDialogState extends State<RestriccionDialog> {
     );
   }
 
-  void _mostrarConfirmacion(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            const Icon(UniconsLine.check_circle, color: MDSJColors.success),
-            const SizedBox(width: 8),
-            Text(
-              'Configuración Guardada',
-              style: GoogleFonts.inter(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-        content: Text(
-          'Los cambios se han aplicado correctamente.',
-          style: GoogleFonts.inter(fontSize: 14),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Aceptar',
-              style: GoogleFonts.inter(fontWeight: FontWeight.w500),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 /// Función helper para mostrar el diálogo de restricciones

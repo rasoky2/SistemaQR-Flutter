@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:inventario_qr/providers/inventario.provider.dart';
+import 'package:inventario_qr/utils/math_utils.dart';
 import 'package:inventario_qr/utils/theme_colors.dart';
 import 'package:inventario_qr/widgets/restriccion_dialog.dart';
 import 'package:provider/provider.dart';
@@ -8,7 +9,7 @@ import 'package:unicons/unicons.dart';
 class RestriccionesEstadisticasDialog extends StatelessWidget {
   const RestriccionesEstadisticasDialog({super.key});
 
-  /// ✅ Calcula el valor disponible basado en el ratio y el límite máximo
+  /// Calcula el valor disponible basado en el ratio y el límite máximo
   String _calcularDisponible(double ratio, String maxLabel) {
     if (ratio >= 1.0) {
       return '0.00';
@@ -23,13 +24,13 @@ class RestriccionesEstadisticasDialog extends StatelessWidget {
     if (maxLabel.contains('m²')) {
       return '${valorDisponible.toStringAsFixed(2)} m²';
     } else if (maxLabel.contains('S/')) {
-      return 'S/ ${valorDisponible.toStringAsFixed(2)}';
+      return MathUtils.formatearMoneda(valorDisponible);
     } else {
       return valorDisponible.toStringAsFixed(0);
     }
   }
 
-  /// ✅ Calcula el exceso cuando se supera el límite
+  /// Calcula el exceso cuando se supera el límite
   String _calcularExceso(double ratio, String usadoLabel) {
     if (ratio <= 1.0) {
       return '';
@@ -44,7 +45,7 @@ class RestriccionesEstadisticasDialog extends StatelessWidget {
     if (usadoLabel.contains('m²')) {
       return '${valorExceso.toStringAsFixed(2)} m²';
     } else if (usadoLabel.contains('S/')) {
-      return 'S/ ${valorExceso.toStringAsFixed(2)}';
+      return MathUtils.formatearMoneda(valorExceso);
     } else {
       return valorExceso.toStringAsFixed(0);
     }
@@ -210,9 +211,9 @@ class RestriccionesEstadisticasDialog extends StatelessWidget {
                             icon: UniconsLine.money_bill,
                             titulo: 'Presupuesto',
                             usadoLabel:
-                                'S/ ${resultado.presupuestoTotal.toStringAsFixed(2)}',
+                                MathUtils.formatearMoneda(resultado.presupuestoTotal),
                             maxLabel:
-                                'S/ ${provider.presupuestoMaximo.toStringAsFixed(2)}',
+                                MathUtils.formatearMoneda(provider.presupuestoMaximo),
                             ratio: provider.presupuestoMaximo > 0
                                 ? resultado.presupuestoTotal /
                                     provider.presupuestoMaximo
@@ -246,13 +247,27 @@ class RestriccionesEstadisticasDialog extends StatelessWidget {
                           const Text('Cerrar', style: TextStyle(fontSize: 14)),
                     ),
                     const SizedBox(width: 12),
-                    TextButton(
+                    ElevatedButton.icon(
                       onPressed: () {
                         Navigator.pop(context);
                         mostrarDialogoRestricciones(context);
                       },
-                      child: const Text('Configurar',
-                          style: TextStyle(fontSize: 14)),
+                      icon: const Icon(Icons.settings, size: 16),
+                      label: const Text('Configurar'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: MDSJColors.primary,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 8),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        textStyle: const TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
                     ),
                   ],
                 ),

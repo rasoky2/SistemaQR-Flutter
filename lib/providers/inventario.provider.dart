@@ -6,6 +6,7 @@ import 'package:inventario_qr/repositories/excel.repository.dart';
 import 'package:inventario_qr/repositories/inventario.repository.dart';
 import 'package:inventario_qr/utils/logger.dart';
 import 'package:inventario_qr/utils/math_utils.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Provider para manejar el estado del sistema de inventario
 class InventarioProvider extends ChangeNotifier {
@@ -22,12 +23,21 @@ class InventarioProvider extends ChangeNotifier {
   double _presupuestoMaximo = 10000.0;
   double _numeroMaximoPedidos = 100.0;
 
-  // ✅ Configuraciones de redondeo
+  // Configuraciones de redondeo
   String _tipoRedondeoPuntoReorden = 'decimales'; // 'unidades', 'decimales'
   String _tipoRedondeoTamanoLote = 'decimales'; // 'unidades', 'decimales'
   int _decimalesPuntoReorden = 2; // 0 = enteros, 1-4 = decimales
   int _decimalesTamanoLote = 2; // 0 = enteros, 1-4 = decimales
   bool _redondeosVinculados = true; // true = vinculados, false = independientes
+
+  // Formato de separadores para la UI
+  String _formatoSeparadores = 'punto_coma'; // 'coma_punto', 'punto_coma', 'comilla_punto'
+
+  InventarioProvider() {
+    // Sincronizar formato de separadores inicial con MathUtils
+    MathUtils.formatoNumeroUI = _formatoSeparadores;
+    _cargarConfiguracionLocal();
+  }
 
   // Usar los nombres exactos de la plantilla oficial
   final Set<String> _columnasImportar = const {
@@ -47,11 +57,11 @@ class InventarioProvider extends ChangeNotifier {
   String? _archivoSeleccionado;
   Uint8List? _archivoBytesWeb;
 
-  // ✅ Nuevas propiedades para rastrear cálculos automáticos
+  // Nuevas propiedades para rastrear cálculos automáticos
   List<String> _articulosConCalculosAutomaticos = [];
   List<String> _detallesCalculos = [];
 
-  // ✅ TRACKING DE CELDAS CALCULADAS AUTOMÁTICAMENTE (persistente entre navegaciones)
+  // TRACKING DE CELDAS CALCULADAS AUTOMÁTICAMENTE (persistente entre navegaciones)
   // Map<nombreArticulo, Set<field>> para rastrear qué celdas fueron calculadas automáticamente
   final Map<String, Set<String>> _celdasCalculadasAutomaticas = {};
 
@@ -63,17 +73,17 @@ class InventarioProvider extends ChangeNotifier {
   bool get tieneCalculosAutomaticos =>
       _articulosConCalculosAutomaticos.isNotEmpty;
 
-  // ✅ GETTERS PARA TRACKING DE CELDAS
+  // GETTERS PARA TRACKING DE CELDAS
   Map<String, Set<String>> get celdasCalculadasAutomaticas =>
       _celdasCalculadasAutomaticas;
 
-  // ✅ VERIFICAR SI UNA CELDA FUE CALCULADA AUTOMÁTICAMENTE
+  // VERIFICAR SI UNA CELDA FUE CALCULADA AUTOMÁTICAMENTE
   bool esCeldaCalculadaAutomaticamente(String nombreArticulo, String field) {
     return _celdasCalculadasAutomaticas.containsKey(nombreArticulo) &&
         _celdasCalculadasAutomaticas[nombreArticulo]!.contains(field);
   }
 
-  // ✅ REMOVER TRACKING DE CELDA CALCULADA AUTOMÁTICAMENTE
+  // REMOVER TRACKING DE CELDA CALCULADA AUTOMÁTICAMENTE
   void removerTrackingCeldaCalculada(String nombreArticulo, String field) {
     if (_celdasCalculadasAutomaticas.containsKey(nombreArticulo)) {
       _celdasCalculadasAutomaticas[nombreArticulo]!.remove(field);
@@ -95,41 +105,42 @@ class InventarioProvider extends ChangeNotifier {
   double get presupuestoMaximo => _presupuestoMaximo;
   double get numeroMaximoPedidos => _numeroMaximoPedidos;
 
-  // ✅ Getters para configuraciones de redondeo
+  // Getters para configuraciones de redondeo
   String get tipoRedondeoPuntoReorden => _tipoRedondeoPuntoReorden;
   String get tipoRedondeoTamanoLote => _tipoRedondeoTamanoLote;
   int get decimalesPuntoReorden => _decimalesPuntoReorden;
   int get decimalesTamanoLote => _decimalesTamanoLote;
   bool get redondeosVinculados => _redondeosVinculados;
+  String get formatoSeparadores => _formatoSeparadores;
 
   /// Importa artículos desde Excel
   Future<void> importarArticulos() async {
-    logDebug('🚀 Provider: Iniciando importación de artículos...');
+    logDebug('Provider: Iniciando importación de artículos...');
     _setLoading(true);
     try {
       if (_archivoSeleccionado == null && _archivoBytesWeb == null) {
         throw Exception('No se ha seleccionado ningún archivo');
       }
 
-      logDebug('📋 Provider: Columnas seleccionadas: $_columnasImportar');
-      logDebug('📄 Provider: Archivo: $_archivoSeleccionado');
+      logDebug('Provider: Columnas seleccionadas: $_columnasImportar');
+      logDebug('Provider: Archivo: $_archivoSeleccionado');
 
-      // ✅ Importar con detección de cálculos automáticos
+      // Importar con detección de cálculos automáticos
       final resultadoImportacion =
           await ExcelRepository.importarArticulosConColumnas(
         _columnasImportar,
         _archivoSeleccionado ?? '',
         _archivoBytesWeb,
-        _leadTimeDias, // ✅ Pasar el lead time configurado
+        _leadTimeDias, // Pasar el lead time configurado
       );
 
-      // ✅ Actualizar artículos y cálculos automáticos
+      // Actualizar artículos y cálculos automáticos
       _articulos = resultadoImportacion.articulos;
       _articulosConCalculosAutomaticos =
           resultadoImportacion.articulosConCalculosAutomaticos;
       _detallesCalculos = resultadoImportacion.detallesCalculos;
 
-      // ✅ INICIALIZAR TRACKING DE CELDAS CALCULADAS AUTOMÁTICAMENTE
+      // INICIALIZAR TRACKING DE CELDAS CALCULADAS AUTOMÁTICAMENTE
       _celdasCalculadasAutomaticas.clear();
       for (final nombreArticulo in _articulosConCalculosAutomaticos) {
         // Marcar las celdas de Punto Reorden y Tamaño Lote como calculadas automáticamente
@@ -139,11 +150,11 @@ class InventarioProvider extends ChangeNotifier {
         };
       }
 
-      logDebug('✅ Provider: Artículos importados: ${_articulos.length}');
+      logDebug('Provider: Artículos importados: ${_articulos.length}');
       logDebug(
-          '📋 Provider: Lista de artículos después de importar: ${_articulos.map((a) => a.nombre).toList()}');
+          'Provider: Lista de artículos después de importar: ${_articulos.map((a) => a.nombre).toList()}');
       logDebug(
-          '🔧 Provider: Artículos con cálculos automáticos: ${_articulosConCalculosAutomaticos.length}');
+          'Provider: Artículos con cálculos automáticos: ${_articulosConCalculosAutomaticos.length}');
 
       // Verificar si hay artículos con campos faltantes
       final articulosConProblemas = <String>[];
@@ -187,21 +198,21 @@ class InventarioProvider extends ChangeNotifier {
         _error =
             'Algunos artículos tienen campos faltantes o inválidos. Por favor, revise y complete los datos.';
         logDebug(
-            '⚠️ Provider: Artículos con problemas: $articulosConProblemas');
+            '️ Provider: Artículos con problemas: $articulosConProblemas');
       } else {
         _error = null;
       }
 
       await calcularResultados();
-      logDebug('🎉 Provider: Importación completada exitosamente');
+      logDebug('Provider: Importación completada exitosamente');
       logDebug(
-          '📊 Provider: Total de artículos en provider: ${_articulos.length}');
+          'Provider: Total de artículos en provider: ${_articulos.length}');
 
-      // ✅ Forzar actualización completa de la UI para mostrar Z-score inmediatamente
+      // Forzar actualización completa de la UI para mostrar Z-score inmediatamente
       _error = null; // Limpiar errores previos
       notifyListeners(); // Notificar cambios inmediatamente
     } catch (e) {
-      logDebug('❌ Provider: Error al importar artículos: $e');
+      logDebug('Provider: Error al importar artículos: $e');
       _error = 'Error al importar artículos: $e';
     } finally {
       _setLoading(false);
@@ -211,7 +222,7 @@ class InventarioProvider extends ChangeNotifier {
   /// Selecciona un archivo para importación
   Future<void> seleccionarArchivo() async {
     try {
-      logDebug('📁 Provider: Abriendo FilePicker...');
+      logDebug('Provider: Abriendo FilePicker...');
       final result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['xlsx'],
@@ -224,12 +235,12 @@ class InventarioProvider extends ChangeNotifier {
         _archivoBytesWeb = picked.bytes; // en nativo puede ser null
         _error = null;
         logDebug(
-            '✅ Provider: Archivo seleccionado: ${_archivoSeleccionado ?? '(bytes en web)'}');
+            'Provider: Archivo seleccionado: ${_archivoSeleccionado ?? '(bytes en web)'}');
       } else {
         throw Exception('No se seleccionó ningún archivo');
       }
     } catch (e) {
-      logDebug('❌ Provider: Error al seleccionar archivo: $e');
+      logDebug('Provider: Error al seleccionar archivo: $e');
       _error = 'Error al seleccionar archivo: $e';
     }
     notifyListeners();
@@ -247,7 +258,7 @@ class InventarioProvider extends ChangeNotifier {
       final filePath = await ExcelRepository.exportarResultados(
         _resultado!,
         articulos: _articulos,
-        // ✅ Configuraciones de redondeo del provider
+        // Configuraciones de redondeo del provider
         tipoRedondeoPuntoReorden: _tipoRedondeoPuntoReorden,
         tipoRedondeoTamanoLote: _tipoRedondeoTamanoLote,
         decimalesPuntoReorden: _decimalesPuntoReorden,
@@ -275,17 +286,17 @@ class InventarioProvider extends ChangeNotifier {
     }
   }
 
-  /// ✅ DESCARGAR ARCHIVO ZIP DESDE ASSETS
+  /// DESCARGAR ARCHIVO ZIP DESDE ASSETS
   Future<String?> descargarArchivoZip(String nombreArchivo) async {
     try {
-      logDebug('📦 Provider: Descargando archivo ZIP: $nombreArchivo...');
+      logDebug('Provider: Descargando archivo ZIP: $nombreArchivo...');
       final resultado =
           await ExcelRepository.descargarArchivoZip(nombreArchivo);
       _error = null;
-      logDebug('✅ Provider: Archivo ZIP descargado: $resultado');
+      logDebug('Provider: Archivo ZIP descargado: $resultado');
       return resultado;
     } catch (e) {
-      logDebug('❌ Provider: Error al descargar archivo ZIP: $e');
+      logDebug('Provider: Error al descargar archivo ZIP: $e');
       _error = 'Error al descargar archivo ZIP: $e';
       notifyListeners();
       return null;
@@ -294,11 +305,11 @@ class InventarioProvider extends ChangeNotifier {
 
   /// Calcula los resultados del modelo QR
   Future<void> calcularResultados() async {
-    logDebug('🧮 Provider: Iniciando cálculo de resultados...');
-    logDebug('🧮 Provider: Total de artículos: ${_articulos.length}');
+    logDebug('Provider: Iniciando cálculo de resultados...');
+    logDebug('Provider: Total de artículos: ${_articulos.length}');
 
     if (_articulos.isEmpty) {
-      logDebug('❌ Provider: No hay artículos para calcular');
+      logDebug('Provider: No hay artículos para calcular');
       _error = 'No hay artículos para calcular';
       notifyListeners();
       return;
@@ -306,7 +317,7 @@ class InventarioProvider extends ChangeNotifier {
 
     try {
       logDebug(
-          '🧮 Provider: Llamando a InventarioRepository.evaluarModeloQR...');
+          'Provider: Llamando a InventarioRepository.evaluarModeloQR...');
       _resultado = InventarioRepository.evaluarModeloQR(
         _articulos,
         leadTimeDias: _leadTimeDias,
@@ -314,30 +325,30 @@ class InventarioProvider extends ChangeNotifier {
         presupuestoMaximo: _presupuestoMaximo,
         numeroMaximoPedidos: _numeroMaximoPedidos,
       );
-      logDebug('✅ Provider: Resultados calculados exitosamente');
+      logDebug('Provider: Resultados calculados exitosamente');
 
       // Validar restricciones
-      logDebug('🧮 Provider: Validando restricciones...');
+      logDebug('Provider: Validando restricciones...');
       _restricciones = InventarioRepository.validarRestricciones(
         _resultado!,
         espacioMaximo: _espacioMaximo,
         presupuestoMaximo: _presupuestoMaximo,
         numeroMaximoPedidos: _numeroMaximoPedidos,
       );
-      logDebug('✅ Provider: Restricciones validadas');
+      logDebug('Provider: Restricciones validadas');
 
       // Calcular estadísticas
-      logDebug('🧮 Provider: Calculando estadísticas...');
+      logDebug('Provider: Calculando estadísticas...');
       _estadisticas = InventarioRepository.calcularEstadisticas(_resultado!);
-      logDebug('✅ Provider: Estadísticas calculadas');
+      logDebug('Provider: Estadísticas calculadas');
       _error = null;
     } catch (e) {
-      logDebug('❌ Provider: Error al calcular resultados: $e');
+      logDebug('Provider: Error al calcular resultados: $e');
       _error = 'Error al calcular resultados: $e';
     }
-    logDebug('🧮 Provider: Finalizando cálculo de resultados');
+    logDebug('Provider: Finalizando cálculo de resultados');
 
-    // ✅ Notificar cambios inmediatamente
+    // Notificar cambios inmediatamente
     notifyListeners();
   }
 
@@ -387,11 +398,11 @@ class InventarioProvider extends ChangeNotifier {
       }
 
       logDebug(
-          '📝 Provider.actualizarArticulo -> index=$index cambios=${cambios.isEmpty ? 'sin cambios' : cambios.join(', ')}');
+          'Provider.actualizarArticulo -> index=$index cambios=${cambios.isEmpty ? 'sin cambios' : cambios.join(', ')}');
 
       _articulos[index] = articulo;
 
-      // ✅ REMOVER TRACKING DE CELDA CALCULADA AUTOMÁTICAMENTE SI SE EDITÓ
+      // REMOVER TRACKING DE CELDA CALCULADA AUTOMÁTICAMENTE SI SE EDITÓ
       final nombreArticulo = articulo.nombre;
       final camposEditados = <String>[];
 
@@ -408,8 +419,8 @@ class InventarioProvider extends ChangeNotifier {
         removerTrackingCeldaCalculada(nombreArticulo, field);
       }
 
-      // ✅ Recalcular resultados inmediatamente
-      logDebug('🧮 Provider.actualizarArticulo: recalculando resultados...');
+      // Recalcular resultados inmediatamente
+      logDebug('Provider.actualizarArticulo: recalculando resultados...');
       calcularResultados();
     }
   }
@@ -420,14 +431,17 @@ class InventarioProvider extends ChangeNotifier {
     double? espacioMaximo,
     double? presupuestoMaximo,
     double? numeroMaximoPedidos,
-    // ✅ Configuraciones de redondeo
+    // Configuraciones de redondeo
     String? tipoRedondeoPuntoReorden,
     String? tipoRedondeoTamanoLote,
     int? decimalesPuntoReorden,
     int? decimalesTamanoLote,
     bool? redondeosVinculados,
+    // Formato de separadores
+    String? formatoSeparadores,
   }) {
     bool needsRecalculation = false;
+    bool needsRefresh = false;
 
     if (leadTimeDias != null && leadTimeDias != _leadTimeDias) {
       _leadTimeDias = leadTimeDias;
@@ -450,36 +464,50 @@ class InventarioProvider extends ChangeNotifier {
       needsRecalculation = true;
     }
 
-    // ✅ Actualizar configuraciones de redondeo
+    // Actualizar configuraciones de redondeo
     if (tipoRedondeoPuntoReorden != null &&
         tipoRedondeoPuntoReorden != _tipoRedondeoPuntoReorden) {
       _tipoRedondeoPuntoReorden = tipoRedondeoPuntoReorden;
+      needsRefresh = true;
     }
 
     if (tipoRedondeoTamanoLote != null &&
         tipoRedondeoTamanoLote != _tipoRedondeoTamanoLote) {
       _tipoRedondeoTamanoLote = tipoRedondeoTamanoLote;
+      needsRefresh = true;
     }
 
     if (decimalesPuntoReorden != null &&
         decimalesPuntoReorden != _decimalesPuntoReorden) {
       _decimalesPuntoReorden = decimalesPuntoReorden;
+      needsRefresh = true;
     }
 
     if (decimalesTamanoLote != null &&
         decimalesTamanoLote != _decimalesTamanoLote) {
       _decimalesTamanoLote = decimalesTamanoLote;
+      needsRefresh = true;
     }
 
     if (redondeosVinculados != null &&
         redondeosVinculados != _redondeosVinculados) {
       _redondeosVinculados = redondeosVinculados;
+      needsRefresh = true;
+    }
+
+    // Actualizar formato de separadores en la UI
+    if (formatoSeparadores != null && formatoSeparadores != _formatoSeparadores) {
+      _formatoSeparadores = formatoSeparadores;
+      MathUtils.formatoNumeroUI = formatoSeparadores;
+      needsRefresh = true;
     }
 
     if (needsRecalculation && _articulos.isNotEmpty) {
       calcularResultados();
-    } else {
+      _guardarConfiguracionLocal();
+    } else if (needsRefresh || needsRecalculation) {
       notifyListeners();
+      _guardarConfiguracionLocal();
     }
   }
 
@@ -495,16 +523,16 @@ class InventarioProvider extends ChangeNotifier {
 
   /// Agrega un artículo a la lista
   void agregarArticulo(Articulo articulo) {
-    logDebug('📝 Provider: Agregando artículo: ${articulo.nombre}');
-    logDebug('📝 Provider: Total de artículos antes: ${_articulos.length}');
+    logDebug('Provider: Agregando artículo: ${articulo.nombre}');
+    logDebug('Provider: Total de artículos antes: ${_articulos.length}');
 
     _articulos.add(articulo);
 
-    logDebug('📝 Provider: Total de artículos después: ${_articulos.length}');
+    logDebug('Provider: Total de artículos después: ${_articulos.length}');
     logDebug(
-        '📝 Provider: Lista de artículos: ${_articulos.map((a) => a.nombre).toList()}');
+        'Provider: Lista de artículos: ${_articulos.map((a) => a.nombre).toList()}');
 
-    // ✅ Calcular resultados y notificar cambios
+    // Calcular resultados y notificar cambios
     calcularResultados();
     notifyListeners();
   }
@@ -527,26 +555,26 @@ class InventarioProvider extends ChangeNotifier {
 
     if (_restricciones['espacio'] == true) {
       estados.add(
-          '✅ Espacio: ${MathUtils.formatearUnidades(_resultado?.espacioTotalUsado ?? 0, 'm²')} ≤ ${MathUtils.formatearUnidades(_espacioMaximo, 'm²')}');
+          'Espacio: ${MathUtils.formatearUnidades(_resultado?.espacioTotalUsado ?? 0, 'm²')} ≤ ${MathUtils.formatearUnidades(_espacioMaximo, 'm²')}');
     } else {
       estados.add(
-          '❌ Espacio: ${MathUtils.formatearUnidades(_resultado?.espacioTotalUsado ?? 0, 'm²')} > ${MathUtils.formatearUnidades(_espacioMaximo, 'm²')}');
+          'Espacio: ${MathUtils.formatearUnidades(_resultado?.espacioTotalUsado ?? 0, 'm²')} > ${MathUtils.formatearUnidades(_espacioMaximo, 'm²')}');
     }
 
     if (_restricciones['presupuesto'] == true) {
       estados.add(
-          '✅ Presupuesto: ${MathUtils.formatearMoneda(_resultado?.presupuestoTotal ?? 0)} ≤ ${MathUtils.formatearMoneda(_presupuestoMaximo)}');
+          'Presupuesto: ${MathUtils.formatearMoneda(_resultado?.presupuestoTotal ?? 0)} ≤ ${MathUtils.formatearMoneda(_presupuestoMaximo)}');
     } else {
       estados.add(
-          '❌ Presupuesto: ${MathUtils.formatearMoneda(_resultado?.presupuestoTotal ?? 0)} > ${MathUtils.formatearMoneda(_presupuestoMaximo)}');
+          'Presupuesto: ${MathUtils.formatearMoneda(_resultado?.presupuestoTotal ?? 0)} > ${MathUtils.formatearMoneda(_presupuestoMaximo)}');
     }
 
     if (_restricciones['pedidos'] == true) {
       estados.add(
-          '✅ Pedidos: ${_resultado?.numeroTotalPedidos ?? 0} ≤ $_numeroMaximoPedidos');
+          'Pedidos: ${_resultado?.numeroTotalPedidos ?? 0} ≤ $_numeroMaximoPedidos');
     } else {
       estados.add(
-          '❌ Pedidos: ${_resultado?.numeroTotalPedidos ?? 0} > $_numeroMaximoPedidos');
+          'Pedidos: ${_resultado?.numeroTotalPedidos ?? 0} > $_numeroMaximoPedidos');
     }
 
     return estados.join('\n');
@@ -605,25 +633,83 @@ class InventarioProvider extends ChangeNotifier {
       throw Exception('No hay resultados disponibles para exportar');
     }
 
-    debugPrint('📤 Provider: Iniciando exportación de resultados a Excel...');
+    debugPrint('Provider: Iniciando exportación de resultados a Excel...');
 
     try {
-      // ✅ Pasar también los artículos y configuraciones de redondeo para que coincida con la interfaz
+      // Pasar también los artículos y configuraciones de redondeo para que coincida con la interfaz
       final filePath = await ExcelRepository.exportarResultados(
         _resultado!,
         articulos: _articulos,
-        // ✅ Configuraciones de redondeo del provider
+        // Configuraciones de redondeo del provider
         tipoRedondeoPuntoReorden: _tipoRedondeoPuntoReorden,
         tipoRedondeoTamanoLote: _tipoRedondeoTamanoLote,
         decimalesPuntoReorden: _decimalesPuntoReorden,
         decimalesTamanoLote: _decimalesTamanoLote,
       );
       debugPrint(
-          '✅ Provider: Resultados exportados exitosamente en: $filePath');
+          'Provider: Resultados exportados exitosamente en: $filePath');
       return filePath;
     } catch (e) {
-      debugPrint('❌ Provider: Error al exportar resultados: $e');
+      debugPrint('Provider: Error al exportar resultados: $e');
       rethrow;
+    }
+  }
+
+  /// Carga la configuración guardada localmente
+  Future<void> _cargarConfiguracionLocal() async {
+    try {
+      logDebug('Provider: Cargando configuración persistente desde SharedPreferences...');
+      final prefs = await SharedPreferences.getInstance();
+
+      _leadTimeDias = prefs.getDouble('leadTimeDias') ?? 36.5;
+      _espacioMaximo = prefs.getDouble('espacioMaximo') ?? 150.0;
+      _presupuestoMaximo = prefs.getDouble('presupuestoMaximo') ?? 10000.0;
+      _numeroMaximoPedidos = prefs.getDouble('numeroMaximoPedidos') ?? 100.0;
+
+      _tipoRedondeoPuntoReorden = prefs.getString('tipoRedondeoPuntoReorden') ?? 'decimales';
+      _tipoRedondeoTamanoLote = prefs.getString('tipoRedondeoTamanoLote') ?? 'decimales';
+      _decimalesPuntoReorden = prefs.getInt('decimalesPuntoReorden') ?? 2;
+      _decimalesTamanoLote = prefs.getInt('decimalesTamanoLote') ?? 2;
+      _redondeosVinculados = prefs.getBool('redondeosVinculados') ?? true;
+      _formatoSeparadores = prefs.getString('formatoSeparadores') ?? 'punto_coma';
+
+      // Sincronizar formato con MathUtils
+      MathUtils.formatoNumeroUI = _formatoSeparadores;
+
+      logDebug('Provider: Configuración cargada con éxito: LeadTime=$_leadTimeDias, EspacioMax=$_espacioMaximo, PresupuestoMax=$_presupuestoMaximo, PedidosMax=$_numeroMaximoPedidos, RedondeoR=$_tipoRedondeoPuntoReorden ($_decimalesPuntoReorden dec), RedondeoQ=$_tipoRedondeoTamanoLote ($_decimalesTamanoLote dec), Separador=$_formatoSeparadores');
+
+      // Si ya hay artículos cargados, recalcular resultados
+      if (_articulos.isNotEmpty) {
+        await calcularResultados();
+      } else {
+        notifyListeners();
+      }
+    } catch (e) {
+      logDebug('Provider: Error al cargar configuración desde SharedPreferences: $e');
+    }
+  }
+
+  /// Guarda la configuración de forma persistente
+  Future<void> _guardarConfiguracionLocal() async {
+    try {
+      logDebug('Provider: Guardando configuración persistente en SharedPreferences...');
+      final prefs = await SharedPreferences.getInstance();
+
+      await prefs.setDouble('leadTimeDias', _leadTimeDias);
+      await prefs.setDouble('espacioMaximo', _espacioMaximo);
+      await prefs.setDouble('presupuestoMaximo', _presupuestoMaximo);
+      await prefs.setDouble('numeroMaximoPedidos', _numeroMaximoPedidos);
+
+      await prefs.setString('tipoRedondeoPuntoReorden', _tipoRedondeoPuntoReorden);
+      await prefs.setString('tipoRedondeoTamanoLote', _tipoRedondeoTamanoLote);
+      await prefs.setInt('decimalesPuntoReorden', _decimalesPuntoReorden);
+      await prefs.setInt('decimalesTamanoLote', _decimalesTamanoLote);
+      await prefs.setBool('redondeosVinculados', _redondeosVinculados);
+      await prefs.setString('formatoSeparadores', _formatoSeparadores);
+
+      logDebug('Provider: Configuración persistida con éxito.');
+    } catch (e) {
+      logDebug('Provider: Error al guardar configuración en SharedPreferences: $e');
     }
   }
 }

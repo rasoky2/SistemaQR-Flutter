@@ -11,6 +11,8 @@ dependencies:
     sdk: flutter
   # Gestión de estado
   provider: ^6.1.5
+  # Persistencia de datos locales
+  shared_preferences: ^2.2.0
   # Manejo de Excel - Compatible con Web, Windows y móviles
   excel: ^4.0.6  # Para importación Y exportación real de Excel
   file_picker: ^10.2.0
@@ -19,7 +21,7 @@ dependencies:
   # Abrir archivos
   open_file: ^3.5.10
   # Google Fonts
-  google_fonts: ^6.3.0
+  google_fonts: ^8.1.0
   # Gráficas para visualización de datos
   syncfusion_flutter_charts: ^30.1.42
   # Iconos Unicons

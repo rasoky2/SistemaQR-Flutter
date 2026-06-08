@@ -49,20 +49,7 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
   final _tamanoLoteFocus = FocusNode();
   
   double? _parseNum(String? input) {
-    if (input == null) {
-      return null;
-    }
-    String s = input.trim();
-    if (s.isEmpty) {
-      return null;
-    }
-    // Si no hay punto y sí hay coma, usar coma como decimal
-    if (!s.contains('.') && s.contains(',')) {
-      s = s.replaceAll(',', '.');
-    }
-    // Quitar separadores de miles comunes
-    s = s.replaceAll('\u00A0', '').replaceAll(' ', '');
-    return double.tryParse(s);
+    return MathUtils.parseDouble(input);
   }
   
 
@@ -158,7 +145,7 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
 
   void _agregarArticulo() {
     if (_formKey.currentState?.validate() ?? false) {
-      logDebug('📝 Iniciando agregar artículo manual...');
+      logDebug('Iniciando agregar artículo manual...');
       
       // Tomamos provider para obtener lead time cuando se necesite calcular R
       final provider = context.read<InventarioProvider>();
@@ -198,7 +185,7 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
         tamanoLote: tamanoLote,
       );
 
-      logDebug('📦 Artículo creado: ${articulo.nombre}');
+      logDebug('Artículo creado: ${articulo.nombre}');
       logDebug('   - Demanda anual: ${articulo.demandaAnual}');
       logDebug('   - Costo pedido: ${articulo.costoPedido}');
       logDebug('   - Costo mantenimiento: ${articulo.costoMantenimiento}');
@@ -212,7 +199,7 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
       // Agregar el artículo al provider
       context.read<InventarioProvider>().agregarArticulo(articulo);
       
-      logDebug('✅ Artículo agregado al provider. Total de artículos: ${provider.articulos.length}');
+      logDebug('Artículo agregado al provider. Total de artículos: ${provider.articulos.length}');
       
       _limpiarFormulario();
       
@@ -226,7 +213,7 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
         );
       }
     } else {
-      logDebug('❌ Validación del formulario falló');
+      logDebug('Validación del formulario falló');
     }
   }
 
@@ -563,7 +550,7 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
                         child: ElevatedButton.icon(
                           onPressed: () async {
                             final provider = context.read<InventarioProvider>();
-                            logDebug('🔍 Iniciando proceso de importación Excel (directo por plantilla)...');
+                            logDebug('Iniciando proceso de importación Excel (directo por plantilla)...');
                             await provider.seleccionarArchivo();
                             await provider.importarArticulos();
                           },
@@ -659,9 +646,7 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
     bool allowDecimal = true,
     bool showStepper = false,
   }) {
-    final formatters = <TextInputFormatter>[
-      FilteringTextInputFormatter.allow(RegExp(allowDecimal ? r'[0-9.,]' : r'[0-9]')),
-    ];
+    final formatters = MathUtils.getInputFormatters(allowDecimal: allowDecimal);
     return TextFormField(
       controller: controller,
       focusNode: focusNode,
@@ -730,12 +715,12 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
 
   Future<void> _generarPlantillaExcel(BuildContext context) async {
     try {
-      logDebug('📋 Iniciando generación de plantilla Excel...');
+      logDebug('Iniciando generación de plantilla Excel...');
       
       // Generar la plantilla usando el repositorio
       final filePath = await ExcelRepository.generarPlantilla();
       
-      logDebug('✅ Plantilla generada exitosamente en: $filePath');
+      logDebug('Plantilla generada exitosamente en: $filePath');
       
       // En Web no se puede abrir el archivo con OpenFile, solo informar
       if (kIsWeb) {
@@ -775,10 +760,10 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
         );
 
         if (abrirArchivo == true) {
-          logDebug('📂 Abriendo plantilla Excel...');
+          logDebug('Abriendo plantilla Excel...');
           final result = await OpenFile.open(filePath);
           if (result.type != ResultType.done) {
-            logDebug('❌ Error al abrir archivo: ${result.message}');
+            logDebug('Error al abrir archivo: ${result.message}');
             if (context.mounted) {
               showDialog(
                 context: context,
@@ -800,7 +785,7 @@ class _IngresarDatosScreenState extends State<IngresarDatosScreen> {
         }
       }
     } catch (e) {
-      logDebug('❌ Error al generar plantilla: $e');
+      logDebug('Error al generar plantilla: $e');
       
       // Mostrar mensaje de error
       if (context.mounted) {

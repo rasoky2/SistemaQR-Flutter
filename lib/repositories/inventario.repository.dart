@@ -19,10 +19,10 @@ class InventarioRepository {
     double presupuestoTotal = 0;
     double numeroTotalPedidos = 0;
 
-    logDebug('🧮 Repo: evaluarModeloQR -> artículos=${articulos.length}, leadTime=$leadTimeDias, espacioMax=$espacioMaximo, presupuestoMax=$presupuestoMaximo, pedidosMax=$numeroMaximoPedidos');
+    logDebug('Repo: evaluarModeloQR -> artículos=${articulos.length}, leadTime=$leadTimeDias, espacioMax=$espacioMaximo, presupuestoMax=$presupuestoMaximo, pedidosMax=$numeroMaximoPedidos');
 
     for (final articulo in articulos) {
-      logDebug('➡️  Artículo: ${articulo.nombre} | D=${articulo.demandaAnual} K=${articulo.costoPedido} h=${articulo.costoMantenimiento} p=${articulo.costoFaltante} c=${articulo.costoUnitario} s=${articulo.espacioUnidad} σd=${articulo.desviacionDiaria} R=${articulo.puntoReorden} Q=${articulo.tamanoLote}');
+      logDebug('️  Artículo: ${articulo.nombre} | D=${articulo.demandaAnual} K=${articulo.costoPedido} h=${articulo.costoMantenimiento} p=${articulo.costoFaltante} c=${articulo.costoUnitario} s=${articulo.espacioUnidad} σd=${articulo.desviacionDiaria} R=${articulo.puntoReorden} Q=${articulo.tamanoLote}');
       // Cálculos del lead time
       final demandaLeadTime = MathUtils.calcularDemandaLeadTime(
         articulo.demandaAnual,
@@ -107,7 +107,7 @@ class InventarioRepository {
       resultados.add(resultado);
     }
 
-    logDebug('✅ Totales -> costoSistema=$costoTotalSistema espacioTotal=$espacioTotalUsado presupuestoTotal=$presupuestoTotal numeroPedidos=${numeroTotalPedidos.round()}');
+    logDebug('Totales -> costoSistema=$costoTotalSistema espacioTotal=$espacioTotalUsado presupuestoTotal=$presupuestoTotal numeroPedidos=${numeroTotalPedidos.round()}');
 
     return ResultadoSistema(
       resultados: resultados,

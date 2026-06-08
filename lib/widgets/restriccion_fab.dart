@@ -103,6 +103,7 @@ class _RestriccionFabState extends State<RestriccionFab> {
           onPressed: () => mostrarDialogoEstadisticasRestricciones(context),
           tooltip: tooltip,
           backgroundColor: Colors.white,
+          shape: const CircleBorder(),
           child: SizedBox(
             width: 48,
             height: 48,

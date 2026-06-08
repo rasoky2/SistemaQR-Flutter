@@ -5,6 +5,7 @@ import 'package:inventario_qr/screens/ingresar_datos_screen.dart';
 import 'package:inventario_qr/screens/resultados_screen.dart';
 import 'package:inventario_qr/screens/tutorial_screen.dart';
 import 'package:inventario_qr/utils/logger.dart';
+import 'package:inventario_qr/utils/math_utils.dart';
 import 'package:inventario_qr/utils/page_transitions.dart';
 import 'package:inventario_qr/widgets/articulos_table.dart';
 import 'package:inventario_qr/widgets/restriccion_dialog.dart';
@@ -20,7 +21,7 @@ class HomeScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Sistema de Inventario MDSJ'),
         actions: [
-          // ✅ SOLO MOSTRAR BOTÓN DE DESCARGA EN WEB
+          // SOLO MOSTRAR BOTÓN DE DESCARGA EN WEB
           if (kIsWeb)
             IconButton(
               onPressed: () => _descargarAppWindows(context),
@@ -45,7 +46,7 @@ class HomeScreen extends StatelessWidget {
       body: Consumer<InventarioProvider>(
         builder: (context, provider, child) {
           logDebug(
-              '🏠 HomeScreen: Consumer reconstruyendo - Artículos: ${provider.articulos.length}');
+              'HomeScreen: Consumer reconstruyendo - Artículos: ${provider.articulos.length}');
           return SingleChildScrollView(
             padding: const EdgeInsets.all(24.0),
             child: Column(
@@ -69,26 +70,26 @@ class HomeScreen extends StatelessWidget {
     return Builder(
       builder: (context) => Card(
         child: Padding(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
                   Icon(UniconsLine.info_circle,
-                      color: Theme.of(context).primaryColor),
-                  const SizedBox(width: 12),
+                      color: Theme.of(context).primaryColor, size: 18),
+                  const SizedBox(width: 8),
                   const Text(
                     'Resumen del Sistema',
                     style: TextStyle(
-                      fontSize: 20,
+                      fontSize: 16,
                       fontWeight: FontWeight.bold,
                       color: Colors.black,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
               Row(
                 children: [
                   Expanded(
@@ -102,7 +103,8 @@ class HomeScreen extends StatelessWidget {
                     child: _buildSummaryItem(
                       'Costo Total',
                       provider.resultado != null
-                          ? 'S/ ${provider.resultado!.costoTotalSistema.toStringAsFixed(2)}'
+                          ? MathUtils.formatearMoneda(
+                              provider.resultado!.costoTotalSistema)
                           : 'N/A',
                       UniconsLine.money_bill,
                     ),
@@ -111,7 +113,8 @@ class HomeScreen extends StatelessWidget {
                     child: _buildSummaryItem(
                       'Espacio Usado',
                       provider.resultado != null
-                          ? '${provider.resultado!.espacioTotalUsado.toStringAsFixed(1)} m²'
+                          ? MathUtils.formatearUnidades(
+                              provider.resultado!.espacioTotalUsado, 'm²')
                           : 'N/A',
                       UniconsLine.store,
                     ),
@@ -129,20 +132,20 @@ class HomeScreen extends StatelessWidget {
     return Builder(
       builder: (context) => Column(
         children: [
-          Icon(icon, size: 32, color: Theme.of(context).primaryColor),
-          const SizedBox(height: 8),
+          Icon(icon, size: 28, color: Theme.of(context).primaryColor),
+          const SizedBox(height: 6),
           Text(
             title,
             style: const TextStyle(
-              fontSize: 14,
+              fontSize: 12,
               color: Colors.grey,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 2),
           Text(
             value,
             style: const TextStyle(
-              fontSize: 18,
+              fontSize: 16,
               fontWeight: FontWeight.bold,
               color: Colors.black,
             ),
@@ -162,13 +165,20 @@ class HomeScreen extends StatelessWidget {
             : width > 600
                 ? 2
                 : 1;
+
+    // Calcular childAspectRatio dinámicamente para mantener una altura constante compacta
+    final double cardHeight = width > 600 ? 125.0 : 110.0;
+    final double gridWidth = width - 48; // Ancho total menos padding horizontal (24 * 2)
+    final double itemWidth = (gridWidth - (crossAxisCount - 1) * 12) / crossAxisCount;
+    final double childAspectRatio = itemWidth / cardHeight;
+
     return GridView.count(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       crossAxisCount: crossAxisCount,
       crossAxisSpacing: 12,
       mainAxisSpacing: 12,
-      childAspectRatio: 1.8,
+      childAspectRatio: childAspectRatio,
       children: [
         _buildNavigationCard(
           context,
@@ -221,22 +231,22 @@ class HomeScreen extends StatelessWidget {
   }) {
     final screenWidth = MediaQuery.of(context).size.width;
 
-    // Tamaños aumentados para mejor legibilidad en contenedores grandes
+    // Tamaños compactados para mejor visualización y evitar desbordes
     final titleFontSize = screenWidth > 1200
-        ? 18.0
+        ? 15.0
         : screenWidth > 800
-            ? 16.0
-            : 14.0;
+            ? 14.0
+            : 13.0;
     final subtitleFontSize = screenWidth > 1200
-        ? 12.0
+        ? 11.0
         : screenWidth > 800
-            ? 11.0
-            : 10.0;
+            ? 10.0
+            : 9.5;
     final iconSize = screenWidth > 1200
-        ? 36.0
+        ? 28.0
         : screenWidth > 800
-            ? 32.0
-            : 28.0;
+            ? 24.0
+            : 22.0;
 
     return _AnimatedNavigationCard(
       title: title,
@@ -253,13 +263,11 @@ class HomeScreen extends StatelessWidget {
 
   Widget _buildArticulosTable(
       InventarioProvider provider, BuildContext context) {
-    logDebug('🏠 HomeScreen: Construyendo tabla de artículos');
+    logDebug('HomeScreen: Construyendo tabla de artículos');
     logDebug(
-        '🏠 HomeScreen: Total de artículos en provider: ${provider.articulos.length}');
+        'HomeScreen: Total de artículos en provider: ${provider.articulos.length}');
     logDebug(
-        '🏠 HomeScreen: Total de artículos en provider: ${provider.articulos.length}');
-    logDebug(
-        '🏠 HomeScreen: Nombres de artículos: ${provider.articulos.map((a) => a.nombre).toList()}');
+        'HomeScreen: Nombres de artículos: ${provider.articulos.map((a) => a.nombre).toList()}');
 
     return ArticulosTable(
       articulos: provider.articulos,
@@ -268,35 +276,35 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  /// ✅ IMPORTAR DATOS DESDE EXCEL
+  /// IMPORTAR DATOS DESDE EXCEL
   Future<void> _importarDesdeExcel(
       BuildContext context, InventarioProvider provider) async {
     try {
-      logDebug('📊 HomeScreen: Iniciando importación desde Excel...');
+      logDebug('HomeScreen: Iniciando importación desde Excel...');
 
       // Seleccionar archivo y importar artículos
       await provider.seleccionarArchivo();
       await provider.importarArticulos();
 
-      logDebug('✅ HomeScreen: Importación completada exitosamente');
+      logDebug('HomeScreen: Importación completada exitosamente');
     } catch (e) {
-      logDebug('❌ HomeScreen: Error durante importación: $e');
+      logDebug('HomeScreen: Error durante importación: $e');
     }
   }
 
-  /// ✅ DESCARGAR PAQUETE PORTABLE DESDE ASSETS
+  /// DESCARGAR PAQUETE PORTABLE DESDE ASSETS
   Future<void> _descargarAppWindows(BuildContext context) async {
     try {
-      logDebug('📦 HomeScreen: Iniciando descarga de paquete portable...');
+      logDebug('HomeScreen: Iniciando descarga de paquete portable...');
 
       // Descargar el paquete portable usando el provider
       final provider = context.read<InventarioProvider>();
       final resultado = await provider
-          .descargarArchivoZip('Sistema_Inventario_MDSJ_Portable.zip');
+          .descargarArchivoZip('InventarioApp.zip');
 
       if (resultado != null) {
         logDebug(
-            '✅ HomeScreen: Paquete portable descargado exitosamente: $resultado');
+            'HomeScreen: Paquete portable descargado exitosamente: $resultado');
 
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -316,7 +324,7 @@ class HomeScreen extends StatelessWidget {
         }
       }
     } catch (e) {
-      logDebug('❌ HomeScreen: Error al descargar paquete portable: $e');
+      logDebug('HomeScreen: Error al descargar paquete portable: $e');
 
       if (context.mounted) {
         showDialog(
@@ -362,7 +370,7 @@ class HomeScreen extends StatelessWidget {
                         SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            'Asegúrate de que el archivo Sistema_Inventario_MDSJ_Portable.zip esté en assets/templates/',
+                            'Asegúrate de que el archivo InventarioApp.zip esté en assets/templates/',
                             style: TextStyle(fontSize: 14, color: Colors.blue),
                           ),
                         ),
@@ -510,7 +518,7 @@ class _AnimatedNavigationCardState extends State<_AnimatedNavigationCard>
               onTap: widget.enabled ? widget.onPressed : null,
               child: Container(
                 padding: const EdgeInsets.symmetric(
-                    horizontal: 16.0, vertical: 14.0),
+                    horizontal: 16.0, vertical: 8.0),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
                   color: _isPressed && widget.enabled
@@ -526,7 +534,7 @@ class _AnimatedNavigationCardState extends State<_AnimatedNavigationCard>
                       size: widget.iconSize,
                       color: widget.enabled ? widget.color : Colors.grey,
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 6),
                     Text(
                       widget.title,
                       style: TextStyle(
@@ -536,7 +544,7 @@ class _AnimatedNavigationCardState extends State<_AnimatedNavigationCard>
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 4),
                     Text(
                       widget.subtitle,
                       style: TextStyle(

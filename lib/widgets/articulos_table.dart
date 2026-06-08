@@ -6,6 +6,7 @@ import 'package:inventario_qr/providers/inventario.provider.dart';
 import 'package:inventario_qr/utils/logger.dart';
 import 'package:inventario_qr/utils/math_utils.dart';
 import 'package:inventario_qr/utils/theme_colors.dart';
+import 'package:inventario_qr/widgets/articulos_table.subwidgets.dart';
 import 'package:pluto_grid/pluto_grid.dart';
 import 'package:provider/provider.dart';
 import 'package:unicons/unicons.dart';
@@ -88,9 +89,17 @@ class _ArticulosTableState extends State<ArticulosTable> {
     _initializePlutoGridColumns();
   }
 
-  // Formatear valor monetario en soles peruanos
-
   void _initializePlutoGridColumns() {
+    final provider = context.read<InventarioProvider>();
+    
+    // Formato dinámico para Punto de Reorden según la configuración del provider
+    final int decR = provider.tipoRedondeoPuntoReorden == 'unidades' ? 0 : provider.decimalesPuntoReorden;
+    final String formatR = decR == 0 ? '#,##0' : '#,##0.${'0' * decR}';
+
+    // Formato dinámico para Tamaño de Lote según la configuración del provider
+    final int decQ = provider.tipoRedondeoTamanoLote == 'unidades' ? 0 : provider.decimalesTamanoLote;
+    final String formatQ = decQ == 0 ? '#,##0' : '#,##0.${'0' * decQ}';
+
     columns = [
       // Columna oculta para mantener el índice real del provider
       PlutoColumn(
@@ -106,182 +115,152 @@ class _ArticulosTableState extends State<ArticulosTable> {
         type: PlutoColumnType.text(),
         width: 150,
         enableRowChecked: widget.showDeleteButton,
-        // ✅ EDICIÓN AUTOMÁTICA AL CAMBIAR DE CELDA (SIN ENTER)
         enableAutoEditing: true,
       ),
-      PlutoColumn(
+      _buildNumericColumn(
         title: 'Demanda Anual',
         field: 'demandaAnual',
-        type: PlutoColumnType.number(
-          format: '#,##0.00',
-          applyFormatOnInit: false, // ✅ EVITAR SELECCIÓN AUTOMÁTICA DE TEXTO
-        ),
         width: 120,
-        enableDropToResize: false,
-        // ✅ EDICIÓN AUTOMÁTICA AL CAMBIAR DE CELDA (SIN ENTER)
-        enableAutoEditing: true,
       ),
-      PlutoColumn(
+      _buildNumericColumn(
         title: 'Costo Pedido (S/)',
         field: 'costoPedido',
-        type: PlutoColumnType.number(
-          format: '#,##0.00',
-          applyFormatOnInit: false, // ✅ EVITAR SELECCIÓN AUTOMÁTICA DE TEXTO
-        ),
         width: 130,
         textAlign: PlutoColumnTextAlign.center,
-        enableDropToResize: false,
-        // ✅ EDICIÓN AUTOMÁTICA AL CAMBIAR DE CELDA (SIN ENTER)
-        enableAutoEditing: true,
       ),
-      PlutoColumn(
+      _buildNumericColumn(
         title: 'Costo Mantenimiento (S/)',
         field: 'costoMantenimiento',
-        type: PlutoColumnType.number(
-          format: '#,##0.00',
-          applyFormatOnInit: false, // ✅ EVITAR SELECCIÓN AUTOMÁTICA DE TEXTO
-        ),
         width: 170,
         textAlign: PlutoColumnTextAlign.center,
-        enableDropToResize: false,
-        // ✅ EDICIÓN AUTOMÁTICA AL CAMBIAR DE CELDA (SIN ENTER)
-        enableAutoEditing: true,
       ),
-      PlutoColumn(
+      _buildNumericColumn(
         title: 'Costo Faltante (S/)',
         field: 'costoFaltante',
-        type: PlutoColumnType.number(
-          format: '#,##0.00',
-          applyFormatOnInit: false, // ✅ EVITAR SELECCIÓN AUTOMÁTICA DE TEXTO
-        ),
         width: 150,
         textAlign: PlutoColumnTextAlign.center,
-        enableDropToResize: false,
-        // ✅ EDICIÓN AUTOMÁTICA AL CAMBIAR DE CELDA (SIN ENTER)
-        enableAutoEditing: true,
       ),
-      PlutoColumn(
+      _buildNumericColumn(
         title: 'Costo Unitario (S/)',
         field: 'costoUnitario',
-        type: PlutoColumnType.number(
-          format: '#,##0.00',
-          applyFormatOnInit: false, // ✅ EVITAR SELECCIÓN AUTOMÁTICA DE TEXTO
-        ),
         width: 150,
         textAlign: PlutoColumnTextAlign.center,
-        enableDropToResize: false,
-        // ✅ EDICIÓN AUTOMÁTICA AL CAMBIAR DE CELDA (SIN ENTER)
-        enableAutoEditing: true,
       ),
-      PlutoColumn(
+      _buildNumericColumn(
         title: 'Espacio Unidad (m²)',
         field: 'espacioUnidad',
-        type: PlutoColumnType.number(
-          format: '#,##0.00',
-          applyFormatOnInit: false, // ✅ EVITAR SELECCIÓN AUTOMÁTICA DE TEXTO
-        ),
         width: 150,
-        enableDropToResize: false,
-        // ✅ EDICIÓN AUTOMÁTICA AL CAMBIAR DE CELDA (SIN ENTER)
-        enableAutoEditing: true,
       ),
-      PlutoColumn(
+      _buildNumericColumn(
         title: 'Desviación Diaria',
         field: 'desviacionDiaria',
-        type: PlutoColumnType.number(
-          format: '#,##0.00',
-          applyFormatOnInit: false, // ✅ EVITAR SELECCIÓN AUTOMÁTICA DE TEXTO
-        ),
         width: 140,
-        enableDropToResize: false,
-        // ✅ EDICIÓN AUTOMÁTICA AL CAMBIAR DE CELDA (SIN ENTER)
-        enableAutoEditing: true,
       ),
       PlutoColumn(
         title: 'Punto Reorden',
         field: 'puntoReorden',
         type: PlutoColumnType.number(
-          format: '#,##0', // ✅ Números enteros para punto de reorden
-          applyFormatOnInit: false, // ✅ EVITAR SELECCIÓN AUTOMÁTICA DE TEXTO
+          format: formatR,
+          applyFormatOnInit: false,
         ),
         width: 130,
         enableDropToResize: false,
-        // ✅ EDICIÓN AUTOMÁTICA AL CAMBIAR DE CELDA (SIN ENTER)
         enableAutoEditing: true,
-        // ✅ RENDERER PERSONALIZADO PARA COLOREAR NÚMEROS CALCULADOS AUTOMÁTICAMENTE
-        renderer: (rendererContext) {
-          final idxCell = rendererContext.row.cells['_idx'];
-          if (idxCell?.value is num) {
-            final rowIndex = (idxCell!.value as num).toInt();
-            if (rowIndex >= 0 && rowIndex < widget.articulos.length) {
-              // Si la celda fue calculada automáticamente, colorear en azul
-              final provider = context.read<InventarioProvider>();
-              if (provider.esCeldaCalculadaAutomaticamente(
-                  widget.articulos[rowIndex].nombre, 'puntoReorden')) {
-                return Text(
-                  rendererContext.cell.value.toString(),
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF0069A7),
-                  ),
-                );
-              }
-            }
-          }
-          // Celda normal sin coloreado
-          return Text(
-            rendererContext.cell.value.toString(),
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-            ),
-          );
-        },
+        renderer: _buildCalculatedColumnRenderer('puntoReorden'),
       ),
       PlutoColumn(
         title: 'Tamaño Lote',
         field: 'tamanoLote',
         type: PlutoColumnType.number(
-          format: '#,##0', // ✅ Números enteros para tamaño de lote
-          applyFormatOnInit: false, // ✅ EVITAR SELECCIÓN AUTOMÁTICA DE TEXTO
+          format: formatQ,
+          applyFormatOnInit: false,
         ),
         width: 130,
         enableDropToResize: false,
-        // ✅ EDICIÓN AUTOMÁTICA AL CAMBIAR DE CELDA (SIN ENTER)
         enableAutoEditing: true,
-        // ✅ RENDERER PERSONALIZADO PARA COLOREAR NÚMEROS CALCULADOS AUTOMÁTICAMENTE
-        renderer: (rendererContext) {
-          final idxCell = rendererContext.row.cells['_idx'];
-          if (idxCell?.value is num) {
-            final rowIndex = (idxCell!.value as num).toInt();
-            if (rowIndex >= 0 && rowIndex < widget.articulos.length) {
-              // Si la celda fue calculada automáticamente, colorear en azul
-              final provider = context.read<InventarioProvider>();
-              if (provider.esCeldaCalculadaAutomaticamente(
-                  widget.articulos[rowIndex].nombre, 'tamanoLote')) {
-                return Text(
-                  rendererContext.cell.value.toString(),
-                  style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF0069A7),
-                  ),
-                );
-              }
-            }
-          }
-          // Celda normal sin coloreado
-          return Text(
-            rendererContext.cell.value.toString(),
-            style: const TextStyle(
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-            ),
-          );
-        },
+        renderer: _buildCalculatedColumnRenderer('tamanoLote'),
       ),
     ];
+  }
+
+  PlutoColumn _buildNumericColumn({
+    required String title,
+    required String field,
+    required double width,
+    PlutoColumnTextAlign textAlign = PlutoColumnTextAlign.left,
+  }) {
+    return PlutoColumn(
+      title: title,
+      field: field,
+      type: PlutoColumnType.number(
+        format: '#,##0.00',
+        applyFormatOnInit: false,
+      ),
+      width: width,
+      textAlign: textAlign,
+      enableDropToResize: false,
+      enableAutoEditing: true,
+      renderer: _buildNumeroRenderer(),
+    );
+  }
+
+  PlutoColumnRenderer _buildCalculatedColumnRenderer(String field) {
+    return (PlutoColumnRendererContext rendererContext) {
+      final idxCell = rendererContext.row.cells['_idx'];
+      final provider = context.read<InventarioProvider>();
+      final int decimales = field == 'puntoReorden'
+          ? (provider.tipoRedondeoPuntoReorden == 'unidades' ? 0 : provider.decimalesPuntoReorden)
+          : (provider.tipoRedondeoTamanoLote == 'unidades' ? 0 : provider.decimalesTamanoLote);
+
+      if (idxCell?.value is num) {
+        final rowIndex = (idxCell!.value as num).toInt();
+        if (rowIndex >= 0 && rowIndex < widget.articulos.length) {
+          if (provider.esCeldaCalculadaAutomaticamente(
+              widget.articulos[rowIndex].nombre, field)) {
+            final double? doubleVal =
+                double.tryParse(rendererContext.cell.value.toString());
+            return Text(
+              doubleVal != null
+                  ? MathUtils.formatearConDecimales(doubleVal, decimales)
+                  : rendererContext.cell.value.toString(),
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+                color: Color(0xFF0069A7),
+              ),
+            );
+          }
+        }
+      }
+      final double? doubleVal =
+          double.tryParse(rendererContext.cell.value.toString());
+      return Text(
+        doubleVal != null
+            ? MathUtils.formatearConDecimales(doubleVal, decimales)
+            : rendererContext.cell.value.toString(),
+        style: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+        ),
+      );
+    };
+  }
+
+  /// Renderer de números para aplicar formato dinámico de separadores en la UI de PlutoGrid
+  PlutoColumnRenderer _buildNumeroRenderer() {
+    return (PlutoColumnRendererContext rendererContext) {
+      final value = rendererContext.cell.value;
+      if (value is num) {
+        return Text(
+          MathUtils.formatearNumero(value.toDouble()),
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+          ),
+        );
+      }
+      return Text(rendererContext.cell.value.toString());
+    };
   }
 
   /// Redondea un valor según la configuración del provider
@@ -322,7 +301,6 @@ class _ArticulosTableState extends State<ArticulosTable> {
         'costoUnitario': PlutoCell(value: articulo.costoUnitario),
         'espacioUnidad': PlutoCell(value: articulo.espacioUnidad),
         'desviacionDiaria': PlutoCell(value: articulo.desviacionDiaria),
-        // ✅ USAR VALORES REDONDEADOS SEGÚN CONFIGURACIÓN DEL PROVIDER
         'puntoReorden': PlutoCell(
             value: _redondearSegunConfiguracion(
                 articulo.puntoReorden, 'puntoReorden')),
@@ -335,49 +313,14 @@ class _ArticulosTableState extends State<ArticulosTable> {
 
   // Manejar cambios en las celdas de PlutoGrid
   void _onCellChanged(PlutoGridOnChangedEvent event) {
-    // Usar el índice real desde la columna oculta
     final idxCell = event.row.cells['_idx'];
     final rowIndex =
         (idxCell?.value is num) ? (idxCell!.value as num).toInt() : -1;
     final field = event.column.field;
 
-    debugPrint('📝 Celda cambiada: ${event.column.title} = ${event.value}');
+    debugPrint('Celda cambiada: ${event.column.title} = ${event.value}');
 
     if (rowIndex >= 0 && rowIndex < widget.articulos.length) {
-      double? parseNum(v) {
-        if (v == null) {
-          return null;
-        }
-        String s = v.toString().trim();
-        if (s.isEmpty) {
-          return null;
-        }
-        // Normaliza miles y decimales para formatos con coma o punto
-        // 1. elimina espacios y NBSP
-        s = s.replaceAll('\u00A0', '').replaceAll(' ', '');
-        // 2. si tiene ambos (coma y punto), asume que el último símbolo es decimal
-        final hasComma = s.contains(',');
-        final hasDot = s.contains('.');
-        if (hasComma && hasDot) {
-          final lastComma = s.lastIndexOf(',');
-          final lastDot = s.lastIndexOf('.');
-          if (lastComma > lastDot) {
-            // coma decimal: quita puntos de miles y reemplaza coma por punto
-            s = s.replaceAll('.', '').replaceAll(',', '.');
-          } else {
-            // punto decimal: quita comas de miles
-            s = s.replaceAll(',', '');
-          }
-        } else if (hasComma && !hasDot) {
-          // solo coma: tratar como decimal
-          s = s.replaceAll('.', '').replaceAll(',', '.');
-        } else {
-          // solo punto o ninguno: quitar separadores de miles si los hubiera
-          s = s.replaceAll(',', '');
-        }
-        return double.tryParse(s);
-      }
-
       final provider = context.read<InventarioProvider>();
       final original = provider.articulos[rowIndex];
       Articulo actualizado = original;
@@ -389,9 +332,8 @@ class _ArticulosTableState extends State<ArticulosTable> {
         }
         actualizado = original.copyWith(nombre: nuevoNombre);
       } else {
-        final parsed = parseNum(event.value);
+        final parsed = MathUtils.parseDouble(event.value);
         if (parsed == null) {
-          // Valor inválido: no actualizar
           return;
         }
         switch (field) {
@@ -417,13 +359,11 @@ class _ArticulosTableState extends State<ArticulosTable> {
             actualizado = original.copyWith(desviacionDiaria: parsed);
             break;
           case 'puntoReorden':
-            // ✅ REDONDEAR SEGÚN CONFIGURACIÓN DEL PROVIDER
             final valorRedondeado =
                 _redondearSegunConfiguracion(parsed, 'puntoReorden');
             actualizado = original.copyWith(puntoReorden: valorRedondeado);
             break;
           case 'tamanoLote':
-            // ✅ REDONDEAR SEGÚN CONFIGURACIÓN DEL PROVIDER
             final valorRedondeado =
                 _redondearSegunConfiguracion(parsed, 'tamanoLote');
             actualizado = original.copyWith(tamanoLote: valorRedondeado);
@@ -433,16 +373,13 @@ class _ArticulosTableState extends State<ArticulosTable> {
         }
       }
 
-      // ✅ REMOVER TRACKING DE CELDA CALCULADA AUTOMÁTICAMENTE SI EL USUARIO LA EDITA
       if (field == 'puntoReorden' || field == 'tamanoLote') {
-        // ✅ PROGRAMAR REMOCIÓN DE TRACKING PARA EVITAR ERROR DE WIDGET TREE LOCKED
         SchedulerBinding.instance.addPostFrameCallback((_) {
           provider.removerTrackingCeldaCalculada(
               widget.articulos[rowIndex].nombre, field);
         });
       }
 
-      // ✅ PROGRAMAR ACTUALIZACIÓN DEL PROVIDER PARA EVITAR ERROR DE WIDGET TREE LOCKED
       SchedulerBinding.instance.addPostFrameCallback((_) {
         provider.actualizarArticulo(rowIndex, actualizado);
       });
@@ -475,109 +412,45 @@ class _ArticulosTableState extends State<ArticulosTable> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          title: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.red.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child:
-                    const Icon(UniconsLine.trash, color: Colors.red, size: 20),
-              ),
-              const SizedBox(width: 12),
-              const Text('Confirmar Eliminación'),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '¿Estás seguro de que deseas eliminar ${selectedRows.length} artículo${selectedRows.length != 1 ? 's' : ''} seleccionado${selectedRows.length != 1 ? 's' : ''}?',
-                style: const TextStyle(fontSize: 16),
-              ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.red.withValues(alpha: 0.05),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.red.withValues(alpha: 0.2)),
-                ),
-                child: const Row(
+        return ConfirmarEliminacionDialog(
+          cantidadArticulos: selectedRows.length,
+          onConfirmar: () {
+            final indices = selectedRows
+                .map((row) => row.cells['_idx']?.value)
+                .whereType<num>()
+                .map((n) => n.toInt())
+                .toSet()
+                .toList()
+              ..sort((a, b) => b.compareTo(a));
+
+            final provider = context.read<InventarioProvider>();
+            for (final index in indices) {
+              if (index >= 0 && index < provider.articulos.length) {
+                provider.eliminarArticulo(index);
+              }
+            }
+
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
                   children: [
-                    Icon(UniconsLine.exclamation_triangle,
-                        color: Colors.red, size: 16),
-                    SizedBox(width: 8),
+                    const Icon(UniconsLine.check_circle,
+                        color: Colors.white),
+                    const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        'Esta acción no se puede deshacer',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.red,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
+                          '${selectedRows.length} artículo${selectedRows.length != 1 ? 's' : ''} eliminado${selectedRows.length != 1 ? 's' : ''} correctamente'),
                     ),
                   ],
                 ),
+                backgroundColor: Colors.green,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
+                duration: const Duration(seconds: 3),
               ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancelar'),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                // Eliminar en orden inverso para evitar problemas de índices
-                final indices = selectedRows
-                    .map((row) => row.cells['_idx']?.value)
-                    .whereType<num>()
-                    .map((n) => n.toInt())
-                    .toSet()
-                    .toList()
-                  ..sort((a, b) => b.compareTo(a));
-
-                final provider = context.read<InventarioProvider>();
-                for (final index in indices) {
-                  if (index >= 0 && index < provider.articulos.length) {
-                    provider.eliminarArticulo(index);
-                  }
-                }
-
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Row(
-                      children: [
-                        const Icon(UniconsLine.check_circle,
-                            color: Colors.white),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                              '${selectedRows.length} artículo${selectedRows.length != 1 ? 's' : ''} eliminado${selectedRows.length != 1 ? 's' : ''} correctamente'),
-                        ),
-                      ],
-                    ),
-                    backgroundColor: Colors.green,
-                    behavior: SnackBarBehavior.floating,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8)),
-                    duration: const Duration(seconds: 3),
-                  ),
-                );
-              },
-              style: TextButton.styleFrom(foregroundColor: Colors.red),
-              child: const Text('Eliminar'),
-            ),
-          ],
+            );
+          },
         );
       },
     );
@@ -585,86 +458,13 @@ class _ArticulosTableState extends State<ArticulosTable> {
 
   @override
   Widget build(BuildContext context) {
-    // Actualizar filas de PlutoGrid
     rows = [
       for (int i = 0; i < widget.articulos.length; i++)
         _articuloToPlutoRow(i, widget.articulos[i])
     ];
 
     if (widget.articulos.isEmpty) {
-      return Card(
-        elevation: 2,
-        child: Container(
-          padding: const EdgeInsets.all(32.0),
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: MDSJColors.primary.withValues(alpha: 0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    UniconsLine.box,
-                    size: 48,
-                    color: MDSJColors.primary,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  'No hay artículos agregados',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                    color: MDSJColors.textPrimary,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 12),
-                const Text(
-                  'Agrega artículos usando el formulario de arriba',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: MDSJColors.textSecondary,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 24),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: MDSJColors.infoBackground,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: MDSJColors.infoBorder),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(
-                        UniconsLine.info_circle,
-                        size: 16,
-                        color: MDSJColors.primary,
-                      ),
-                      SizedBox(width: 8),
-                      Text(
-                        'Los artículos aparecerán aquí',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: MDSJColors.primary,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
+      return const SinArticulosPlaceholder();
     }
 
     return Card(
@@ -725,7 +525,6 @@ class _ArticulosTableState extends State<ArticulosTable> {
                     ],
                   ],
                 ),
-                // Se elimina el banner informativo redundante
               ],
             ),
             const SizedBox(height: 16),
@@ -751,34 +550,40 @@ class _ArticulosTableState extends State<ArticulosTable> {
                 ),
                 child: Consumer<InventarioProvider>(
                   builder: (context, provider, _) {
+                    _initializePlutoGridColumns();
+                    
+                    rows = [
+                      for (int i = 0; i < widget.articulos.length; i++)
+                        _articuloToPlutoRow(i, widget.articulos[i])
+                    ];
+
+                    final plutoGridKey = ValueKey(
+                      '${_computeArticlesSignature()}'
+                      '_${provider.formatoSeparadores}'
+                      '_${provider.tipoRedondeoPuntoReorden}_${provider.decimalesPuntoReorden}'
+                      '_${provider.tipoRedondeoTamanoLote}_${provider.decimalesTamanoLote}'
+                    );
+
                     return PlutoGrid(
-                      key: ValueKey(_computeArticlesSignature()),
+                      key: plutoGridKey,
                       columns: columns,
-                      rows: [
-                        for (int i = 0; i < widget.articulos.length; i++)
-                          _articuloToPlutoRow(i, widget.articulos[i])
-                      ],
+                      rows: rows,
                       onLoaded: (PlutoGridOnLoadedEvent event) {
                         stateManager = event.stateManager;
                         stateManager!.setShowColumnFilter(false);
                       },
                       onChanged: (PlutoGridOnChangedEvent event) {
                         logDebug(
-                            '📝 Celda cambiada: ${event.column.title} = ${event.value}');
+                            'Celda cambiada: ${event.column.title} = ${event.value}');
                         _onCellChanged(event);
                       },
                       onRowChecked: (PlutoGridOnRowCheckedEvent event) {
-                        logDebug('✅ Fila seleccionada: ${event.isChecked}');
+                        logDebug('Fila seleccionada: ${event.isChecked}');
                       },
                       configuration: const PlutoGridConfiguration(
-                        // ✅ CONFIGURACIÓN DE NAVEGACIÓN EXCEL-STYLE
-                        enableMoveDownAfterSelecting:
-                            true, // Mover abajo después de seleccionar
-                        enableMoveHorizontalInEditing:
-                            true, // Permitir movimiento horizontal durante edición
-                        tabKeyAction: PlutoGridTabKeyAction
-                            .moveToNextOnEdge, // Tab continúa a siguiente fila en bordes
-
+                        enableMoveDownAfterSelecting: true,
+                        enableMoveHorizontalInEditing: true,
+                        tabKeyAction: PlutoGridTabKeyAction.moveToNextOnEdge,
                         columnSize: PlutoGridColumnSizeConfig(
                           autoSizeMode: PlutoAutoSizeMode.scale,
                         ),

@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 /// Utilidades matemáticas para el modelo QR de inventario
@@ -222,26 +223,61 @@ class MathUtils {
     };
   }
 
-  /// Formatea un valor como moneda
-  static String formatearMoneda(double valor) {
-    final NumberFormat format = NumberFormat.currency(
-      locale: 'es_PE',
-      symbol: 'S/',
-      decimalDigits: 2,
-    );
-    return format.format(valor);
+  // Configuración de formato para la UI: 'coma_punto', 'punto_coma', 'comilla_punto'
+  static String formatoNumeroUI = 'punto_coma';
+
+  static String _aplicarFormatoUI(String valorEnUS) {
+    switch (formatoNumeroUI) {
+      case 'punto_coma':
+        // Reemplazar , por temporal, . por , y temporal por .
+        return valorEnUS.replaceAll(',', '_').replaceAll('.', ',').replaceAll('_', '.');
+      case 'comilla_punto':
+        // Reemplazar , por '
+        return valorEnUS.replaceAll(',', "'");
+      case 'coma_punto':
+      default:
+        return valorEnUS;
+    }
   }
 
-  /// Formatea un valor como número sin símbolo de moneda (para Excel)
+  /// Formatea un valor como moneda para la UI
+  static String formatearMoneda(double valor) {
+    final NumberFormat format = NumberFormat.currency(
+      locale: 'en_US',
+      symbol: 'S/.',
+      decimalDigits: 2,
+    );
+    final formateado = format.format(valor);
+    final conEspacio = formateado.replaceFirst('S/.', 'S/. ');
+    final parteNumerica = conEspacio.substring(4); // 'S/. ' tiene longitud 4
+    return 'S/. ${_aplicarFormatoUI(parteNumerica)}';
+  }
+
+  /// Formatea un valor como número sin símbolo de moneda para la UI
   static String formatearNumero(double valor) {
+    final NumberFormat format = NumberFormat.decimalPattern('en_US');
+    final formatted = format.format(double.parse(valor.toStringAsFixed(2)));
+    return _aplicarFormatoUI(formatted);
+  }
+
+  /// Formatea un valor numérico aplicando la configuración regional de la UI y decimales personalizados.
+  static String formatearConDecimales(double valor, int decimales) {
+    final NumberFormat format = NumberFormat.decimalPattern('en_US');
+    final formatted = format.format(double.parse(valor.toStringAsFixed(decimales)));
+    return _aplicarFormatoUI(formatted);
+  }
+
+  /// Formatea un valor como número conservando el comportamiento original es_PE (para Excel)
+  static String formatearNumeroParaExcel(double valor) {
     final NumberFormat format = NumberFormat.decimalPattern('es_PE');
     return format.format(double.parse(valor.toStringAsFixed(2)));
   }
 
-  /// Formatea un número con unidades
+  /// Formatea un número con unidades para la UI
   static String formatearUnidades(double valor, String unidad) {
-    final NumberFormat format = NumberFormat.decimalPattern('es_PE');
-    return '${format.format(double.parse(valor.toStringAsFixed(2)))} $unidad';
+    final NumberFormat format = NumberFormat.decimalPattern('en_US');
+    final formatted = format.format(double.parse(valor.toStringAsFixed(2)));
+    return '${_aplicarFormatoUI(formatted)} $unidad';
   }
 
   /// Redondea un valor según su tipo y magnitud
@@ -319,9 +355,8 @@ class MathUtils {
       return valorPorDefecto ?? 0.0;
     }
 
-    // Parsear el valor
-    final valor =
-        double.tryParse(input.replaceAll(',', '.')) ?? valorPorDefecto ?? 0.0;
+    // Parsear el valor usando el parseador regional
+    final valor = parseDouble(input) ?? valorPorDefecto ?? 0.0;
 
     // Validar que sea positivo (excepto para porcentajes que pueden ser negativos)
     if (tipo != 'porcentaje' && valor < 0) {
@@ -330,5 +365,126 @@ class MathUtils {
 
     // Redondear según el tipo
     return redondearInteligente(valor, tipo: tipo);
+  }
+
+  /// Analiza y convierte una cadena formateada con separadores a double.
+  /// Soporta formatos regionales con puntos/comas de miles y decimales.
+  static double? parseDouble(Object? v) {
+    if (v == null) {
+      return null;
+    }
+    String s = v.toString().trim();
+    if (s.isEmpty) {
+      return null;
+    }
+
+    // 1. Quitar espacios y espacios de no separación (NBSP)
+    s = s.replaceAll('\u00A0', '').replaceAll(' ', '');
+
+    // 2. Determinar separadores según el formato regional activo de la UI
+    // formatoNumeroUI: 'punto_coma' (1.250,00), 'coma_punto' (1,250.00), 'comilla_punto' (1'250.00)
+    String milesSep;
+    String decimalSep;
+    if (formatoNumeroUI == 'punto_coma') {
+      milesSep = '.';
+      decimalSep = ',';
+    } else if (formatoNumeroUI == 'comilla_punto') {
+      milesSep = "'";
+      decimalSep = '.';
+    } else {
+      milesSep = ',';
+      decimalSep = '.';
+    }
+
+    // Si la cadena contiene ambos separadores:
+    if (s.contains(milesSep) && s.contains(decimalSep)) {
+      final firstMiles = s.indexOf(milesSep);
+      final lastDecimal = s.lastIndexOf(decimalSep);
+      if (firstMiles < lastDecimal) {
+        // El orden de los separadores es el correcto para el formato regional
+        s = s.replaceAll(milesSep, '').replaceAll(decimalSep, '.');
+      } else {
+        // Están en el orden inverso (ej: ingresaron formato US en local ES o viceversa)
+        final fallback = _parseDoubleFallback(s);
+        if (fallback != null) {
+          return fallback;
+        }
+      }
+    }
+    // Si contiene solo uno de los separadores:
+    else if (s.contains(milesSep)) {
+      // Si contiene solo el separador de miles (ej: "550.000" en punto_coma o "550,000" en coma_punto)
+      final lastIdx = s.lastIndexOf(milesSep);
+      final charsAfter = s.substring(lastIdx + 1).length;
+      if (charsAfter == 3 || s.split(milesSep).length > 2) {
+        // Es separador de miles
+        s = s.replaceAll(milesSep, '');
+      } else {
+        // Si no son 3 dígitos y es el único separador, puede ser que el usuario lo usó como decimal por error
+        s = s.replaceAll(milesSep, '.');
+      }
+    }
+    else if (s.contains(decimalSep)) {
+      // Contiene solo el separador decimal activo. Lo reemplazamos por '.'
+      s = s.replaceAll(decimalSep, '.');
+    }
+    // Si contiene un punto/coma que no es ninguno de los activos:
+    else if (s.contains('.') || s.contains(',') || s.contains("'")) {
+      final fallback = _parseDoubleFallback(s);
+      if (fallback != null) {
+        return fallback;
+      }
+    }
+
+    return double.tryParse(s);
+  }
+
+  /// Parser de respaldo genérico e inteligente basado en análisis posicional de caracteres.
+  static double? _parseDoubleFallback(String s) {
+    s = s.replaceAll("'", '');
+    final hasComma = s.contains(',');
+    final hasDot = s.contains('.');
+    if (hasComma && hasDot) {
+      final lastComma = s.lastIndexOf(',');
+      final lastDot = s.lastIndexOf('.');
+      if (lastComma > lastDot) {
+        s = s.replaceAll('.', '').replaceAll(',', '.');
+      } else {
+        s = s.replaceAll(',', '');
+      }
+    } else if (hasComma && !hasDot) {
+      final lastIdx = s.lastIndexOf(',');
+      final decimals = s.substring(lastIdx + 1);
+      if (decimals.length == 3) {
+        s = s.replaceAll(',', '');
+      } else {
+        s = s.replaceAll(',', '.');
+      }
+    } else if (hasDot && !hasComma) {
+      final lastIdx = s.lastIndexOf('.');
+      final decimals = s.substring(lastIdx + 1);
+      if (decimals.length == 3) {
+        s = s.replaceAll('.', '');
+      }
+    }
+    return double.tryParse(s);
+  }
+
+  /// Retorna los formatters de texto para inputs numéricos, limitando los decimales según la configuración regional.
+  static List<TextInputFormatter> getInputFormatters({bool allowDecimal = true}) {
+    final decimalSep = formatoNumeroUI == 'punto_coma' ? ',' : '.';
+    return [
+      FilteringTextInputFormatter.allow(RegExp(allowDecimal ? r"[0-9.,'\u00A0 ]" : r'[0-9]')),
+      if (allowDecimal)
+        TextInputFormatter.withFunction((oldValue, newValue) {
+          final text = newValue.text;
+          // Contar ocurrencias del separador decimal
+          final count = decimalSep.allMatches(text).length;
+          if (count > 1) {
+            return oldValue;
+          }
+          return newValue;
+        }),
+    ];
   }
 }
